@@ -1,0 +1,10 @@
+recursive-exclude tests *
+recursive-include oarepo_requests *.yaml
+recursive-include oarepo_requests *.json
+recursive-include oarepo_requests *.po
+recursive-include oarepo_requests *.pot
+recursive-include oarepo_requests *.mo
+recursive-include oarepo_requests *.js
+recursive-include oarepo_requests *.jsx
+recursive-include oarepo_requests *.less
+recursive-include oarepo_requests *.jinja

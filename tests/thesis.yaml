@@ -1,0 +1,19 @@
+record:
+  use:
+    - invenio
+  module:
+    qualified: thesis
+  permissions:
+    presets: [ 'everyone' ]
+  record:
+    fields:
+      state: "{{oarepo_workflows.records.systemfields.state.RecordStateField}}(initial='published')"
+  draft:
+    record:
+      fields:
+        state: "{{oarepo_workflows.records.systemfields.state.RecordStateField}}()"
+
+profiles:
+  - record
+  - draft
+
