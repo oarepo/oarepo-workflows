@@ -1,38 +1,59 @@
 from thesis.resources.records.config import ThesisResourceConfig
 
 
-def _create_and_publish(client_with_credentials, input_data):
-    """Create a draft and publish it."""
-    # Create the draft
-    response = client_with_credentials.post(
-        ThesisResourceConfig.url_prefix, json=input_data
+def test_workflow_read(users, logged_client, search_clear):
+    # create draft
+    user_client1 = logged_client(users[0])
+    user_client2 = logged_client(users[1])
+
+    create_response = user_client1.post(ThesisResourceConfig.url_prefix, json={})
+    draft_json = create_response.json
+    assert create_response.status_code == 201
+
+    # in draft state, owner can read, the other user can't
+    owner_response = user_client1.get(
+        f"{ThesisResourceConfig.url_prefix}{draft_json['id']}/draft"
+    )
+    other_response = user_client2.get(
+        f"{ ThesisResourceConfig.url_prefix}{draft_json['id']}/draft"
     )
 
-    assert response.status_code == 201
+    assert owner_response.status_code == 200
+    assert other_response.status_code == 403
 
-    recid = response.json["id"]
 
-    response = client_with_credentials.post(
-        f"{ ThesisResourceConfig.url_prefix}{recid}/draft/actions/publish"
+def test_workflow_publish(users, logged_client, search_clear):
+    user_client1 = logged_client(users[0])
+    user_client2 = logged_client(users[1])
+
+    create_response = user_client1.post(ThesisResourceConfig.url_prefix, json={})
+    draft_json = create_response.json
+    user_client1.post(
+        f"{ThesisResourceConfig.url_prefix}{draft_json['id']}/draft/actions/publish"
     )
 
-    assert response.status_code == 202
-    return recid
-
-def test_publish_draft(client_with_credentials, input_data, search_clear):
-    """
-    should test the permissions here once the IfInState generators can be used in permission presets
-    """
-    recid = _create_and_publish(client_with_credentials, input_data)
-
-    # Check draft does not exists anymore
-    response = client_with_credentials.get(
-        f"{ ThesisResourceConfig.url_prefix}{recid}/draft"
+    # in published state, all authenticated users should be able to read, this tests that the preset covers
+    # read in all states
+    owner_response = user_client1.get(
+        f"{ ThesisResourceConfig.url_prefix}{draft_json['id']}"
+    )
+    other_response = user_client2.get(
+        f"{ ThesisResourceConfig.url_prefix}{draft_json['id']}"
     )
 
-    assert response.status_code == 404
+    assert owner_response.status_code == 200
+    assert other_response.status_code == 200
 
-    # Check record exists
-    response = client_with_credentials.get(f"{ ThesisResourceConfig.url_prefix}{recid}")
 
-    assert response.status_code == 200
+def test_state_change(users, record_service, state_change_function, search_clear):
+    record = record_service.create(users[0].identity, {})._record
+    state_change_function(record, "approving")
+    assert record["state"] == "approving"
+
+
+def test_state_change_entrypoint_hookup(
+    users, record_service, state_change_function, search_clear
+):
+    record = record_service.create(users[0].identity, {})._record
+    state_change_function(record, "approving")
+    assert record["state"] == "approving"

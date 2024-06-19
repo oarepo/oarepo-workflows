@@ -1,41 +1,42 @@
-from oarepo_workflows.permissions.generators import IfInState
-from oarepo_workflows.permissions.policy import WorkflowPermissionPolicy
-from invenio_records_permissions.generators import (
-    AnyUser,
-    AuthenticatedUser,
-    SystemProcess,
-)
-
-from thesis.records.api import ThesisDraft
-
-"""
-WORKFLOWS={
-  'workflow-name': {
-    'label': _('Workflow label'),
-    'permissions': WorkflowNamePermissions,
-    'requests': WorkflowNameRequests,
-  }
-}
-"""
-
-
-class DefaultWorkflowPermissions(WorkflowPermissionPolicy):
-    can_search = [SystemProcess(), AuthenticatedUser()]
-    can_read = [IfInState("draft", [SystemProcess, AuthenticatedUser()]), IfInState("published", [SystemProcess, AnyUser()])]
-    can_create = [SystemProcess(), AuthenticatedUser()]
-    can_update = [SystemProcess(), AuthenticatedUser()]
-    can_delete = [SystemProcess(), AuthenticatedUser()]
-    can_manage = [SystemProcess(), AuthenticatedUser()]
-
 import os
+
 import pytest
 import yaml
 from flask_security import login_user
-from invenio_access.permissions import system_identity
 from invenio_accounts.testutils import login_user_via_session
+from invenio_app.factory import create_api
+from invenio_i18n import lazy_gettext as _
+from invenio_users_resources.records import UserAggregate
 
-from invenio_records_permissions.generators import AuthenticatedUser, SystemProcess
-from oarepo_runtime.services.generators import RecordOwners
+from oarepo_workflows.permissions.policy import WorkflowPermissionPolicy
+
+WORKFLOWS = {
+    "default": {
+        "label": _("Default workflow"),
+        "permissions": WorkflowPermissionPolicy,
+        "requests": {},
+    }
+}
+
+
+@pytest.fixture
+def record_service():
+    from thesis.proxies import current_service
+
+    return current_service
+
+
+@pytest.fixture
+def state_change_function():
+    from oarepo_workflows.proxies import current_oarepo_workflows
+
+    return current_oarepo_workflows.set_state
+
+
+@pytest.fixture(scope="module")
+def create_app(instance_path, entry_points):
+    """Application factory fixture."""
+    return create_api
 
 
 @pytest.fixture(scope="function")
@@ -46,19 +47,31 @@ def sample_metadata_list():
 
 
 @pytest.fixture()
-def record_service():
-    return current_service
-
-
-@pytest.fixture()
 def input_data(sample_metadata_list):
     return sample_metadata_list[0]
 
 
-def receiver_adressed(*args, **kwargs):
-    data = args[4]
-    target_community = data["payload"]["community"]
-    return {"community": target_community}
+@pytest.fixture()
+def users(app, db, UserFixture):
+
+    user1 = UserFixture(
+        email="user1@example.org",
+        password="password",
+        active=True,
+        confirmed=True,
+    )
+    user1.create(app, db)
+
+    user2 = UserFixture(
+        email="user2@example.org",
+        password="beetlesmasher",
+        active=True,
+        confirmed=True,
+    )
+    user2.create(app, db)
+    db.session.commit()
+    UserAggregate.index.refresh()
+    return [user1, user2]
 
 
 class LoggedClient:
@@ -96,12 +109,6 @@ def logged_client(client):
 
 
 @pytest.fixture(scope="module")
-def create_app(instance_path, entry_points):
-    """Application factory fixture."""
-    return create_api
-
-
-@pytest.fixture(scope="module")
 def app_config(app_config):
     """Mimic an instance's configuration."""
     app_config["JSONSCHEMAS_HOST"] = "localhost"
@@ -122,63 +129,6 @@ def app_config(app_config):
     app_config["CACHE_TYPE"] = "SimpleCache"  # Flask-Caching related configs
     app_config["CACHE_DEFAULT_TIMEOUT"] = 300
 
-
-
-
+    app_config["RECORD_WORKFLOWS"] = WORKFLOWS
 
     return app_config
-
-
-
-
-@pytest.fixture()
-def user(UserFixture, app, db):
-    u = UserFixture(
-        email="flower@flow.org",
-        password="community_flower",
-    )
-    u.create(app, db)
-    return u
-
-
-@pytest.fixture(scope="module", autouse=True)
-def location(location):
-    return location
-
-from invenio_requests.customizations import RequestType
-from invenio_requests.proxies import current_requests
-
-
-@pytest.fixture(scope="module")
-def requests_service(app):
-    """Request Factory fixture."""
-
-    return current_requests.requests_service
-
-
-
-
-from thesis.proxies import current_service
-
-
-@pytest.fixture(scope="function")
-def sample_draft(app, db, input_data, community):
-    input_data["community_id"] = community.id
-    draft_item = current_service.create(system_identity, input_data)
-    ThesisDraft.index.refresh()
-    return ThesisDraft.pid.resolve(draft_item.id, registered_only=False)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

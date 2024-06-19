@@ -3,8 +3,7 @@ record:
     - invenio
   module:
     qualified: thesis
-  permissions:
-    presets: [ 'everyone' ]
+
   record:
     fields:
       state: "{{oarepo_workflows.records.systemfields.state.RecordStateField}}(initial='published')"

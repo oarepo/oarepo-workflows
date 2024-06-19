@@ -25,12 +25,13 @@ pip install -U oarepo-model-builder oarepo-model-builder-drafts
 if test -d thesis ; then
   rm -rf thesis
 fi
-oarepo-compile-model ./tests/thesis.yaml --output-directory thesis -vvv
+oarepo-compile-model ./tests/thesis.yaml --output-directory ./thesis -vvv
 
 $PYTHON -m venv $TESTS_VENV
 . $TESTS_VENV/bin/activate
 pip install -U setuptools pip wheel
 pip install "oarepo[tests]==${OAREPO_VERSION}.*"
-pip install -e ".[tests]"
-pip install -e thesis
+pip install -e "./thesis[tests]"
+pip install -e .
 
+pytest ./tests
