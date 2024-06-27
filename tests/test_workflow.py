@@ -47,7 +47,7 @@ def test_workflow_publish(users, logged_client, search_clear):
 
 def test_state_change(users, record_service, state_change_function, search_clear):
     record = record_service.create(users[0].identity, {})._record
-    state_change_function(record, "approving")
+    state_change_function(users[0].identity, record, "approving")
     assert record["state"] == "approving"
 
 
@@ -55,5 +55,5 @@ def test_state_change_entrypoint_hookup(
     users, record_service, state_change_function, search_clear
 ):
     record = record_service.create(users[0].identity, {})._record
-    state_change_function(record, "approving")
+    state_change_function(users[0].identity, record, "approving")
     assert record["state"] == "approving"

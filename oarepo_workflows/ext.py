@@ -19,17 +19,34 @@ class OARepoWorkflows(object):
         group_name = "oarepo_workflows.workflow_changed_notifiers"
         return importlib_metadata.entry_points().select(group=group_name)
 
-    def set_state(self, record, value, *args, **kwargs):
+    @cached_property
+    def default_workflow_getters(self):
+        group_name = "oarepo_workflows.default_workflow_getters"
+        return importlib_metadata.entry_points().select(group=group_name)
+
+    def set_state(self, identity, record, value, *args, uow=None, **kwargs):
         previous_value = record.state
         record.state = value
-        for state_changed_notifier in self.state_changed_notifiers:
-            state_changed_notifier(record, previous_value, value, *args, **kwargs)
+        for state_changed_notifier_ep in self.state_changed_notifiers:
+            state_changed_notifier = state_changed_notifier_ep.load()
+            state_changed_notifier(
+                identity, record, previous_value, value, *args, uow=uow, **kwargs
+            )
 
-    def set_workflow(self, record, value):
+    def get_default_workflow(self, default="default", *args, **kwargs):
+        for default_workflow_getter_ep in self.default_workflow_getters:
+            default_workflow_getter = default_workflow_getter_ep.load()
+            default = default_workflow_getter(default, *args, **kwargs)
+        return default
+
+    def set_workflow(self, identity, record, value, *args, uow=None, **kwargs):
         previous_value = record.parent["workflow"]
         record.parent.workflow = value
-        for workflow_changed_notifier in self.workflow_changed_notifiers:
-            workflow_changed_notifier(record, previous_value, value, *args, **kwargs)
+        for workflow_changed_notifier_ep in self.workflow_changed_notifiers:
+            workflow_changed_notifier = workflow_changed_notifier_ep.load()
+            workflow_changed_notifier(
+                identity, record, previous_value, value, *args, uow=uow, **kwargs
+            )
 
     @property
     def record_workflows(self):
