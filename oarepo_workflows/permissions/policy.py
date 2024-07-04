@@ -4,21 +4,31 @@ from invenio_records_permissions.generators import AuthenticatedUser, SystemProc
 from oarepo_runtime.services.generators import RecordOwners
 
 from oarepo_workflows.proxies import current_oarepo_workflows
-
+import copy
 from .generators import IfInState
 
 
 # todo this must be used as permission_policy_cls in model's service config and for now is not compatible with permissions presets - the mixin must be deleted
-def workflow_permission_set_getter(service, action, **kwargs):
-    if "record" in kwargs:
-        workflow_id = kwargs["record"].parent["workflow"]
+def workflow_permission_set_getter(service, action_name=None, **kwargs):
+    if "record" in kwargs: # todo should the input to get_default_workflow be always parent? it should be unified somewhere
+        kwargs_copy = copy.deepcopy(kwargs)
+        record = kwargs_copy.pop("record")
+        parent = record.parent
+        if "workflow" in parent:
+            workflow_id = parent["workflow"]
+        else:
+            workflow_id = current_oarepo_workflows.get_default_workflow(record=parent, **kwargs_copy)
     else:
         # todo hook in communities to get default for community
-        workflow_id = "default"
-    policy = dict_lookup(
-        current_oarepo_workflows.record_workflows, f"{workflow_id}.permissions"
-    )
-    return policy(action, **kwargs)
+        workflow_id = current_oarepo_workflows.get_default_workflow(**kwargs)
+    try:
+        policy = dict_lookup(
+            current_oarepo_workflows.record_workflows, f"{workflow_id}.permissions"
+        )
+    except:
+        #todo dev debug
+        print()
+    return policy(action_name, **kwargs)
 
 
 # todo this is just for testing purposes now
@@ -34,22 +44,25 @@ class WorkflowPermissionPolicy(RecordPermissionPolicy):
         "draft_commit_files": "commit_files",
         "draft_read_files": "read_files",
         "draft_update_files": "update_files",
+        "search_drafts": "search"
     }
 
-    def __init__(self, action, **over):
-        action = WorkflowPermissionPolicy.PERMISSIONS_REMAP.get(action, action)
-        super().__init__(action, **over)
+    def __init__(self, action_name=None, **over):
+        action_name = WorkflowPermissionPolicy.PERMISSIONS_REMAP.get(action_name, action_name)
+        can = getattr(self, f"can_{action_name}")
+        can.append(SystemProcess())
+        super().__init__(action_name, **over)
 
-    can_search = [SystemProcess(), AuthenticatedUser()]
+    can_search = [AuthenticatedUser()]
     can_read = [
-        IfInState("draft", [SystemProcess(), RecordOwners()]),
-        IfInState("published", [SystemProcess(), AuthenticatedUser()]),
+        IfInState("draft", [RecordOwners()]),
+        IfInState("published", [AuthenticatedUser()]),
     ]
-    can_update = [IfInState("draft", RecordOwners()), SystemProcess()]
+    can_update = [IfInState("draft", RecordOwners())]
     can_delete = [
         IfInState("draft", RecordOwners()),
         # published record can not be deleted directly by anyone else than system
         SystemProcess(),
     ]
-    can_create = [SystemProcess(), AuthenticatedUser()]
-    can_publish = [SystemProcess(), AuthenticatedUser()]
+    can_create = [AuthenticatedUser()]
+    can_publish = [AuthenticatedUser()]
