@@ -42,7 +42,9 @@ class WorkflowField(SystemField):
         super().pre_commit(record)
         saved_workflow = self._get_workflow_from_parent_db(record)
         if not saved_workflow:
-            default = self._get_workflow(record) # todo or use the intialized one from pre_create or ?
+            default = self._get_workflow(
+                record
+            )
             if default:
                 new = self._record_workflow_model(
                     workflow=default, record_id=str(record.id)

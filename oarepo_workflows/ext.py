@@ -7,7 +7,21 @@ class OARepoWorkflows(object):
 
     def __init__(self, app=None):
         if app:
+            self.init_config(app)
             self.init_app(app)
+
+    def init_config(self, app):
+        """Initialize configuration."""
+        from . import ext_config
+
+        if "OAREPO_PERMISSIONS_PRESETS" not in app.config:
+            app.config["OAREPO_PERMISSIONS_PRESETS"] = {}
+
+        for k in ext_config.OAREPO_PERMISSIONS_PRESETS:
+            if k not in app.config["OAREPO_PERMISSIONS_PRESETS"]:
+                app.config["OAREPO_PERMISSIONS_PRESETS"][k] = (
+                    ext_config.OAREPO_PERMISSIONS_PRESETS[k]
+                )
 
     @cached_property
     def state_changed_notifiers(self):

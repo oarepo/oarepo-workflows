@@ -6,14 +6,36 @@ from flask_security import login_user
 from invenio_accounts.testutils import login_user_via_session
 from invenio_app.factory import create_api
 from invenio_i18n import lazy_gettext as _
+from invenio_records_permissions.generators import AuthenticatedUser, SystemProcess
 from invenio_users_resources.records import UserAggregate
+from oarepo_runtime.services.generators import RecordOwners
 
-from oarepo_workflows.permissions.policy import WorkflowPermissionPolicy
+from oarepo_workflows.permissions.generators import IfInState
+from oarepo_workflows.permissions.policy import DefaultWorkflowPermissionPolicy
+
+# tests should not depend on specified default configuration
+
+
+class TestWorkflowPermissionPolicy(DefaultWorkflowPermissionPolicy):
+    can_search = [AuthenticatedUser()]
+    can_read = [
+        IfInState("draft", [RecordOwners()]),
+        IfInState("published", [AuthenticatedUser()]),
+    ]
+    can_update = [IfInState("draft", RecordOwners())]
+    can_delete = [
+        IfInState("draft", RecordOwners()),
+        # published record can not be deleted directly by anyone else than system
+        SystemProcess(),
+    ]
+    can_create = [AuthenticatedUser()]
+    can_publish = [AuthenticatedUser()]
+
 
 WORKFLOWS = {
     "default": {
         "label": _("Default workflow"),
-        "permissions": WorkflowPermissionPolicy,
+        "permissions": DefaultWorkflowPermissionPolicy,
         "requests": {},
     }
 }

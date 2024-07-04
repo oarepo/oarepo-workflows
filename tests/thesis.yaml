@@ -4,6 +4,9 @@ record:
   module:
     qualified: thesis
 
+  permissions:
+    presets: [ 'workflow' ]
+
   record:
     fields:
       state: "{{oarepo_workflows.records.systemfields.state.RecordStateField}}(initial='published')"

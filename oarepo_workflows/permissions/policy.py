@@ -1,55 +1,33 @@
-from invenio_records.dictutils import dict_lookup
+
 from invenio_records_permissions import RecordPermissionPolicy
 from invenio_records_permissions.generators import AuthenticatedUser, SystemProcess
 from oarepo_runtime.services.generators import RecordOwners
 
-from oarepo_workflows.proxies import current_oarepo_workflows
-import copy
+from oarepo_workflows.permissions.generators import WorkflowPermission
+
 from .generators import IfInState
 
 
-# todo this must be used as permission_policy_cls in model's service config and for now is not compatible with permissions presets - the mixin must be deleted
-def workflow_permission_set_getter(service, action_name=None, **kwargs):
-    if "record" in kwargs: # todo should the input to get_default_workflow be always parent? it should be unified somewhere
-        kwargs_copy = copy.deepcopy(kwargs)
-        record = kwargs_copy.pop("record")
-        parent = record.parent
-        if "workflow" in parent:
-            workflow_id = parent["workflow"]
-        else:
-            workflow_id = current_oarepo_workflows.get_default_workflow(record=parent, **kwargs_copy)
-    else:
-        # todo hook in communities to get default for community
-        workflow_id = current_oarepo_workflows.get_default_workflow(**kwargs)
-    try:
-        policy = dict_lookup(
-            current_oarepo_workflows.record_workflows, f"{workflow_id}.permissions"
-        )
-    except:
-        #todo dev debug
-        print()
-    return policy(action_name, **kwargs)
-
-
-# todo this is just for testing purposes now
-class WorkflowPermissionPolicy(RecordPermissionPolicy):
+class DefaultWorkflowPermissionPolicy(RecordPermissionPolicy):
 
     PERMISSIONS_REMAP = {
-        "read_draft": "read",
-        "update_draft": "update",
-        "delete_draft": "delete",
-        "draft_create_files": "create_files",
-        "draft_set_content_files": "set_content_files",
-        "draft_get_content_files": "get_content_files",
-        "draft_commit_files": "commit_files",
-        "draft_read_files": "read_files",
-        "draft_update_files": "update_files",
-        "search_drafts": "search"
+        "can_read_draft": "can_read",
+        "can_update_draft": "can_update",
+        "can_delete_draft": "can_delete",
+        "can_draft_create_files": "can_create_files",
+        "can_draft_set_content_files": "can_set_content_files",
+        "can_draft_get_content_files": "can_get_content_files",
+        "can_draft_commit_files": "can_commit_files",
+        "can_draft_read_files": "can_read_files",
+        "can_draft_update_files": "can_update_files",
+        "can_search_drafts": "can_search",
     }
 
     def __init__(self, action_name=None, **over):
-        action_name = WorkflowPermissionPolicy.PERMISSIONS_REMAP.get(action_name, action_name)
-        can = getattr(self, f"can_{action_name}")
+        action_name = DefaultWorkflowPermissionPolicy.PERMISSIONS_REMAP.get(
+            action_name, action_name
+        )
+        can = getattr(self, action_name)
         can.append(SystemProcess())
         super().__init__(action_name, **over)
 
@@ -66,3 +44,30 @@ class WorkflowPermissionPolicy(RecordPermissionPolicy):
     ]
     can_create = [AuthenticatedUser()]
     can_publish = [AuthenticatedUser()]
+
+
+class WorkflowPermissionPolicy(RecordPermissionPolicy):
+
+    can_create = [WorkflowPermission("can_create")]
+    can_publish = [WorkflowPermission("can_publish")]
+    can_search = [WorkflowPermission("can_search")]
+    can_read = [WorkflowPermission("can_read")]
+    can_update = [WorkflowPermission("can_update")]
+    can_delete = [WorkflowPermission("can_delete")]
+    can_create_files = [WorkflowPermission("can_create_files")]
+    can_set_content_files = [WorkflowPermission("can_set_content_files")]
+    can_get_content_files = [WorkflowPermission("can_get_content_files")]
+    can_commit_files = [WorkflowPermission("can_commit_files")]
+    can_read_files = [WorkflowPermission("can_read_files")]
+    can_update_files = [WorkflowPermission("can_update_files")]
+
+    can_search_drafts = [WorkflowPermission("can_search")]
+    can_read_draft = [WorkflowPermission("can_read")]
+    can_update_draft = [WorkflowPermission("can_update")]
+    can_delete_draft = [WorkflowPermission("can_delete")]
+    can_draft_create_files = [WorkflowPermission("can_create_files")]
+    can_draft_set_content_files = [WorkflowPermission("can_set_content_files")]
+    can_draft_get_content_files = [WorkflowPermission("can_get_content_files")]
+    can_draft_commit_files = [WorkflowPermission("can_commit_files")]
+    can_draft_read_files = [WorkflowPermission("can_read_files")]
+    can_draft_update_files = [WorkflowPermission("can_update_files")]

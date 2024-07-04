@@ -1,14 +1,12 @@
-from invenio_communities.communities.records.models import CommunityMetadata
 from invenio_db import db
 from sqlalchemy import String
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy_utils.types import UUIDType
 
 
-
-
 class RecordWorkflowModelMixin:
     __record_model__ = None
+
     @declared_attr
     def record_id(cls):
         return db.Column(

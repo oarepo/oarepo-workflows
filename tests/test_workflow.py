@@ -1,4 +1,7 @@
+from flask_security import logout_user
+
 from thesis.resources.records.config import ThesisResourceConfig
+from thesis.thesis.records.api import ThesisRecord
 
 
 def test_workflow_read(users, logged_client, search_clear):
@@ -43,6 +46,25 @@ def test_workflow_publish(users, logged_client, search_clear):
 
     assert owner_response.status_code == 200
     assert other_response.status_code == 200
+
+
+def test_query_filter(users, client, logged_client, search_clear):
+    # todo complete; turns out this is a bit more complicated. needs to make muy own test generators
+    user_client1 = logged_client(users[0])
+
+    create_response = user_client1.post(ThesisResourceConfig.url_prefix, json={})
+    draft_json = create_response.json
+    user_client1.post(
+        f"{ThesisResourceConfig.url_prefix}{draft_json['id']}/draft/actions/publish"
+    )
+    ThesisRecord.index.refresh()
+
+    owner_response = user_client1.get(ThesisResourceConfig.url_prefix).json
+
+    logout_user()
+    anon_response = client.get(ThesisResourceConfig.url_prefix).json
+
+    print()
 
 
 def test_state_change(users, record_service, state_change_function, search_clear):
