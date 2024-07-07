@@ -1,10 +1,17 @@
 #!/bin/bash
 
 PYTHON="${PYTHON:-python3.10}"
+OAREPO_VERSION="${OAREPO_VERSION:-12}"
 
 set -e
 
-OAREPO_VERSION="${OAREPO_VERSION:-12}"
+install_python_package() {
+  package_name=$1
+  uppercase_package_name=$(echo $package_name | tr '[:lower:]' '[:upper:]' | tr '-' '_')
+  pip_package_name=${!uppercase_package_name}   # dereference the variable if possible
+  pip_package_name=${pip_package_name:-$package_name}
+  pip install -U $pip_package_name
+}
 
 BUILDER_VENV=.venv-builder
 TESTS_VENV=.venv-tests
@@ -20,7 +27,8 @@ fi
 $PYTHON -m venv $BUILDER_VENV
 . $BUILDER_VENV/bin/activate
 pip install -U setuptools pip wheel
-pip install -U oarepo-model-builder oarepo-model-builder-drafts
+install_python_package oarepo-model-builder
+install_python_package oarepo-model-builder-drafts
 
 if test -d thesis ; then
   rm -rf thesis

@@ -36,7 +36,10 @@ class OARepoWorkflows(object):
     @cached_property
     def default_workflow_getters(self):
         group_name = "oarepo_workflows.default_workflow_getters"
-        return importlib_metadata.entry_points().select(group=group_name)
+        return [
+            x.load()
+            for x in importlib_metadata.entry_points().select(group=group_name)
+        ]
 
     def set_state(self, identity, record, value, *args, uow=None, **kwargs):
         previous_value = record.state

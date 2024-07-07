@@ -53,7 +53,14 @@ def state_change_function():
     from oarepo_workflows.proxies import current_oarepo_workflows
 
     return current_oarepo_workflows.set_state
-
+#
+# @pytest.fixture(scope="module")
+# def extra_entry_points():
+#     return {
+#         'oarepo_workflows.default_workflow_getters': [
+#             'test_getter = tests.utils.get_default_workflow',
+#         ]
+#     }
 
 @pytest.fixture(scope="module")
 def create_app(instance_path, entry_points):
