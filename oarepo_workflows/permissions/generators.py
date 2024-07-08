@@ -39,6 +39,7 @@ def query_filters_from_generators(generators, **kwargs):
 
 def _needs_from_workflow(workflow_id, action, record, **kwargs):
     try:
+        # TODO: suspicious
         generators = dict_lookup(
             current_oarepo_workflows, f"{workflow_id}.permissions.{action}"
         )
@@ -53,6 +54,8 @@ def get_workflow_from_record(record, **kwargs):
     if hasattr(record, "workflow") and record.workflow:
         return record.workflow
     else:
+        # TODO: branch not in tests, should not return None
+        # when record has no workflow yet?
         if "record" not in kwargs:
             return current_oarepo_workflows.get_default_workflow(
                 record=record, **kwargs
