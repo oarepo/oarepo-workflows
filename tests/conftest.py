@@ -6,12 +6,15 @@ from flask_security import login_user
 from invenio_accounts.testutils import login_user_via_session
 from invenio_app.factory import create_api
 from invenio_i18n import lazy_gettext as _
-from invenio_records_permissions.generators import AuthenticatedUser, SystemProcess
+from invenio_records_permissions.generators import AuthenticatedUser, SystemProcess, Generator
 from invenio_users_resources.records import UserAggregate
 from oarepo_runtime.services.generators import RecordOwners
+from oarepo_workflows import Workflow
 
-from oarepo_workflows.permissions.generators import IfInState
-from oarepo_workflows.permissions.policy import DefaultWorkflowPermissionPolicy
+from oarepo_workflows.permissions import IfInState, DefaultWorkflowPermissionPolicy
+from oarepo_workflows.requests import WorkflowRequestPolicy, WorkflowRequest, WorkflowTransitions
+
+from flask_principal import ActionNeed
 
 # tests should not depend on specified default configuration
 
@@ -32,17 +35,55 @@ class TestWorkflowPermissionPolicy(DefaultWorkflowPermissionPolicy):
     can_publish = [AuthenticatedUser()]
 
 
+class Administration(Generator):
+
+    def needs(self, **kwargs):
+        """Enabling Needs."""
+        return [ActionNeed("administration")]
+
+    def query_filter(self, **kwargs):
+        """Search filters."""
+        from invenio_search.engine import dsl
+
+        return dsl.Q("match_all")
+
+
+class MyWorkflowRequests(WorkflowRequestPolicy):
+    delete_request = WorkflowRequest(
+        requesters=[
+            IfInState("published", RecordOwners())
+        ],
+        recipients=[Administration()],
+        transitions = WorkflowTransitions(
+            submitted='considered_for_deletion',
+            approved='deleted',
+            rejected='published'
+        )
+    )
+
 WORKFLOWS = {
-    "default": {
-        "label": _("Default workflow"),
-        "permissions": DefaultWorkflowPermissionPolicy,
-        "requests": {},
-    }
+    "my_workflow": Workflow(
+        label = _("Default workflow"),
+        permissions_cls = DefaultWorkflowPermissionPolicy,
+        requests_cls = MyWorkflowRequests
+    )
 }
+
+@pytest.fixture
+def mappings():
+    from thesis.records.api import ThesisDraft, ThesisRecord
+
+    # update the mappings
+    from oarepo_runtime.services.custom_fields.mappings import prepare_cf_indices
+
+    prepare_cf_indices()
+    ThesisDraft.index.refresh()
+    ThesisRecord.index.refresh()
+
 
 
 @pytest.fixture
-def record_service():
+def record_service(mappings):
     from thesis.proxies import current_service
 
     return current_service
@@ -53,14 +94,14 @@ def state_change_function():
     from oarepo_workflows.proxies import current_oarepo_workflows
 
     return current_oarepo_workflows.set_state
-#
-# @pytest.fixture(scope="module")
-# def extra_entry_points():
-#     return {
-#         'oarepo_workflows.default_workflow_getters': [
-#             'test_getter = tests.utils.get_default_workflow',
-#         ]
-#     }
+
+@pytest.fixture(scope="module")
+def extra_entry_points():
+    return {
+        'oarepo_workflows.default_workflow_getters': [
+            'test_getter = tests.utils:get_default_workflow',
+        ]
+    }
 
 @pytest.fixture(scope="module")
 def create_app(instance_path, entry_points):
@@ -130,7 +171,7 @@ class LoggedClient:
 
 
 @pytest.fixture()
-def logged_client(client):
+def logged_client(client, mappings):
     def _logged_client(user):
         return LoggedClient(client, user)
 
@@ -158,6 +199,6 @@ def app_config(app_config):
     app_config["CACHE_TYPE"] = "SimpleCache"  # Flask-Caching related configs
     app_config["CACHE_DEFAULT_TIMEOUT"] = 300
 
-    app_config["RECORD_WORKFLOWS"] = WORKFLOWS
+    app_config["WORKFLOWS"] = WORKFLOWS
 
     return app_config

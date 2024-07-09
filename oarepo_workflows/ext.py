@@ -44,30 +44,29 @@ class OARepoWorkflows(object):
     def set_state(self, identity, record, value, *args, uow=None, **kwargs):
         previous_value = record.state
         record.state = value
-        for state_changed_notifier_ep in self.state_changed_notifiers:
-            state_changed_notifier = state_changed_notifier_ep
+        for state_changed_notifier in self.state_changed_notifiers:
             state_changed_notifier(
                 identity, record, previous_value, value, *args, uow=uow, **kwargs
             )
 
-    def get_default_workflow(self, default="default", *args, **kwargs):
-        for default_workflow_getter_ep in self.default_workflow_getters:
-            default_workflow_getter = default_workflow_getter_ep
-            default = default_workflow_getter(default, *args, **kwargs)
-        return default
+    def get_default_workflow(self, **kwargs):
+        for default_workflow_getter in self.default_workflow_getters:
+            default = default_workflow_getter(**kwargs)
+            if default:
+                return default
+        return "default"
 
     def set_workflow(self, identity, record, value, *args, uow=None, **kwargs):
         previous_value = record.parent["workflow"]
         record.parent.workflow = value
-        for workflow_changed_notifier_ep in self.workflow_changed_notifiers:
-            workflow_changed_notifier = workflow_changed_notifier_ep
+        for workflow_changed_notifier in self.workflow_changed_notifiers:
             workflow_changed_notifier(
                 identity, record, previous_value, value, *args, uow=uow, **kwargs
             )
 
     @property
     def record_workflows(self):
-        return self.app.config["RECORD_WORKFLOWS"]
+        return self.app.config["WORKFLOWS"]
 
     def init_app(self, app):
         """Flask application initialization."""

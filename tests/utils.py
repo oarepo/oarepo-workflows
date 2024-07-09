@@ -1,2 +1,2 @@
-def get_default_workflow(record, **kwargs):
-    raise Exception("Not implemented yet")
+def get_default_workflow(**kwargs):
+    return "my_workflow"

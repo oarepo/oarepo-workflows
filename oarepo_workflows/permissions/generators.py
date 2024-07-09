@@ -9,91 +9,52 @@ from invenio_search.engine import dsl
 from oarepo_workflows.proxies import current_oarepo_workflows
 
 
-def needs_from_generators(generators, **kwargs):
-    if not generators:
-        return []
-    needs = [
-        g.needs(
-            **kwargs,
-        )
-        for g in generators
-    ]
-    return set(chain.from_iterable(needs))
-
-
-def reference_receiver_from_generators(generators, **kwargs):
-    if not generators:
-        return None
-    for generator in generators:
-        if hasattr(generator, 'reference_receiver'):
-            ref = generator.reference_receiver(**kwargs)
-            if ref:
-                return ref
-
-
-def query_filters_from_generators(generators, **kwargs):
-    queries = [g.query_filter(**kwargs) for g in generators]
-    queries = [q for q in queries if q]
-    return reduce(operator.or_, queries) if queries else None
-
-
-def _needs_from_workflow(workflow_id, action, record, **kwargs):
-    try:
-        # TODO: suspicious
-        generators = dict_lookup(
-            current_oarepo_workflows, f"{workflow_id}.permissions.{action}"
-        )
-    except KeyError:
-        return []
-    return needs_from_generators(generators, record, **kwargs)
-
-
-def get_workflow_from_record(record, **kwargs):
-    if hasattr(record, "parent"):
-        record = record.parent
-    if hasattr(record, "workflow") and record.workflow:
-        return record.workflow
-    else:
-        # TODO: branch not in tests, should not return None
-        # when record has no workflow yet?
-        if "record" not in kwargs:
-            return current_oarepo_workflows.get_default_workflow(
-                record=record, **kwargs
-            )
-        else:
-            return current_oarepo_workflows.get_default_workflow(**kwargs)
-
-
-def get_permission_class_from_workflow(record=None, action_name=None, **kwargs):
-    if record:
-        workflow_id = get_workflow_from_record(record)
-    else:
-        workflow_id = current_oarepo_workflows.get_default_workflow(**kwargs)
-
-    policy = dict_lookup(
-        current_oarepo_workflows.record_workflows, f"{workflow_id}.permissions"
-    )
-    return policy(action_name, **kwargs)
-
-
 class WorkflowPermission(Generator):
     def __init__(self, action):
         super().__init__()
         self._action = action
 
+    def _get_workflow_from_record(self, record, **kwargs):
+        if hasattr(record, "parent"):
+            record = record.parent
+        if hasattr(record, "workflow") and record.workflow:
+            return record.workflow
+        else:
+            return None
+
+    def _get_permission_class_from_workflow(self, record=None, action_name=None, **kwargs):
+        if record:
+            workflow_id = self._get_workflow_from_record(record)
+        else:
+            # TODO: should not we raise an exception here ???
+            workflow_id = current_oarepo_workflows.get_default_workflow(**kwargs)
+
+        policy = current_oarepo_workflows.record_workflows[workflow_id].permissions
+        return policy(action_name, **kwargs)
+
     def _get_generators(self, record, **kwargs):
-        permission_class = get_permission_class_from_workflow(
+        permission_class = self._get_permission_class_from_workflow(
             record, action_name=self._action, **kwargs
         )
-        return getattr(permission_class, self._action, None)
+        return getattr(permission_class, self._action, None) or []
 
     def needs(self, record=None, **kwargs):
         generators = self._get_generators(record, **kwargs)
-        return needs_from_generators(generators, record=record, **kwargs)
+        needs = [
+            g.needs(
+                record=record,
+                **kwargs,
+            )
+            for g in generators
+        ]
+        return set(chain.from_iterable(needs))
 
     def query_filter(self, record=None, **kwargs):
         generators = self._get_generators(record, **kwargs)
-        return query_filters_from_generators(generators, record=record, **kwargs)
+
+        queries = [g.query_filter(record=record, **kwargs) for g in generators]
+        queries = [q for q in queries if q]
+        return reduce(operator.or_, queries) if queries else None
 
 
 class IfInState(ConditionalGenerator):
