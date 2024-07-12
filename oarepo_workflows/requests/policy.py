@@ -82,17 +82,20 @@ class RecipientGeneratorMixin:
         """
         raise NotImplementedError("Implement reference receiver in your code")
 
-
+auto_request_need = SystemRoleNeed("auto_request")
+auto_approve_need = SystemRoleNeed("auto_approve")
 class AutoRequest(Generator):
     """
     Auto request generator. This generator is used to automatically create a request
     when a record is moved to a specific state.
     """
-    auto_request_need = SystemRoleNeed("auto_request")
-
     def needs(self, **kwargs):
         """Enabling Needs."""
-        return [self.auto_request_need]
+        return [auto_request_need]
+
+
+
+
 
 
 class AutoApprove(RecipientGeneratorMixin, Generator):
@@ -103,5 +106,5 @@ class AutoApprove(RecipientGeneratorMixin, Generator):
 
     def reference_receivers(self, record=None, request_type=None, **kwargs):
         return [{
-            "auto_approve": True
+            "auto_approve": "true"
         }]

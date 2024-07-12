@@ -36,9 +36,9 @@ class DefaultWorkflowPermissionPolicy(RecordPermissionPolicy):
         IfInState("draft", [RecordOwners()]),
         IfInState("published", [AuthenticatedUser()]),
     ]
-    can_update = [IfInState("draft", RecordOwners())]
+    can_update = [IfInState("draft", [RecordOwners()])]
     can_delete = [
-        IfInState("draft", RecordOwners()),
+        IfInState("draft", [RecordOwners()]),
         # published record can not be deleted directly by anyone else than system
         SystemProcess(),
     ]
@@ -60,6 +60,7 @@ class WorkflowPermissionPolicy(RecordPermissionPolicy):
     can_commit_files = [WorkflowPermission("can_commit_files")]
     can_read_files = [WorkflowPermission("can_read_files")]
     can_update_files = [WorkflowPermission("can_update_files")]
+    can_edit = [WorkflowPermission("can_edit")]
 
     can_search_drafts = [WorkflowPermission("can_search")]
     can_read_draft = [WorkflowPermission("can_read")]

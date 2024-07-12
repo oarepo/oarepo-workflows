@@ -57,7 +57,7 @@ class OARepoWorkflows(object):
         return "default"
 
     def set_workflow(self, identity, record, value, *args, uow=None, **kwargs):
-        previous_value = record.parent["workflow"]
+        previous_value = record.parent.workflow
         record.parent.workflow = value
         for workflow_changed_notifier in self.workflow_changed_notifiers:
             workflow_changed_notifier(
