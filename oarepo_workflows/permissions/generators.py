@@ -7,26 +7,26 @@ from invenio_records_permissions.generators import ConditionalGenerator, Generat
 from invenio_search.engine import dsl
 
 from oarepo_workflows.proxies import current_oarepo_workflows
+from oarepo_workflows.utils import get_workflow_from_record, get_from_requests_workflow
 
 
 class WorkflowPermission(Generator):
-    def __init__(self, action):
+    def __init__(self, action=None):
+        # might not be needed in subclasses
         super().__init__()
         self._action = action
 
-    def _get_workflow_from_record(self, record, **kwargs):
-        if hasattr(record, "parent"):
-            record = record.parent
-        if hasattr(record, "workflow") and record.workflow:
-            return record.workflow
-        else:
-            return None
 
     def _get_permission_class_from_workflow(self, record=None, action_name=None, **kwargs):
         if record:
-            workflow_id = self._get_workflow_from_record(record)
+            workflow_id = get_workflow_from_record(record)
+            if not workflow_id:
+                workflow_id = current_oarepo_workflows.get_default_workflow(record=record, **kwargs)
         else:
             # TODO: should not we raise an exception here ???
+            # record doesn't have to be here - ie. in case of create in community, in such case we need default value for the community
+            # alternatively, this could be split into more generators
+            # holds for if not from above too
             workflow_id = current_oarepo_workflows.get_default_workflow(**kwargs)
 
         policy = current_oarepo_workflows.record_workflows[workflow_id].permissions
@@ -40,6 +40,7 @@ class WorkflowPermission(Generator):
 
     def needs(self, record=None, **kwargs):
         generators = self._get_generators(record, **kwargs)
+        # todo ui record is RecordItem, it doesn't have state and owners on parent - either do ui serialization of those or resolve them
         needs = [
             g.needs(
                 record=record,
@@ -55,6 +56,15 @@ class WorkflowPermission(Generator):
         queries = [g.query_filter(record=record, **kwargs) for g in generators]
         queries = [q for q in queries if q]
         return reduce(operator.or_, queries) if queries else None
+
+class CreatorsFromWorkflow(WorkflowPermission):
+    """
+    generator for accesing request creators
+    """
+    def _get_generators(self, record, **kwargs):
+        request_type = kwargs["request_type"]
+        workflow_id = get_workflow_from_record(record)
+        return get_from_requests_workflow(workflow_id, request_type.type_id, "requesters")
 
 
 class IfInState(ConditionalGenerator):
@@ -77,3 +87,5 @@ class IfInState(ConditionalGenerator):
         then_query = self._make_query(self.then_, **kwargs)
 
         return q_instate & then_query
+
+
