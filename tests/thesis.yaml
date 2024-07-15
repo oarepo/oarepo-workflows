@@ -10,10 +10,21 @@ record:
   record:
     fields:
       state: "{{oarepo_workflows.records.systemfields.state.RecordStateField}}(initial='published')"
+
   draft:
     record:
       fields:
         state: "{{oarepo_workflows.records.systemfields.state.RecordStateField}}()"
+
+  draft-parent-record:
+    fields:
+      workflow: "{{oarepo_workflows.records.systemfields.workflow.WorkflowField}}()"
+
+  draft-parent-record-metadata:
+    base-classes:
+      - oarepo_workflows.records.models.RecordWorkflowParentModelMixin
+      - invenio_db.db{db.Model}
+      - invenio_records.models.RecordMetadataBase
 
 profiles:
   - record

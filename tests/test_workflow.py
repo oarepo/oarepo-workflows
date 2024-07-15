@@ -1,7 +1,7 @@
 from flask_security import logout_user
 
 from thesis.resources.records.config import ThesisResourceConfig
-from thesis.thesis.records.api import ThesisRecord
+from thesis.thesis.records.api import ThesisRecord, ThesisDraft
 
 
 def test_workflow_read(users, logged_client, search_clear):
@@ -13,6 +13,9 @@ def test_workflow_read(users, logged_client, search_clear):
     draft_json = create_response.json
     assert create_response.status_code == 201
 
+    ThesisRecord.index.refresh()
+    ThesisDraft.index.refresh()
+
     # in draft state, owner can read, the other user can't
     owner_response = user_client1.get(
         f"{ThesisResourceConfig.url_prefix}{draft_json['id']}/draft"
@@ -23,6 +26,18 @@ def test_workflow_read(users, logged_client, search_clear):
 
     assert owner_response.status_code == 200
     assert other_response.status_code == 403
+
+    owner_records = user_client1.get(
+        "/user/thesis/"
+    )
+    assert owner_records.status_code == 200
+    assert len(owner_records.json["hits"]["hits"]) == 1
+
+    other_records = user_client2.get(
+        "user/thesis/"
+    )
+    assert other_records.status_code == 200
+    assert len(other_records.json["hits"]["hits"]) == 0
 
 
 def test_workflow_publish(users, logged_client, search_clear):
