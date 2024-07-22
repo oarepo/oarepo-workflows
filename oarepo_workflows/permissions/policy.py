@@ -1,15 +1,13 @@
-
 from invenio_records_permissions import RecordPermissionPolicy
 from invenio_records_permissions.generators import AuthenticatedUser, SystemProcess
 from oarepo_runtime.services.generators import RecordOwners
 
-from oarepo_workflows.permissions.generators import WorkflowPermission
+from oarepo_workflows.permissions.generators import WorkflowPermission, CreatorsFromWorkflow
 
 from .generators import IfInState
 
 
 class DefaultWorkflowPermissionPolicy(RecordPermissionPolicy):
-
     PERMISSIONS_REMAP = {
         "can_read_draft": "can_read",
         "can_update_draft": "can_update",
@@ -47,7 +45,6 @@ class DefaultWorkflowPermissionPolicy(RecordPermissionPolicy):
 
 
 class WorkflowPermissionPolicy(RecordPermissionPolicy):
-
     can_create = [WorkflowPermission("can_create")]
     can_publish = [WorkflowPermission("can_publish")]
     can_search = [WorkflowPermission("can_search")]
@@ -72,3 +69,13 @@ class WorkflowPermissionPolicy(RecordPermissionPolicy):
     can_draft_commit_files = [WorkflowPermission("can_commit_files")]
     can_draft_read_files = [WorkflowPermission("can_read_files")]
     can_draft_update_files = [WorkflowPermission("can_update_files")]
+
+
+from invenio_requests.services.permissions import PermissionPolicy
+
+
+class CreatorsFromWorkflowPermissionPolicy(PermissionPolicy):
+    can_create = [
+        SystemProcess(),
+        CreatorsFromWorkflow(),
+    ]
