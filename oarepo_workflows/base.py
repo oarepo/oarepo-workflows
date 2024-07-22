@@ -1,5 +1,6 @@
 import dataclasses
 from typing import Type
+
 from flask_babel import LazyString
 
 from .permissions import DefaultWorkflowPermissionPolicy

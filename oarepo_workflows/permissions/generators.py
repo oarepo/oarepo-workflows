@@ -7,7 +7,7 @@ from invenio_records_permissions.generators import ConditionalGenerator, Generat
 from invenio_search.engine import dsl
 
 from oarepo_workflows.proxies import current_oarepo_workflows
-from oarepo_workflows.utils import get_workflow_from_record, get_from_requests_workflow
+from oarepo_workflows.utils import get_from_requests_workflow, get_workflow_from_record
 
 
 class WorkflowPermission(Generator):
@@ -40,7 +40,7 @@ class WorkflowPermission(Generator):
 
     def needs(self, record=None, **kwargs):
         generators = self._get_generators(record, **kwargs)
-        # todo ui record is RecordItem, it doesn't have state and owners on parent - either do ui serialization of those or resolve them
+        # todo ui record is RecordItem, it doesn't have state and owners on parent - either do ui serialization of those or resolve them - made a change into oarepo-ui for this
         needs = [
             g.needs(
                 record=record,

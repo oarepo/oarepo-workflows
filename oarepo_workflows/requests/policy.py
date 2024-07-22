@@ -1,7 +1,8 @@
-from typing import List, Tuple, Optional
 import dataclasses
-from invenio_records_permissions.generators import Generator
+from typing import List, Optional, Tuple
+
 from invenio_access.permissions import SystemRoleNeed
+from invenio_records_permissions.generators import Generator
 
 
 @dataclasses.dataclass
@@ -84,6 +85,8 @@ class RecipientGeneratorMixin:
 
 auto_request_need = SystemRoleNeed("auto_request")
 auto_approve_need = SystemRoleNeed("auto_approve")
+
+
 class AutoRequest(Generator):
     """
     Auto request generator. This generator is used to automatically create a request
@@ -92,10 +95,6 @@ class AutoRequest(Generator):
     def needs(self, **kwargs):
         """Enabling Needs."""
         return [auto_request_need]
-
-
-
-
 
 
 class AutoApprove(RecipientGeneratorMixin, Generator):

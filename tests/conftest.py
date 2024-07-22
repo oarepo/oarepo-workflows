@@ -2,19 +2,26 @@ import os
 
 import pytest
 import yaml
+from flask_principal import ActionNeed
 from flask_security import login_user
 from invenio_accounts.testutils import login_user_via_session
 from invenio_app.factory import create_api
 from invenio_i18n import lazy_gettext as _
-from invenio_records_permissions.generators import AuthenticatedUser, SystemProcess, Generator
+from invenio_records_permissions.generators import (
+    AuthenticatedUser,
+    Generator,
+    SystemProcess,
+)
 from invenio_users_resources.records import UserAggregate
 from oarepo_runtime.services.generators import RecordOwners
+
 from oarepo_workflows import Workflow
-
-from oarepo_workflows.permissions import IfInState, DefaultWorkflowPermissionPolicy
-from oarepo_workflows.requests import WorkflowRequestPolicy, WorkflowRequest, WorkflowTransitions
-
-from flask_principal import ActionNeed
+from oarepo_workflows.permissions import DefaultWorkflowPermissionPolicy, IfInState
+from oarepo_workflows.requests import (
+    WorkflowRequest,
+    WorkflowRequestPolicy,
+    WorkflowTransitions,
+)
 
 # tests should not depend on specified default configuration
 
@@ -71,10 +78,10 @@ WORKFLOWS = {
 
 @pytest.fixture
 def mappings():
-    from thesis.records.api import ThesisDraft, ThesisRecord
-
     # update the mappings
     from oarepo_runtime.services.custom_fields.mappings import prepare_cf_indices
+
+    from thesis.records.api import ThesisDraft, ThesisRecord
 
     prepare_cf_indices()
     ThesisDraft.index.refresh()

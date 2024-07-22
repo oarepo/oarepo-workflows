@@ -1,4 +1,11 @@
-from .policy import WorkflowRequestPolicy, WorkflowRequest, WorkflowTransitions, RecipientGeneratorMixin, AutoRequest, AutoApprove
+from .policy import (
+    AutoApprove,
+    AutoRequest,
+    RecipientGeneratorMixin,
+    WorkflowRequest,
+    WorkflowRequestPolicy,
+    WorkflowTransitions,
+)
 
 __all__ = (
     'WorkflowRequestPolicy',

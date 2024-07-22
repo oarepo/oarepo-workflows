@@ -1,7 +1,7 @@
 from flask_security import logout_user
 
 from thesis.resources.records.config import ThesisResourceConfig
-from thesis.thesis.records.api import ThesisRecord, ThesisDraft
+from thesis.thesis.records.api import ThesisDraft, ThesisRecord
 
 
 def test_workflow_read(users, logged_client, search_clear):

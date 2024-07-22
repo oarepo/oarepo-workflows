@@ -1,4 +1,5 @@
 from itertools import chain
+
 from oarepo_workflows.proxies import current_oarepo_workflows
 
 

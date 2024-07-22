@@ -1,9 +1,9 @@
 import pytest
-
 from invenio_access.permissions import system_identity
-from oarepo_workflows.requests import WorkflowRequest, RecipientGeneratorMixin
-from oarepo_runtime.services.generators import RecordOwners
 from invenio_records_permissions.generators import Generator
+from oarepo_runtime.services.generators import RecordOwners
+
+from oarepo_workflows.requests import RecipientGeneratorMixin, WorkflowRequest
 from thesis.thesis.records.api import ThesisRecord
 
 
