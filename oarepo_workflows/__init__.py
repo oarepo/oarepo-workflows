@@ -1,4 +1,3 @@
-from .base import Workflow
 from .permissions import (
     DefaultWorkflowPermissionPolicy,
     IfInState,
@@ -15,14 +14,14 @@ from .requests import (
 )
 
 __all__ = (
-    'IfInState',
-    'WorkflowPermission',
-    'DefaultWorkflowPermissionPolicy',
-    'WorkflowPermissionPolicy',
-    'WorkflowRequestPolicy',
-    'WorkflowRequest',
-    'WorkflowTransitions',
-    'RecipientGeneratorMixin',
-    'AutoRequest',
-    'AutoApprove',
+    "IfInState",
+    "WorkflowPermission",
+    "DefaultWorkflowPermissionPolicy",
+    "WorkflowPermissionPolicy",
+    "WorkflowRequestPolicy",
+    "WorkflowRequest",
+    "WorkflowTransitions",
+    "RecipientGeneratorMixin",
+    "AutoRequest",
+    "AutoApprove",
 )

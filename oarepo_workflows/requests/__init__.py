@@ -8,10 +8,10 @@ from .policy import (
 )
 
 __all__ = (
-    'WorkflowRequestPolicy',
-    'WorkflowRequest',
-    'WorkflowTransitions',
-    'RecipientGeneratorMixin',
-    'AutoRequest',
-    'AutoApprove',
+    "WorkflowRequestPolicy",
+    "WorkflowRequest",
+    "WorkflowTransitions",
+    "RecipientGeneratorMixin",
+    "AutoRequest",
+    "AutoApprove",
 )

@@ -26,19 +26,22 @@ class OARepoWorkflows(object):
     @cached_property
     def state_changed_notifiers(self):
         group_name = "oarepo_workflows.state_changed_notifiers"
-        return [x.load() for x in importlib_metadata.entry_points().select(group=group_name)]
+        return [
+            x.load() for x in importlib_metadata.entry_points().select(group=group_name)
+        ]
 
     @cached_property
     def workflow_changed_notifiers(self):
         group_name = "oarepo_workflows.workflow_changed_notifiers"
-        return [x.load() for x in importlib_metadata.entry_points().select(group=group_name)]
+        return [
+            x.load() for x in importlib_metadata.entry_points().select(group=group_name)
+        ]
 
     @cached_property
     def default_workflow_getters(self):
         group_name = "oarepo_workflows.default_workflow_getters"
         return [
-            x.load()
-            for x in importlib_metadata.entry_points().select(group=group_name)
+            x.load() for x in importlib_metadata.entry_points().select(group=group_name)
         ]
 
     def set_state(self, identity, record, value, *args, uow=None, **kwargs):

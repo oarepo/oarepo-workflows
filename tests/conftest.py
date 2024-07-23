@@ -57,24 +57,24 @@ class Administration(Generator):
 
 class MyWorkflowRequests(WorkflowRequestPolicy):
     delete_request = WorkflowRequest(
-        requesters=[
-            IfInState("published", RecordOwners())
-        ],
+        requesters=[IfInState("published", RecordOwners())],
         recipients=[Administration()],
-        transitions = WorkflowTransitions(
-            submitted='considered_for_deletion',
-            approved='deleted',
-            rejected='published'
-        )
+        transitions=WorkflowTransitions(
+            submitted="considered_for_deletion",
+            approved="deleted",
+            rejected="published",
+        ),
     )
+
 
 WORKFLOWS = {
     "my_workflow": Workflow(
-        label = _("Default workflow"),
-        permissions_cls = DefaultWorkflowPermissionPolicy,
-        requests_cls = MyWorkflowRequests
+        label=_("Default workflow"),
+        permissions_cls=DefaultWorkflowPermissionPolicy,
+        requests_cls=MyWorkflowRequests,
     )
 }
+
 
 @pytest.fixture
 def mappings():
@@ -86,7 +86,6 @@ def mappings():
     prepare_cf_indices()
     ThesisDraft.index.refresh()
     ThesisRecord.index.refresh()
-
 
 
 @pytest.fixture
@@ -102,13 +101,15 @@ def state_change_function():
 
     return current_oarepo_workflows.set_state
 
+
 @pytest.fixture(scope="module")
 def extra_entry_points():
     return {
-        'oarepo_workflows.default_workflow_getters': [
-            'test_getter = tests.utils:get_default_workflow',
+        "oarepo_workflows.default_workflow_getters": [
+            "test_getter = tests.utils:get_default_workflow",
         ]
     }
+
 
 @pytest.fixture(scope="module")
 def create_app(instance_path, entry_points):

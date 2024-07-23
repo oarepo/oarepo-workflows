@@ -1,4 +1,3 @@
-from invenio_db import db
 from invenio_records.systemfields.model import ModelField
 from oarepo_runtime.records.systemfields import MappingSystemFieldMixin
 
@@ -13,15 +12,13 @@ class WorkflowField(MappingSystemFieldMixin, ModelField):
 
     def post_create(self, parent_record):
         if not parent_record.workflow:
-            parent_record.workflow = current_oarepo_workflows.get_default_workflow(record=parent_record)
+            parent_record.workflow = current_oarepo_workflows.get_default_workflow(
+                record=parent_record
+            )
 
     def pre_commit(self, parent_record):
         super().pre_commit(parent_record)
 
     @property
     def mapping(self):
-        return {
-            self.attr_name: {
-                "type": "keyword"
-            }
-        }
+        return {self.attr_name: {"type": "keyword"}}

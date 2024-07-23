@@ -27,15 +27,11 @@ def test_workflow_read(users, logged_client, search_clear):
     assert owner_response.status_code == 200
     assert other_response.status_code == 403
 
-    owner_records = user_client1.get(
-        "/user/thesis/"
-    )
+    owner_records = user_client1.get("/user/thesis/")
     assert owner_records.status_code == 200
     assert len(owner_records.json["hits"]["hits"]) == 1
 
-    other_records = user_client2.get(
-        "user/thesis/"
-    )
+    other_records = user_client2.get("user/thesis/")
     assert other_records.status_code == 200
     assert len(other_records.json["hits"]["hits"]) == 0
 

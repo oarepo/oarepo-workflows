@@ -15,12 +15,15 @@ class WorkflowPermission(Generator):
         super().__init__()
         self._action = action
 
-
-    def _get_permission_class_from_workflow(self, record=None, action_name=None, **kwargs):
+    def _get_permission_class_from_workflow(
+        self, record=None, action_name=None, **kwargs
+    ):
         if record:
             workflow_id = get_workflow_from_record(record)
             if not workflow_id:
-                workflow_id = current_oarepo_workflows.get_default_workflow(record=record, **kwargs)
+                workflow_id = current_oarepo_workflows.get_default_workflow(
+                    record=record, **kwargs
+                )
         else:
             # TODO: should not we raise an exception here ???
             # record doesn't have to be here - ie. in case of create in community, in such case we need default value for the community
@@ -77,5 +80,3 @@ class IfInState(ConditionalGenerator):
         then_query = self._make_query(self.then_, **kwargs)
 
         return q_instate & then_query
-
-
