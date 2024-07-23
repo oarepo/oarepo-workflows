@@ -15,7 +15,7 @@ from invenio_records_permissions.generators import (
 from invenio_users_resources.records import UserAggregate
 from oarepo_runtime.services.generators import RecordOwners
 
-from oarepo_workflows import Workflow
+from oarepo_workflows.base import Workflow
 from oarepo_workflows.permissions import DefaultWorkflowPermissionPolicy, IfInState
 from oarepo_workflows.requests import (
     WorkflowRequest,
