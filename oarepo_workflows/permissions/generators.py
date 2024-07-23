@@ -2,12 +2,11 @@ import operator
 from functools import reduce
 from itertools import chain
 
-from invenio_records.dictutils import dict_lookup
 from invenio_records_permissions.generators import ConditionalGenerator, Generator
 from invenio_search.engine import dsl
 
 from oarepo_workflows.proxies import current_oarepo_workflows
-from oarepo_workflows.utils import get_from_requests_workflow, get_workflow_from_record
+from oarepo_workflows.utils import get_workflow_from_record
 
 
 class WorkflowPermission(Generator):
@@ -56,15 +55,6 @@ class WorkflowPermission(Generator):
         queries = [g.query_filter(record=record, **kwargs) for g in generators]
         queries = [q for q in queries if q]
         return reduce(operator.or_, queries) if queries else None
-
-class CreatorsFromWorkflow(WorkflowPermission):
-    """
-    generator for accesing request creators
-    """
-    def _get_generators(self, record, **kwargs):
-        request_type = kwargs["request_type"]
-        workflow_id = get_workflow_from_record(record)
-        return get_from_requests_workflow(workflow_id, request_type.type_id, "requesters")
 
 
 class IfInState(ConditionalGenerator):
