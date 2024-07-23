@@ -21,12 +21,15 @@ class DefaultWorkflowPermissionPolicy(RecordPermissionPolicy):
         "can_search_drafts": "can_search",
     }
 
+    system_process = SystemProcess()
+
     def __init__(self, action_name=None, **over):
         action_name = DefaultWorkflowPermissionPolicy.PERMISSIONS_REMAP.get(
             action_name, action_name
         )
         can = getattr(self, action_name)
-        can.append(SystemProcess())
+        if self.system_process not in can:
+            can.append(self.system_process)
         super().__init__(action_name, **over)
 
     can_search = [AuthenticatedUser()]
@@ -37,8 +40,6 @@ class DefaultWorkflowPermissionPolicy(RecordPermissionPolicy):
     can_update = [IfInState("draft", [RecordOwners()])]
     can_delete = [
         IfInState("draft", [RecordOwners()]),
-        # published record can not be deleted directly by anyone else than system
-        SystemProcess(),
     ]
     can_create = [AuthenticatedUser()]
     can_publish = [AuthenticatedUser()]

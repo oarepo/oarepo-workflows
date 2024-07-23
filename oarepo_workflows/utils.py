@@ -10,19 +10,6 @@ def get_workflow_from_record(record, **kwargs):
     else:
         return None
 
-
-"""
-def needs_from_generators(generators, **kwargs):
-    needs = [
-        g.needs(
-            **kwargs,
-        )
-        for g in generators
-    ]
-    return set(chain.from_iterable(needs))
-"""
-
-
 def get_from_requests_workflow(workflow_id, type_id, segment):
     try:
         request = getattr(
