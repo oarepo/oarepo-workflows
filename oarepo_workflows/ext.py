@@ -67,6 +67,14 @@ class OARepoWorkflows(object):
                 identity, record, previous_value, value, *args, uow=uow, **kwargs
             )
 
+    def get_workflow_from_record(self, record, **kwargs):
+        if hasattr(record, "parent"):
+            record = record.parent
+        if hasattr(record, "workflow") and record.workflow:
+            return record.workflow
+        else:
+            return None
+
     @property
     def record_workflows(self):
         return self.app.config["WORKFLOWS"]

@@ -6,7 +6,6 @@ from invenio_records_permissions.generators import ConditionalGenerator, Generat
 from invenio_search.engine import dsl
 
 from oarepo_workflows.proxies import current_oarepo_workflows
-from oarepo_workflows.utils import get_workflow_from_record
 
 
 class WorkflowPermission(Generator):
@@ -18,7 +17,7 @@ class WorkflowPermission(Generator):
     def _get_workflow_in_permissions(self, record=None, **kwargs):
         workflow_id = None
         if record:
-            workflow_id = get_workflow_from_record(record)
+            workflow_id = current_oarepo_workflows.get_workflow_from_record(record)
         if not workflow_id:
             try:
                 workflow_id = kwargs["data"]["parent"]["workflow_id"]
