@@ -2,11 +2,8 @@ import dataclasses
 from typing import List, Optional, Tuple
 
 from invenio_access.permissions import SystemRoleNeed
-from invenio_records_permissions.generators import Generator, SystemProcess
-from invenio_requests.services.permissions import PermissionPolicy
+from invenio_records_permissions.generators import Generator
 
-from oarepo_workflows.permissions.generators import WorkflowPermission
-from oarepo_workflows.utils import get_from_requests_workflow, get_workflow_from_record
 
 
 @dataclasses.dataclass
@@ -116,23 +113,3 @@ class AutoApprove(RecipientGeneratorMixin, Generator):
 
     def reference_receivers(self, record=None, request_type=None, **kwargs):
         return [{"auto_approve": "true"}]
-
-
-class CreatorsFromWorkflow(WorkflowPermission):
-    """
-    generator for accesing request creators
-    """
-
-    def _get_generators(self, record, **kwargs):
-        request_type = kwargs["request_type"]
-        workflow_id = get_workflow_from_record(record)
-        return get_from_requests_workflow(
-            workflow_id, request_type.type_id, "requesters"
-        )
-
-
-class CreatorsFromWorkflowPermissionPolicy(PermissionPolicy):
-    can_create = [
-        SystemProcess(),
-        CreatorsFromWorkflow(),
-    ]
