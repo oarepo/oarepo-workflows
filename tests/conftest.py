@@ -177,7 +177,6 @@ def logged_client(client, mappings):
 
     return _logged_client
 
-
 @pytest.fixture(scope="module")
 def app_config(app_config):
     """Mimic an instance's configuration."""
@@ -202,3 +201,7 @@ def app_config(app_config):
     app_config["WORKFLOWS"] = WORKFLOWS
 
     return app_config
+
+@pytest.fixture()
+def default_workflow_json():
+    return {"parent": {"workflow_id": "my_workflow"}}

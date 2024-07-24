@@ -6,12 +6,12 @@ from thesis.resources.records.config import ThesisResourceConfig
 from thesis.thesis.records.api import ThesisDraft, ThesisRecord
 
 
-def test_workflow_read(users, logged_client, search_clear):
+def test_workflow_read(users, logged_client, default_workflow_json, search_clear):
     # create draft
     user_client1 = logged_client(users[0])
     user_client2 = logged_client(users[1])
 
-    create_response = user_client1.post(ThesisResourceConfig.url_prefix, json={"parent": {"workflow_id": "my_workflow"}})
+    create_response = user_client1.post(ThesisResourceConfig.url_prefix, json=default_workflow_json)
     draft_json = create_response.json
     assert create_response.status_code == 201
 
@@ -38,11 +38,11 @@ def test_workflow_read(users, logged_client, search_clear):
     assert len(other_records.json["hits"]["hits"]) == 0
 
 
-def test_workflow_publish(users, logged_client, search_clear):
+def test_workflow_publish(users, logged_client, default_workflow_json, search_clear):
     user_client1 = logged_client(users[0])
     user_client2 = logged_client(users[1])
 
-    create_response = user_client1.post(ThesisResourceConfig.url_prefix, json={})
+    create_response = user_client1.post(ThesisResourceConfig.url_prefix, json=default_workflow_json)
     draft_json = create_response.json
     user_client1.post(
         f"{ThesisResourceConfig.url_prefix}{draft_json['id']}/draft/actions/publish"
@@ -61,11 +61,11 @@ def test_workflow_publish(users, logged_client, search_clear):
     assert other_response.status_code == 200
 
 
-def test_query_filter(users, client, logged_client, search_clear):
+def test_query_filter(users, logged_client, default_workflow_json, search_clear):
     user_client1 = logged_client(users[0])
     user_client2 = logged_client(users[1])
 
-    record_w1 = user_client1.post(ThesisResourceConfig.url_prefix, json={"parent": {"workflow_id": "my_workflow"}})
+    record_w1 = user_client1.post(ThesisResourceConfig.url_prefix, json=default_workflow_json)
     record_w2 = user_client1.post(ThesisResourceConfig.url_prefix, json={"parent": {"workflow_id": "record_owners_can_read"}})
 
     draft_json = record_w1.json
@@ -86,18 +86,16 @@ def test_query_filter(users, client, logged_client, search_clear):
     assert len(search_u1["hits"]["hits"]) == 2
     assert len(search_u2["hits"]["hits"]) == 1
 
-    # todo test
 
-
-def test_state_change(users, record_service, state_change_function, search_clear):
-    record = record_service.create(users[0].identity, {})._record
+def test_state_change(users, record_service, state_change_function, default_workflow_json, search_clear):
+    record = record_service.create(users[0].identity, default_workflow_json)._record
     state_change_function(users[0].identity, record, "approving")
     assert record["state"] == "approving"
 
 
 def test_state_change_entrypoint_hookup(
-    users, record_service, state_change_function, search_clear
+    users, record_service, state_change_function, default_workflow_json, search_clear
 ):
-    record = record_service.create(users[0].identity, {})._record
+    record = record_service.create(users[0].identity, default_workflow_json)._record
     state_change_function(users[0].identity, record, "approving")
     assert record["state"] == "approving"
