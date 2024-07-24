@@ -1,3 +1,4 @@
+from .base import Workflow
 from .permissions import (
     DefaultWorkflowPermissionPolicy,
     IfInState,
@@ -15,6 +16,7 @@ from .requests import (
 
 __all__ = (
     "IfInState",
+    "Workflow",
     "WorkflowPermission",
     "DefaultWorkflowPermissionPolicy",
     "WorkflowPermissionPolicy",
