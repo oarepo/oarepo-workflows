@@ -10,15 +10,6 @@ class WorkflowField(MappingSystemFieldMixin, ModelField):
         self._workflow = None  # added in db
         super().__init__(model_field_name="workflow", key="workflow")
 
-    def post_create(self, parent_record):
-        if not parent_record.workflow:
-            parent_record.workflow = current_oarepo_workflows.get_default_workflow(
-                record=parent_record
-            )
-
-    def pre_commit(self, parent_record):
-        super().pre_commit(parent_record)
-
     @property
     def mapping(self):
         return {self.attr_name: {"type": "keyword"}}

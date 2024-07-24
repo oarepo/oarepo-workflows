@@ -1,3 +1,5 @@
+import time
+
 from flask_security import logout_user
 
 from thesis.resources.records.config import ThesisResourceConfig
@@ -9,7 +11,7 @@ def test_workflow_read(users, logged_client, search_clear):
     user_client1 = logged_client(users[0])
     user_client2 = logged_client(users[1])
 
-    create_response = user_client1.post(ThesisResourceConfig.url_prefix, json={})
+    create_response = user_client1.post(ThesisResourceConfig.url_prefix, json={"parent": {"workflow_id": "my_workflow"}})
     draft_json = create_response.json
     assert create_response.status_code == 201
 
@@ -60,22 +62,31 @@ def test_workflow_publish(users, logged_client, search_clear):
 
 
 def test_query_filter(users, client, logged_client, search_clear):
-    # todo complete; turns out this is a bit more complicated. needs to make muy own test generators
     user_client1 = logged_client(users[0])
+    user_client2 = logged_client(users[1])
 
-    create_response = user_client1.post(ThesisResourceConfig.url_prefix, json={})
-    draft_json = create_response.json
+    record_w1 = user_client1.post(ThesisResourceConfig.url_prefix, json={"parent": {"workflow_id": "my_workflow"}})
+    record_w2 = user_client1.post(ThesisResourceConfig.url_prefix, json={"parent": {"workflow_id": "record_owners_can_read"}})
+
+    draft_json = record_w1.json
     user_client1.post(
         f"{ThesisResourceConfig.url_prefix}{draft_json['id']}/draft/actions/publish"
     )
+
+    draft_json = record_w2.json
+    user_client2.post(
+        f"{ThesisResourceConfig.url_prefix}{draft_json['id']}/draft/actions/publish"
+    )
+
     ThesisRecord.index.refresh()
 
-    owner_response = user_client1.get(ThesisResourceConfig.url_prefix).json
+    search_u1 = user_client1.get(ThesisResourceConfig.url_prefix).json
+    search_u2 = user_client2.get(ThesisResourceConfig.url_prefix).json
 
-    logout_user()
-    anon_response = client.get(ThesisResourceConfig.url_prefix).json
+    assert len(search_u1["hits"]["hits"]) == 2
+    assert len(search_u2["hits"]["hits"]) == 1
 
-    print()
+    # todo test
 
 
 def test_state_change(users, record_service, state_change_function, search_clear):

@@ -10,7 +10,7 @@ from invenio_i18n import lazy_gettext as _
 from invenio_records_permissions.generators import (
     AuthenticatedUser,
     Generator,
-    SystemProcess,
+    SystemProcess, AnyUser,
 )
 from invenio_users_resources.records import UserAggregate
 from oarepo_runtime.services.generators import RecordOwners
@@ -23,23 +23,10 @@ from oarepo_workflows.requests import (
     WorkflowTransitions,
 )
 
-# tests should not depend on specified default configuration
-
-
-class TestWorkflowPermissionPolicy(DefaultWorkflowPermissionPolicy):
-    can_search = [AuthenticatedUser()]
+class RecordOwnersReadTestWorkflowPermissionPolicy(DefaultWorkflowPermissionPolicy):
     can_read = [
-        IfInState("draft", [RecordOwners()]),
-        IfInState("published", [AuthenticatedUser()]),
+        RecordOwners()
     ]
-    can_update = [IfInState("draft", RecordOwners())]
-    can_delete = [
-        IfInState("draft", RecordOwners()),
-        # published record can not be deleted directly by anyone else than system
-        SystemProcess(),
-    ]
-    can_create = [AuthenticatedUser()]
-    can_publish = [AuthenticatedUser()]
 
 
 class Administration(Generator):
@@ -71,6 +58,11 @@ WORKFLOWS = {
     "my_workflow": Workflow(
         label=_("Default workflow"),
         permissions_cls=DefaultWorkflowPermissionPolicy,
+        requests_cls=MyWorkflowRequests,
+    ),
+    "record_owners_can_read": Workflow(
+        label=_("Record owners read workflow"),
+        permissions_cls=RecordOwnersReadTestWorkflowPermissionPolicy,
         requests_cls=MyWorkflowRequests,
     )
 }

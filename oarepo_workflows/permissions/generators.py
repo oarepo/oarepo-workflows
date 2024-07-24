@@ -15,26 +15,25 @@ class WorkflowPermission(Generator):
         super().__init__()
         self._action = action
 
+    def _get_workflow_in_permissions(self, record=None, **kwargs):
+        workflow_id = None
+        if record:
+            workflow_id = get_workflow_from_record(record)
+        if not workflow_id:
+            try:
+                workflow_id = kwargs["data"]["parent"]["workflow_id"]
+            except KeyError:
+                pass
+        return workflow_id
+
     def _get_permission_class_from_workflow(
         self, record=None, action_name=None, **kwargs
     ):
-        if record:
-            workflow_id = get_workflow_from_record(record)
-            if not workflow_id:
-                workflow_id = current_oarepo_workflows.get_default_workflow(
-                    record=record, **kwargs
-                )
-        else:
-            # TODO: should not we raise an exception here ???
-            # record doesn't have to be here - ie. in case of create in community, in such case we need default value for the community
-            # alternatively, this could be split into more generators
-            # holds for if not from above too
-            workflow_id = current_oarepo_workflows.get_default_workflow(**kwargs)
-
+        workflow_id = self._get_workflow_in_permissions(record, **kwargs)
         policy = current_oarepo_workflows.record_workflows[workflow_id].permissions
         return policy(action_name, **kwargs)
 
-    def _get_generators(self, record, **kwargs):
+    def _get_generators(self, record=None, **kwargs):
         permission_class = self._get_permission_class_from_workflow(
             record, action_name=self._action, **kwargs
         )
