@@ -8,9 +8,10 @@ from invenio_accounts.testutils import login_user_via_session
 from invenio_app.factory import create_api
 from invenio_i18n import lazy_gettext as _
 from invenio_records_permissions.generators import (
+    AnyUser,
     AuthenticatedUser,
     Generator,
-    SystemProcess, AnyUser,
+    SystemProcess,
 )
 from invenio_users_resources.records import UserAggregate
 from oarepo_runtime.services.generators import RecordOwners
@@ -23,10 +24,9 @@ from oarepo_workflows.requests import (
     WorkflowTransitions,
 )
 
+
 class RecordOwnersReadTestWorkflowPermissionPolicy(DefaultWorkflowPermissionPolicy):
-    can_read = [
-        RecordOwners()
-    ]
+    can_read = [RecordOwners()]
 
 
 class Administration(Generator):
@@ -64,7 +64,7 @@ WORKFLOWS = {
         label=_("Record owners read workflow"),
         permissions_cls=RecordOwnersReadTestWorkflowPermissionPolicy,
         requests_cls=MyWorkflowRequests,
-    )
+    ),
 }
 
 
@@ -177,6 +177,7 @@ def logged_client(client, mappings):
 
     return _logged_client
 
+
 @pytest.fixture(scope="module")
 def app_config(app_config):
     """Mimic an instance's configuration."""
@@ -201,6 +202,7 @@ def app_config(app_config):
     app_config["WORKFLOWS"] = WORKFLOWS
 
     return app_config
+
 
 @pytest.fixture()
 def default_workflow_json():

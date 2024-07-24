@@ -5,7 +5,6 @@ from invenio_access.permissions import SystemRoleNeed
 from invenio_records_permissions.generators import Generator
 
 
-
 @dataclasses.dataclass
 class WorkflowRequest:
     requesters: List[Generator] | Tuple[Generator]

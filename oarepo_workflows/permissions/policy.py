@@ -1,12 +1,19 @@
-from invenio_records_permissions import RecordPermissionPolicy
-from invenio_records_permissions.generators import AuthenticatedUser, SystemProcess, AnyUser
-from oarepo_runtime.services.generators import RecordOwners
-from oarepo_workflows.permissions.generators import WorkflowPermission
-from .generators import IfInState
-from ..proxies import current_oarepo_workflows
-from invenio_search.engine import dsl
 import operator
 from functools import reduce
+
+from invenio_records_permissions import RecordPermissionPolicy
+from invenio_records_permissions.generators import (
+    AnyUser,
+    AuthenticatedUser,
+    SystemProcess,
+)
+from invenio_search.engine import dsl
+from oarepo_runtime.services.generators import RecordOwners
+
+from oarepo_workflows.permissions.generators import WorkflowPermission
+
+from ..proxies import current_oarepo_workflows
+from .generators import IfInState
 
 
 class DefaultWorkflowPermissionPolicy(RecordPermissionPolicy):
@@ -80,7 +87,11 @@ class WorkflowPermissionPolicy(RecordPermissionPolicy):
         queries = []
         for workflow in workflows:
             q_inworkflow = dsl.Q("match", **{"parent.workflow": workflow})
-            query = WorkflowPermission("can_read").query_filter(data={"parent": {"workflow_id": workflow}}, **self.over) & q_inworkflow
+            query = (
+                WorkflowPermission("can_read").query_filter(
+                    data={"parent": {"workflow_id": workflow}}, **self.over
+                )
+                & q_inworkflow
+            )
             queries.append(query)
         return [q for q in queries if q]
-
