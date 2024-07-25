@@ -5,6 +5,7 @@ from itertools import chain
 from invenio_records_permissions.generators import ConditionalGenerator, Generator
 from invenio_search.engine import dsl
 
+from oarepo_workflows.errors import InvalidWorkflowError, MissingWorkflowError
 from oarepo_workflows.proxies import current_oarepo_workflows
 
 
@@ -15,20 +16,26 @@ class WorkflowPermission(Generator):
         self._action = action
 
     def _get_workflow_in_permissions(self, record=None, **kwargs):
-        workflow_id = None
         if record:
             workflow_id = current_oarepo_workflows.get_workflow_from_record(record)
-        if not workflow_id:
-            try:
-                workflow_id = kwargs["data"]["parent"]["workflow_id"]
-            except KeyError:
-                pass
+            if not workflow_id:
+                raise MissingWorkflowError("Workflow not defined on record.")
+        else:
+            workflow_id = (
+                kwargs.get("data", {}).get("parent", {}).get("workflow_id", {})
+            )
+            if not workflow_id:
+                raise MissingWorkflowError("Workflow not defined in input.")
         return workflow_id
 
     def _get_permission_class_from_workflow(
         self, record=None, action_name=None, **kwargs
     ):
         workflow_id = self._get_workflow_in_permissions(record, **kwargs)
+        if workflow_id not in current_oarepo_workflows.record_workflows:
+            raise InvalidWorkflowError(
+                f"Workflow {workflow_id} does not exist in the configuration."
+            )  # todo translation and duplication in component?
         policy = current_oarepo_workflows.record_workflows[workflow_id].permissions
         return policy(action_name, **kwargs)
 

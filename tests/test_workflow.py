@@ -1,7 +1,3 @@
-import time
-
-from flask_security import logout_user
-
 from thesis.resources.records.config import ThesisResourceConfig
 from thesis.thesis.records.api import ThesisDraft, ThesisRecord
 
@@ -94,6 +90,23 @@ def test_query_filter(users, logged_client, default_workflow_json, search_clear)
 
     assert len(search_u1["hits"]["hits"]) == 2
     assert len(search_u2["hits"]["hits"]) == 1
+
+
+def test_invalid_workflow_input(users, logged_client, search_clear):
+    user_client1 = logged_client(users[0])
+    invalid_wf_response = user_client1.post(
+        ThesisResourceConfig.url_prefix,
+        json={"parent": {"workflow_id": "rglknjgidlrg"}},
+    )
+    assert invalid_wf_response.status_code == 400
+    assert invalid_wf_response.json["errors"][0]["messages"] == [
+        "Workflow rglknjgidlrg does not exist in the configuration."
+    ]
+    missing_wf_response = user_client1.post(ThesisResourceConfig.url_prefix, json={})
+    assert missing_wf_response.status_code == 400
+    assert missing_wf_response.json["errors"][0]["messages"] == [
+        "Workflow not defined in input."
+    ]
 
 
 def test_state_change(
