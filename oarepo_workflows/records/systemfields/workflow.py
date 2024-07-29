@@ -1,8 +1,6 @@
 from invenio_records.systemfields.model import ModelField
 from oarepo_runtime.records.systemfields import MappingSystemFieldMixin
 
-from ...proxies import current_oarepo_workflows
-
 
 class WorkflowField(MappingSystemFieldMixin, ModelField):
 
