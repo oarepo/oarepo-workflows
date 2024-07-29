@@ -1,15 +1,17 @@
-from typing import List, Tuple, Optional
 import dataclasses
-from invenio_records_permissions.generators import Generator
+from typing import List, Optional, Tuple
+
 from invenio_access.permissions import SystemRoleNeed
+from invenio_records_permissions.generators import Generator
 
 
 @dataclasses.dataclass
 class WorkflowRequest:
     requesters: List[Generator] | Tuple[Generator]
     recipients: List[Generator] | Tuple[Generator]
-    transitions: Optional['WorkflowTransitions'] = dataclasses.field(
-        default_factory=lambda: WorkflowTransitions())
+    transitions: Optional["WorkflowTransitions"] = dataclasses.field(
+        default_factory=lambda: WorkflowTransitions()
+    )
 
     def reference_receivers(self, **kwargs):
         if not self.recipients:
@@ -30,6 +32,7 @@ class WorkflowTransitions:
     If the request is approved, the record will be moved to state defined in approved.
     If the request is rejected, the record will be moved to state defined in rejected.
     """
+
     submitted: Optional[str] = None
     approved: Optional[str] = None
     rejected: Optional[str] = None
@@ -37,38 +40,41 @@ class WorkflowTransitions:
 
 class WorkflowRequestPolicy:
     """Base class for workflow request policies. Inherit from this class
-       and add properties to define specific requests for a workflow.
+    and add properties to define specific requests for a workflow.
 
-       The name of the property is the request_type name and the value must be
-       an instance of WorkflowRequest.
+    The name of the property is the request_type name and the value must be
+    an instance of WorkflowRequest.
 
-       Example:
+    Example:
 
-           class MyWorkflowRequests(WorkflowRequestPolicy):
-               delete_request = WorkflowRequest(
-                   requesters = [
-                       IfInState("published", RecordOwner())
-                   ],
-                   recipients = [CommunityRole("curator")],
-                   transitions: WorkflowTransitions(
-                       submitted = 'considered_for_deletion',
-                       approved = 'deleted',
-                       rejected = 'published'
-                   )
-               )
+        class MyWorkflowRequests(WorkflowRequestPolicy):
+            delete_request = WorkflowRequest(
+                requesters = [
+                    IfInState("published", RecordOwner())
+                ],
+                recipients = [CommunityRole("curator")],
+                transitions: WorkflowTransitions(
+                    submitted = 'considered_for_deletion',
+                    approved = 'deleted',
+                    rejected = 'published'
+                )
+            )
     """
 
     def __getitem__(self, item):
         try:
             return getattr(self, item)
         except AttributeError:
-            raise KeyError(f"Request type {item} not defined in {self.__class__.__name__}")
+            raise KeyError(
+                f"Request type {item} not defined in {self.__class__.__name__}"
+            )
 
 
 class RecipientGeneratorMixin:
     """
     Mixin for permission generators that can be used as recipients in WorkflowRequest.
     """
+
     def reference_receivers(self, record=None, request_type=None, **kwargs):
         """
         Taken the context (will include record amd request type at least),
@@ -83,16 +89,19 @@ class RecipientGeneratorMixin:
         raise NotImplementedError("Implement reference receiver in your code")
 
 
+auto_request_need = SystemRoleNeed("auto_request")
+auto_approve_need = SystemRoleNeed("auto_approve")
+
+
 class AutoRequest(Generator):
     """
     Auto request generator. This generator is used to automatically create a request
     when a record is moved to a specific state.
     """
-    auto_request_need = SystemRoleNeed("auto_request")
 
     def needs(self, **kwargs):
         """Enabling Needs."""
-        return [self.auto_request_need]
+        return [auto_request_need]
 
 
 class AutoApprove(RecipientGeneratorMixin, Generator):
@@ -102,6 +111,4 @@ class AutoApprove(RecipientGeneratorMixin, Generator):
     """
 
     def reference_receivers(self, record=None, request_type=None, **kwargs):
-        return [{
-            "auto_approve": True
-        }]
+        return [{"auto_approve": "true"}]

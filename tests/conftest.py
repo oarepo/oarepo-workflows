@@ -2,37 +2,26 @@ import os
 
 import pytest
 import yaml
+from flask_principal import ActionNeed
 from flask_security import login_user
 from invenio_accounts.testutils import login_user_via_session
 from invenio_app.factory import create_api
 from invenio_i18n import lazy_gettext as _
-from invenio_records_permissions.generators import AuthenticatedUser, SystemProcess, Generator
+from invenio_records_permissions.generators import Generator
 from invenio_users_resources.records import UserAggregate
 from oarepo_runtime.services.generators import RecordOwners
-from oarepo_workflows import Workflow
 
-from oarepo_workflows.permissions import IfInState, DefaultWorkflowPermissionPolicy
-from oarepo_workflows.requests import WorkflowRequestPolicy, WorkflowRequest, WorkflowTransitions
+from oarepo_workflows.base import Workflow
+from oarepo_workflows.permissions import DefaultWorkflowPermissionPolicy, IfInState
+from oarepo_workflows.requests import (
+    WorkflowRequest,
+    WorkflowRequestPolicy,
+    WorkflowTransitions,
+)
 
-from flask_principal import ActionNeed
 
-# tests should not depend on specified default configuration
-
-
-class TestWorkflowPermissionPolicy(DefaultWorkflowPermissionPolicy):
-    can_search = [AuthenticatedUser()]
-    can_read = [
-        IfInState("draft", [RecordOwners()]),
-        IfInState("published", [AuthenticatedUser()]),
-    ]
-    can_update = [IfInState("draft", RecordOwners())]
-    can_delete = [
-        IfInState("draft", RecordOwners()),
-        # published record can not be deleted directly by anyone else than system
-        SystemProcess(),
-    ]
-    can_create = [AuthenticatedUser()]
-    can_publish = [AuthenticatedUser()]
+class RecordOwnersReadTestWorkflowPermissionPolicy(DefaultWorkflowPermissionPolicy):
+    can_read = [RecordOwners()]
 
 
 class Administration(Generator):
@@ -50,36 +39,40 @@ class Administration(Generator):
 
 class MyWorkflowRequests(WorkflowRequestPolicy):
     delete_request = WorkflowRequest(
-        requesters=[
-            IfInState("published", RecordOwners())
-        ],
+        requesters=[IfInState("published", RecordOwners())],
         recipients=[Administration()],
-        transitions = WorkflowTransitions(
-            submitted='considered_for_deletion',
-            approved='deleted',
-            rejected='published'
-        )
+        transitions=WorkflowTransitions(
+            submitted="considered_for_deletion",
+            approved="deleted",
+            rejected="published",
+        ),
     )
+
 
 WORKFLOWS = {
     "my_workflow": Workflow(
-        label = _("Default workflow"),
-        permissions_cls = DefaultWorkflowPermissionPolicy,
-        requests_cls = MyWorkflowRequests
-    )
+        label=_("Default workflow"),
+        permissions_cls=DefaultWorkflowPermissionPolicy,
+        requests_cls=MyWorkflowRequests,
+    ),
+    "record_owners_can_read": Workflow(
+        label=_("Record owners read workflow"),
+        permissions_cls=RecordOwnersReadTestWorkflowPermissionPolicy,
+        requests_cls=MyWorkflowRequests,
+    ),
 }
+
 
 @pytest.fixture
 def mappings():
-    from thesis.records.api import ThesisDraft, ThesisRecord
-
     # update the mappings
     from oarepo_runtime.services.custom_fields.mappings import prepare_cf_indices
+
+    from thesis.records.api import ThesisDraft, ThesisRecord
 
     prepare_cf_indices()
     ThesisDraft.index.refresh()
     ThesisRecord.index.refresh()
-
 
 
 @pytest.fixture
@@ -95,13 +88,25 @@ def state_change_function():
 
     return current_oarepo_workflows.set_state
 
+
+@pytest.fixture
+def workflow_change_function():
+    from oarepo_workflows.proxies import current_oarepo_workflows
+
+    return current_oarepo_workflows.set_workflow
+
+
 @pytest.fixture(scope="module")
 def extra_entry_points():
     return {
-        'oarepo_workflows.default_workflow_getters': [
-            'test_getter = tests.utils:get_default_workflow',
-        ]
+        "oarepo_workflows.state_changed_notifiers": [
+            "test_getter = tests.utils:test_state_change_notifier",
+        ],
+        "oarepo_workflows.workflow_changed_notifiers": [
+            "test_getter = tests.utils:test_workflow_change_notifier",
+        ],
     }
+
 
 @pytest.fixture(scope="module")
 def create_app(instance_path, entry_points):
@@ -202,3 +207,8 @@ def app_config(app_config):
     app_config["WORKFLOWS"] = WORKFLOWS
 
     return app_config
+
+
+@pytest.fixture()
+def default_workflow_json():
+    return {"parent": {"workflow_id": "my_workflow"}}

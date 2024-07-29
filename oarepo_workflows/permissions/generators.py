@@ -1,60 +1,45 @@
-import operator
-from functools import reduce
-from itertools import chain
-
-from invenio_records.dictutils import dict_lookup
 from invenio_records_permissions.generators import ConditionalGenerator, Generator
 from invenio_search.engine import dsl
 
+from oarepo_workflows.errors import InvalidWorkflowError, MissingWorkflowError
 from oarepo_workflows.proxies import current_oarepo_workflows
 
 
 class WorkflowPermission(Generator):
-    def __init__(self, action):
+    def __init__(self, action=None):
+        # might not be needed in subclasses
         super().__init__()
         self._action = action
 
-    def _get_workflow_from_record(self, record, **kwargs):
-        if hasattr(record, "parent"):
-            record = record.parent
-        if hasattr(record, "workflow") and record.workflow:
-            return record.workflow
-        else:
-            return None
-
-    def _get_permission_class_from_workflow(self, record=None, action_name=None, **kwargs):
+    def _get_workflow_id(self, record=None, **kwargs):
         if record:
-            workflow_id = self._get_workflow_from_record(record)
+            workflow_id = current_oarepo_workflows.get_workflow_from_record(record)
+            if not workflow_id:
+                raise MissingWorkflowError("Workflow not defined on record.")
         else:
-            # TODO: should not we raise an exception here ???
-            workflow_id = current_oarepo_workflows.get_default_workflow(**kwargs)
+            workflow_id = (
+                kwargs.get("data", {}).get("parent", {}).get("workflow_id", {})
+            )
+            if not workflow_id:
+                raise MissingWorkflowError("Workflow not defined in input.")
+        return workflow_id
 
+    def _get_permissions_from_workflow(self, record=None, action_name=None, **kwargs):
+        workflow_id = self._get_workflow_id(record, **kwargs)
+        if workflow_id not in current_oarepo_workflows.record_workflows:
+            raise InvalidWorkflowError(
+                f"Workflow {workflow_id} does not exist in the configuration."
+            )
         policy = current_oarepo_workflows.record_workflows[workflow_id].permissions
-        return policy(action_name, **kwargs)
-
-    def _get_generators(self, record, **kwargs):
-        permission_class = self._get_permission_class_from_workflow(
-            record, action_name=self._action, **kwargs
-        )
-        return getattr(permission_class, self._action, None) or []
+        return policy(action_name, record=record, **kwargs)
 
     def needs(self, record=None, **kwargs):
-        generators = self._get_generators(record, **kwargs)
-        needs = [
-            g.needs(
-                record=record,
-                **kwargs,
-            )
-            for g in generators
-        ]
-        return set(chain.from_iterable(needs))
+        return self._get_permissions_from_workflow(record, self._action, **kwargs).needs
 
     def query_filter(self, record=None, **kwargs):
-        generators = self._get_generators(record, **kwargs)
-
-        queries = [g.query_filter(record=record, **kwargs) for g in generators]
-        queries = [q for q in queries if q]
-        return reduce(operator.or_, queries) if queries else None
+        return self._get_permissions_from_workflow(
+            record, self._action, **kwargs
+        ).query_filters
 
 
 class IfInState(ConditionalGenerator):
@@ -73,7 +58,7 @@ class IfInState(ConditionalGenerator):
         """Filters for queries."""
         field = "state"
 
-        q_instate = dsl.Q("match", **{field: self.state})
+        q_instate = dsl.Q("term", **{field: self.state})
         then_query = self._make_query(self.then_, **kwargs)
 
         return q_instate & then_query

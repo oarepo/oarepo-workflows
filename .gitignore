@@ -93,3 +93,5 @@ thesis
 **/ui/theme/**/todo.md
 node_modules
 .venv-builder/
+
+forked_install.sh

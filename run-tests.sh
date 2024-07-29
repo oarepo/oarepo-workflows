@@ -19,7 +19,7 @@ TESTS_VENV=.venv-tests
 if test -d $BUILDER_VENV ; then
 	rm -rf $BUILDER_VENV
 fi
-
+curl -L -o forked_install.sh https://github.com/oarepo/nrp-devtools/raw/main/tests/forked_install.sh
 if test -d $TESTS_VENV ; then
 	rm -rf $TESTS_VENV
 fi
@@ -39,6 +39,9 @@ $PYTHON -m venv $TESTS_VENV
 . $TESTS_VENV/bin/activate
 pip install -U setuptools pip wheel
 pip install "oarepo[tests]==${OAREPO_VERSION}.*"
+sh forked_install.sh invenio-records-resources
+sh forked_install.sh invenio-requests
+sh forked_install.sh invenio-drafts-resources
 pip install -e "./thesis[tests]"
 pip install -e .
 
