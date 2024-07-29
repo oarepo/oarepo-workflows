@@ -7,12 +7,7 @@ from flask_security import login_user
 from invenio_accounts.testutils import login_user_via_session
 from invenio_app.factory import create_api
 from invenio_i18n import lazy_gettext as _
-from invenio_records_permissions.generators import (
-    AnyUser,
-    AuthenticatedUser,
-    Generator,
-    SystemProcess,
-)
+from invenio_records_permissions.generators import Generator
 from invenio_users_resources.records import UserAggregate
 from oarepo_runtime.services.generators import RecordOwners
 
@@ -94,12 +89,22 @@ def state_change_function():
     return current_oarepo_workflows.set_state
 
 
+@pytest.fixture
+def workflow_change_function():
+    from oarepo_workflows.proxies import current_oarepo_workflows
+
+    return current_oarepo_workflows.set_workflow
+
+
 @pytest.fixture(scope="module")
 def extra_entry_points():
     return {
-        "oarepo_workflows.default_workflow_getters": [
-            "test_getter = tests.utils:get_default_workflow",
-        ]
+        "oarepo_workflows.state_changed_notifiers": [
+            "test_getter = tests.utils:test_state_change_notifier",
+        ],
+        "oarepo_workflows.workflow_changed_notifiers": [
+            "test_getter = tests.utils:test_workflow_change_notifier",
+        ],
     }
 
 

@@ -1,3 +1,6 @@
+import pytest
+
+from oarepo_workflows.errors import InvalidWorkflowError
 from thesis.resources.records.config import ThesisResourceConfig
 from thesis.thesis.records.api import ThesisDraft, ThesisRecord
 
@@ -117,9 +120,39 @@ def test_state_change(
     assert record["state"] == "approving"
 
 
+def test_set_workflow(
+    users,
+    logged_client,
+    default_workflow_json,
+    record_service,
+    workflow_change_function,
+    search_clear,
+):
+    record = record_service.create(users[0].identity, default_workflow_json)._record
+    with pytest.raises(InvalidWorkflowError):
+        workflow_change_function(users[0].identity, record, "egregore")
+    workflow_change_function(users[0].identity, record, "record_owners_can_read")
+    assert record.parent.workflow == "record_owners_can_read"
+
+
 def test_state_change_entrypoint_hookup(
     users, record_service, state_change_function, default_workflow_json, search_clear
 ):
     record = record_service.create(users[0].identity, default_workflow_json)._record
     state_change_function(users[0].identity, record, "approving")
-    assert record["state"] == "approving"
+    assert record["state-change-notifier-called"]
+
+
+def test_set_workflow_entrypoint_hookup(
+    users,
+    logged_client,
+    default_workflow_json,
+    record_service,
+    workflow_change_function,
+    search_clear,
+):
+    record = record_service.create(users[0].identity, default_workflow_json)._record
+    with pytest.raises(InvalidWorkflowError):
+        workflow_change_function(users[0].identity, record, "egregore")
+    workflow_change_function(users[0].identity, record, "record_owners_can_read")
+    assert record.parent["workflow-change-notifier-called"]
