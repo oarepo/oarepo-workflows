@@ -1,6 +1,7 @@
 from functools import cached_property
 
 import importlib_metadata
+from invenio_drafts_resources.services.records.uow import ParentRecordCommitOp
 
 from oarepo_workflows.errors import InvalidWorkflowError
 from oarepo_workflows.proxies import current_oarepo_workflows
@@ -49,17 +50,27 @@ class OARepoWorkflows(object):
                 identity, record, previous_value, value, *args, uow=uow, **kwargs
             )
 
-    def set_workflow(self, identity, record, value, *args, uow=None, **kwargs):
-        if value not in current_oarepo_workflows.record_workflows:
+    def set_workflow(
+        self, identity, record, new_workflow_id, *args, uow=None, commit=True, **kwargs
+    ):
+        if new_workflow_id not in current_oarepo_workflows.record_workflows:
             raise InvalidWorkflowError(
-                f"Workflow {value} does not exist in the configuration."
+                f"Workflow {new_workflow_id} does not exist in the configuration."
             )
         previous_value = record.parent.workflow
-        record.parent.workflow = value
+        record.parent.workflow = new_workflow_id
         for workflow_changed_notifier in self.workflow_changed_notifiers:
             workflow_changed_notifier(
-                identity, record, previous_value, value, *args, uow=uow, **kwargs
+                identity,
+                record,
+                previous_value,
+                new_workflow_id,
+                *args,
+                uow=uow,
+                **kwargs,
             )
+        if commit:
+            uow.register(ParentRecordCommitOp(record.parent))
 
     def get_workflow_from_record(self, record, **kwargs):
         if hasattr(record, "parent"):

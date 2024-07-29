@@ -130,8 +130,12 @@ def test_set_workflow(
 ):
     record = record_service.create(users[0].identity, default_workflow_json)._record
     with pytest.raises(InvalidWorkflowError):
-        workflow_change_function(users[0].identity, record, "egregore")
-    workflow_change_function(users[0].identity, record, "record_owners_can_read")
+        workflow_change_function(
+            users[0].identity, record, "invalid_workflow", commit=False
+        )
+    workflow_change_function(
+        users[0].identity, record, "record_owners_can_read", commit=False
+    )
     assert record.parent.workflow == "record_owners_can_read"
 
 
@@ -153,6 +157,10 @@ def test_set_workflow_entrypoint_hookup(
 ):
     record = record_service.create(users[0].identity, default_workflow_json)._record
     with pytest.raises(InvalidWorkflowError):
-        workflow_change_function(users[0].identity, record, "egregore")
-    workflow_change_function(users[0].identity, record, "record_owners_can_read")
+        workflow_change_function(
+            users[0].identity, record, "invalid_workflow", commit=False
+        )
+    workflow_change_function(
+        users[0].identity, record, "record_owners_can_read", commit=False
+    )
     assert record.parent["workflow-change-notifier-called"]

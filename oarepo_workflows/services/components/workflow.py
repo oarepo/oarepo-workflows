@@ -11,4 +11,6 @@ class WorkflowComponent(ServiceComponent):
             workflow_id = data["parent"]["workflow_id"]
         except KeyError:
             raise MissingWorkflowError("Workflow not defined in input.")
-        current_oarepo_workflows.set_workflow(identity, record, workflow_id)
+        current_oarepo_workflows.set_workflow(
+            identity, record, workflow_id, uow=self.uow, **kwargs
+        )
