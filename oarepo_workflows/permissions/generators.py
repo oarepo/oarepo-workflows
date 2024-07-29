@@ -1,7 +1,3 @@
-import operator
-from functools import reduce
-from itertools import chain
-
 from invenio_records_permissions.generators import ConditionalGenerator, Generator
 from invenio_search.engine import dsl
 
@@ -15,7 +11,7 @@ class WorkflowPermission(Generator):
         super().__init__()
         self._action = action
 
-    def _get_workflow_in_permissions(self, record=None, **kwargs):
+    def _get_workflow_id(self, record=None, **kwargs):
         if record:
             workflow_id = current_oarepo_workflows.get_workflow_from_record(record)
             if not workflow_id:
@@ -28,41 +24,22 @@ class WorkflowPermission(Generator):
                 raise MissingWorkflowError("Workflow not defined in input.")
         return workflow_id
 
-    def _get_permission_class_from_workflow(
-        self, record=None, action_name=None, **kwargs
-    ):
-        workflow_id = self._get_workflow_in_permissions(record, **kwargs)
+    def _get_permissions_from_workflow(self, record=None, action_name=None, **kwargs):
+        workflow_id = self._get_workflow_id(record, **kwargs)
         if workflow_id not in current_oarepo_workflows.record_workflows:
             raise InvalidWorkflowError(
                 f"Workflow {workflow_id} does not exist in the configuration."
-            )  # todo translation and duplication in component?
+            )
         policy = current_oarepo_workflows.record_workflows[workflow_id].permissions
-        return policy(action_name, **kwargs)
-
-    def _get_generators(self, record=None, **kwargs):
-        permission_class = self._get_permission_class_from_workflow(
-            record, action_name=self._action, **kwargs
-        )
-        return getattr(permission_class, self._action, None) or []
+        return policy(action_name, record=record, **kwargs)
 
     def needs(self, record=None, **kwargs):
-        generators = self._get_generators(record, **kwargs)
-        # todo ui record is RecordItem, it doesn't have state and owners on parent - either do ui serialization of those or resolve them - made a change into oarepo-ui for this
-        needs = [
-            g.needs(
-                record=record,
-                **kwargs,
-            )
-            for g in generators
-        ]
-        return set(chain.from_iterable(needs))
+        return self._get_permissions_from_workflow(record, self._action, **kwargs).needs
 
     def query_filter(self, record=None, **kwargs):
-        generators = self._get_generators(record, **kwargs)
-
-        queries = [g.query_filter(record=record, **kwargs) for g in generators]
-        queries = [q for q in queries if q]
-        return reduce(operator.or_, queries) if queries else None
+        return self._get_permissions_from_workflow(
+            record, self._action, **kwargs
+        ).query_filters
 
 
 class IfInState(ConditionalGenerator):
@@ -81,7 +58,7 @@ class IfInState(ConditionalGenerator):
         """Filters for queries."""
         field = "state"
 
-        q_instate = dsl.Q("match", **{field: self.state})
+        q_instate = dsl.Q("term", **{field: self.state})
         then_query = self._make_query(self.then_, **kwargs)
 
         return q_instate & then_query
