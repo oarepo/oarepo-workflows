@@ -36,7 +36,6 @@ class DefaultWorkflowPermissionPolicy(RecordPermissionPolicy):
             action_name, action_name
         )
         can = getattr(self, f"can_{action_name}")
-        # todo check if needed
         if self.system_process not in can:
             can.append(self.system_process)
         super().__init__(action_name, **over)

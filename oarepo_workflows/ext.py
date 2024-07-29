@@ -2,6 +2,9 @@ from functools import cached_property
 
 import importlib_metadata
 
+from oarepo_workflows.errors import InvalidWorkflowError
+from oarepo_workflows.proxies import current_oarepo_workflows
+
 
 class OARepoWorkflows(object):
 
@@ -37,13 +40,7 @@ class OARepoWorkflows(object):
             x.load() for x in importlib_metadata.entry_points().select(group=group_name)
         ]
 
-    @cached_property
-    def default_workflow_getters(self):
-        group_name = "oarepo_workflows.default_workflow_getters"
-        return [
-            x.load() for x in importlib_metadata.entry_points().select(group=group_name)
-        ]
-
+    # add registered states for checking?
     def set_state(self, identity, record, value, *args, uow=None, **kwargs):
         previous_value = record.state
         record.state = value
@@ -52,14 +49,11 @@ class OARepoWorkflows(object):
                 identity, record, previous_value, value, *args, uow=uow, **kwargs
             )
 
-    def get_default_workflow(self, **kwargs):
-        for default_workflow_getter in self.default_workflow_getters:
-            default = default_workflow_getter(**kwargs)
-            if default:
-                return default
-        return "default"
-
     def set_workflow(self, identity, record, value, *args, uow=None, **kwargs):
+        if value not in current_oarepo_workflows.record_workflows:
+            raise InvalidWorkflowError(
+                f"Workflow {value} does not exist in the configuration."
+            )
         previous_value = record.parent.workflow
         record.parent.workflow = value
         for workflow_changed_notifier in self.workflow_changed_notifiers:
