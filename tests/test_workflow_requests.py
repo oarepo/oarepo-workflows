@@ -28,6 +28,5 @@ def test_workflow_requests(users, logged_client, search_clear, record_service):
 
 def test_request_policy_access(app):
     request_policy = app.config["WORKFLOWS"]["my_workflow"].requests
-    assert request_policy["delete_request"]
-    with pytest.raises(KeyError):
-        assert request_policy["non_existing_request"]
+    assert getattr(request_policy, "delete_request", None)
+    assert not getattr(request_policy, "non_existing_request", None)

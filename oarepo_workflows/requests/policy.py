@@ -1,8 +1,11 @@
 import dataclasses
+import inspect
 from typing import List, Optional, Tuple
 
 from invenio_access.permissions import SystemRoleNeed
-from invenio_records_permissions.generators import Generator
+from invenio_records_permissions.generators import Disable, Generator
+
+from oarepo_workflows.proxies import current_oarepo_workflows
 
 
 @dataclasses.dataclass
@@ -23,6 +26,15 @@ class WorkflowRequest:
                     return ref[0]
         return None
 
+    def needs(self, **kwargs):
+        return {need for generator in self.requesters for need in generator.needs(**kwargs)}
+
+    def excludes(self, **kwargs):
+        return {exclude for generator in self.requesters for exclude in generator.excludes(**kwargs)}
+
+    def query_filters(self, **kwargs):
+        return [query_filter for generator in self.requesters for query_filter in generator.query_filter(**kwargs)]
+
 
 @dataclasses.dataclass
 class WorkflowTransitions:
@@ -34,11 +46,22 @@ class WorkflowTransitions:
     """
 
     submitted: Optional[str] = None
-    approved: Optional[str] = None
-    rejected: Optional[str] = None
+    accepted: Optional[str] = None
+    declined: Optional[str] = None
+
+    def __getitem__(self, item):
+        try:
+            return getattr(self, item)
+        except AttributeError:
+            raise KeyError(
+                f"Transition {item} not defined in {self.__class__.__name__}"
+            )
 
 
-class WorkflowRequestPolicy:
+from invenio_records_permissions.policies.base import BasePermissionPolicy
+
+
+class WorkflowRequestPolicy():
     """Base class for workflow request policies. Inherit from this class
     and add properties to define specific requests for a workflow.
 
@@ -61,6 +84,18 @@ class WorkflowRequestPolicy:
             )
     """
 
+    @property
+    def generators(self):
+        request = getattr(self, self.over["request_type"].type_id, None)
+        generators = getattr(request, self.over["workflow_field"], None) if request else None
+        if not generators:
+            generators = [Disable()]
+        return generators
+
+    def reference_receivers(self, request_id, **kwargs):
+        request = getattr(self, request_id, None)
+        return request.reference_receivers(**kwargs) if request else None
+
     def __getitem__(self, item):
         try:
             return getattr(self, item)
@@ -68,6 +103,9 @@ class WorkflowRequestPolicy:
             raise KeyError(
                 f"Request type {item} not defined in {self.__class__.__name__}"
             )
+
+    def items(self):
+        return inspect.getmembers(self, lambda x: isinstance(x, WorkflowRequest))
 
 
 class RecipientGeneratorMixin:
