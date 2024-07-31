@@ -5,7 +5,7 @@ from typing import List, Optional, Tuple
 from invenio_access.permissions import SystemRoleNeed
 from invenio_records_permissions.generators import Disable, Generator
 
-from oarepo_workflows.proxies import current_oarepo_workflows
+from datetime import timedelta
 
 
 @dataclasses.dataclass
@@ -15,6 +15,7 @@ class WorkflowRequest:
     transitions: Optional["WorkflowTransitions"] = dataclasses.field(
         default_factory=lambda: WorkflowTransitions()
     )
+    escalations: Optional[List["WorkflowRequestEscalation"]] = None
 
     def reference_receivers(self, **kwargs):
         if not self.recipients:
@@ -58,7 +59,15 @@ class WorkflowTransitions:
             )
 
 
-from invenio_records_permissions.policies.base import BasePermissionPolicy
+@dataclasses.dataclass
+class WorkflowRequestEscalation:
+    """
+    If the request is not approved/declined/cancelled in time, it might be passed to another recipient
+    (such as a supervisor, administrator, ...). The escalation is defined by the time after which the
+    request is escalated and the recipients of the escalation.
+    """
+    after: timedelta
+    recipients: List[Generator] | Tuple[Generator]
 
 
 class WorkflowRequestPolicy():
