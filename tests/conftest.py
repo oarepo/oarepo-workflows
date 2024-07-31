@@ -52,13 +52,13 @@ class MyWorkflowRequests(WorkflowRequestPolicy):
 WORKFLOWS = {
     "my_workflow": Workflow(
         label=_("Default workflow"),
-        permissions_cls=DefaultWorkflowPermissionPolicy,
-        requests_cls=MyWorkflowRequests,
+        permission_policy_cls=DefaultWorkflowPermissionPolicy,
+        request_policy_cls=MyWorkflowRequests,
     ),
     "record_owners_can_read": Workflow(
         label=_("Record owners read workflow"),
-        permissions_cls=RecordOwnersReadTestWorkflowPermissionPolicy,
-        requests_cls=MyWorkflowRequests,
+        permission_policy_cls=RecordOwnersReadTestWorkflowPermissionPolicy,
+        request_policy_cls=MyWorkflowRequests,
     ),
 }
 
