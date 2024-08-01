@@ -1,11 +1,10 @@
 import dataclasses
 import inspect
+from datetime import timedelta
 from typing import List, Optional, Tuple
 
 from invenio_access.permissions import SystemRoleNeed
-from invenio_records_permissions.generators import Disable, Generator
-
-from datetime import timedelta
+from invenio_records_permissions.generators import Generator
 
 
 @dataclasses.dataclass
@@ -28,13 +27,23 @@ class WorkflowRequest:
         return None
 
     def needs(self, **kwargs):
-        return {need for generator in self.requesters for need in generator.needs(**kwargs)}
+        return {
+            need for generator in self.requesters for need in generator.needs(**kwargs)
+        }
 
     def excludes(self, **kwargs):
-        return {exclude for generator in self.requesters for exclude in generator.excludes(**kwargs)}
+        return {
+            exclude
+            for generator in self.requesters
+            for exclude in generator.excludes(**kwargs)
+        }
 
     def query_filters(self, **kwargs):
-        return [query_filter for generator in self.requesters for query_filter in generator.query_filter(**kwargs)]
+        return [
+            query_filter
+            for generator in self.requesters
+            for query_filter in generator.query_filter(**kwargs)
+        ]
 
 
 @dataclasses.dataclass
@@ -66,11 +75,12 @@ class WorkflowRequestEscalation:
     (such as a supervisor, administrator, ...). The escalation is defined by the time after which the
     request is escalated and the recipients of the escalation.
     """
+
     after: timedelta
     recipients: List[Generator] | Tuple[Generator]
 
 
-class WorkflowRequestPolicy():
+class WorkflowRequestPolicy:
     """Base class for workflow request policies. Inherit from this class
     and add properties to define specific requests for a workflow.
 
@@ -92,18 +102,6 @@ class WorkflowRequestPolicy():
                 )
             )
     """
-
-    @property
-    def generators(self):
-        request = getattr(self, self.over["request_type"].type_id, None)
-        generators = getattr(request, self.over["workflow_field"], None) if request else None
-        if not generators:
-            generators = [Disable()]
-        return generators
-
-    def reference_receivers(self, request_id, **kwargs):
-        request = getattr(self, request_id, None)
-        return request.reference_receivers(**kwargs) if request else None
 
     def __getitem__(self, item):
         try:

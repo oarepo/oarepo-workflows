@@ -116,7 +116,7 @@ def test_state_change(
     users, record_service, state_change_function, default_workflow_json, search_clear
 ):
     record = record_service.create(users[0].identity, default_workflow_json)._record
-    state_change_function(users[0].identity, record, "approving")
+    state_change_function(users[0].identity, record, "approving", commit=False)
     assert record["state"] == "approving"
 
 
@@ -143,7 +143,7 @@ def test_state_change_entrypoint_hookup(
     users, record_service, state_change_function, default_workflow_json, search_clear
 ):
     record = record_service.create(users[0].identity, default_workflow_json)._record
-    state_change_function(users[0].identity, record, "approving")
+    state_change_function(users[0].identity, record, "approving", commit=False)
     assert record["state-change-notifier-called"]
 
 

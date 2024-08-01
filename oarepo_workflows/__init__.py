@@ -1,18 +1,14 @@
-from .base import Workflow
-from .permissions import (
+from oarepo_workflows.services.permissions import (
+    AutoApprove,
+    AutoRequest,
     DefaultWorkflowPermissionPolicy,
     IfInState,
     WorkflowPermission,
     WorkflowPermissionPolicy,
 )
-from .requests import (
-    AutoApprove,
-    AutoRequest,
-    RecipientGeneratorMixin,
-    WorkflowRequest,
-    WorkflowRequestPolicy,
-    WorkflowTransitions,
-)
+
+from .base import Workflow
+from .requests import WorkflowRequest, WorkflowRequestPolicy, WorkflowTransitions
 
 __all__ = (
     "IfInState",
@@ -23,7 +19,6 @@ __all__ = (
     "WorkflowRequestPolicy",
     "WorkflowRequest",
     "WorkflowTransitions",
-    "RecipientGeneratorMixin",
-    "AutoRequest",
     "AutoApprove",
+    "AutoRequest",
 )

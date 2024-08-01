@@ -3,6 +3,8 @@ from invenio_search.engine import dsl
 
 from oarepo_workflows.errors import InvalidWorkflowError, MissingWorkflowError
 from oarepo_workflows.proxies import current_oarepo_workflows
+from oarepo_workflows.requests.policy import RecipientGeneratorMixin
+from oarepo_workflows.services.permissions.identity import auto_request_need
 
 
 class WorkflowPermission(Generator):
@@ -62,3 +64,24 @@ class IfInState(ConditionalGenerator):
         then_query = self._make_query(self.then_, **kwargs)
 
         return q_instate & then_query
+
+
+class AutoRequest(Generator):
+    """
+    Auto request generator. This generator is used to automatically create a request
+    when a record is moved to a specific state.
+    """
+
+    def needs(self, **kwargs):
+        """Enabling Needs."""
+        return [auto_request_need]
+
+
+class AutoApprove(RecipientGeneratorMixin, Generator):
+    """
+    Auto approve generator. If the generator is used within recipients of a request,
+    the request will be automatically approved when the request is submitted.
+    """
+
+    def reference_receivers(self, record=None, request_type=None, **kwargs):
+        return [{"auto_approve": "true"}]

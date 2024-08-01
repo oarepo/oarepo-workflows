@@ -3,8 +3,8 @@ from typing import Type
 
 from flask_babel import LazyString
 
-from .permissions import DefaultWorkflowPermissionPolicy
 from .requests import WorkflowRequestPolicy
+from .services.permissions import DefaultWorkflowPermissionPolicy
 
 
 @dataclasses.dataclass

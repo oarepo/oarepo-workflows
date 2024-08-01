@@ -12,11 +12,14 @@ from invenio_users_resources.records import UserAggregate
 from oarepo_runtime.services.generators import RecordOwners
 
 from oarepo_workflows.base import Workflow
-from oarepo_workflows.permissions import DefaultWorkflowPermissionPolicy, IfInState
 from oarepo_workflows.requests import (
     WorkflowRequest,
     WorkflowRequestPolicy,
     WorkflowTransitions,
+)
+from oarepo_workflows.services.permissions import (
+    DefaultWorkflowPermissionPolicy,
+    IfInState,
 )
 
 
@@ -43,8 +46,8 @@ class MyWorkflowRequests(WorkflowRequestPolicy):
         recipients=[Administration()],
         transitions=WorkflowTransitions(
             submitted="considered_for_deletion",
-            approved="deleted",
-            rejected="published",
+            accepted="deleted",
+            declined="published",
         ),
     )
 
