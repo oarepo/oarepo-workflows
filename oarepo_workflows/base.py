@@ -3,20 +3,20 @@ from typing import Type
 
 from flask_babel import LazyString
 
-from .permissions import DefaultWorkflowPermissionPolicy
 from .requests import WorkflowRequestPolicy
+from .services.permissions import DefaultWorkflowPermissionPolicy
 
 
 @dataclasses.dataclass
 class Workflow:
     label: str | LazyString
-    permissions_cls: Type[DefaultWorkflowPermissionPolicy]
-    requests_cls: Type[WorkflowRequestPolicy] = WorkflowRequestPolicy
+    permission_policy_cls: Type[DefaultWorkflowPermissionPolicy]
+    request_policy_cls: Type[WorkflowRequestPolicy] = WorkflowRequestPolicy
 
-    @property
-    def permissions(self):
-        return self.permissions_cls
+    def permissions(self, action, **over):
+        """Return permission policy for this workflow applicable to the given action."""
+        return self.permission_policy_cls(action, **over)
 
-    @property
     def requests(self):
-        return self.requests_cls()
+        """Return instance of request policy for this workflow."""
+        return self.request_policy_cls()

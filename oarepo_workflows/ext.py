@@ -2,8 +2,10 @@ from functools import cached_property
 
 import importlib_metadata
 from invenio_drafts_resources.services.records.uow import ParentRecordCommitOp
+from invenio_records_resources.services.uow import RecordCommitOp
+from oarepo_runtime.datastreams.utils import get_record_service_for_record
 
-from oarepo_workflows.errors import InvalidWorkflowError
+from oarepo_workflows.errors import InvalidWorkflowError, MissingWorkflowError
 from oarepo_workflows.proxies import current_oarepo_workflows
 
 
@@ -41,10 +43,14 @@ class OARepoWorkflows(object):
             x.load() for x in importlib_metadata.entry_points().select(group=group_name)
         ]
 
-    # add registered states for checking?
-    def set_state(self, identity, record, value, *args, uow=None, **kwargs):
+    def set_state(
+        self, identity, record, value, *args, uow=None, commit=True, **kwargs
+    ):
         previous_value = record.state
         record.state = value
+        if commit:
+            service = get_record_service_for_record(record)
+            uow.register(RecordCommitOp(record, indexer=service.indexer))
         for state_changed_notifier in self.state_changed_notifiers:
             state_changed_notifier(
                 identity, record, previous_value, value, *args, uow=uow, **kwargs
@@ -59,6 +65,13 @@ class OARepoWorkflows(object):
             )
         previous_value = record.parent.workflow
         record.parent.workflow = new_workflow_id
+        if commit:
+            service = get_record_service_for_record(record)
+            uow.register(
+                ParentRecordCommitOp(
+                    record.parent, indexer_context=dict(service=service)
+                )
+            )
         for workflow_changed_notifier in self.workflow_changed_notifiers:
             workflow_changed_notifier(
                 identity,
@@ -69,8 +82,6 @@ class OARepoWorkflows(object):
                 uow=uow,
                 **kwargs,
             )
-        if commit:
-            uow.register(ParentRecordCommitOp(record.parent))
 
     def get_workflow_from_record(self, record, **kwargs):
         if hasattr(record, "parent"):
@@ -83,6 +94,16 @@ class OARepoWorkflows(object):
     @property
     def record_workflows(self):
         return self.app.config["WORKFLOWS"]
+
+    def get_workflow(self, record):
+        try:
+            return self.record_workflows[record.parent.workflow]
+        except AttributeError:
+            raise MissingWorkflowError(f"Workflow not found on record {record['id']}.")
+        except KeyError:
+            raise InvalidWorkflowError(
+                f"Workflow {record.parent.workflow} on record {record['id']} doesn't exist."
+            )
 
     def init_app(self, app):
         """Flask application initialization."""

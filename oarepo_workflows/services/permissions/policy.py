@@ -9,10 +9,8 @@ from invenio_records_permissions.generators import (
 from invenio_search.engine import dsl
 from oarepo_runtime.services.generators import RecordOwners
 
-from oarepo_workflows.permissions.generators import WorkflowPermission
-
-from ..proxies import current_oarepo_workflows
-from .generators import IfInState
+from ...proxies import current_oarepo_workflows
+from .generators import IfInState, WorkflowPermission
 
 
 class DefaultWorkflowPermissionPolicy(RecordPermissionPolicy):

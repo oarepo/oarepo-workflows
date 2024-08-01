@@ -1,4 +1,6 @@
 import dataclasses
+import inspect
+from datetime import timedelta
 from typing import List, Optional, Tuple
 
 from invenio_access.permissions import SystemRoleNeed
@@ -12,6 +14,7 @@ class WorkflowRequest:
     transitions: Optional["WorkflowTransitions"] = dataclasses.field(
         default_factory=lambda: WorkflowTransitions()
     )
+    escalations: Optional[List["WorkflowRequestEscalation"]] = None
 
     def reference_receivers(self, **kwargs):
         if not self.recipients:
@@ -22,6 +25,25 @@ class WorkflowRequest:
                 if ref:
                     return ref[0]
         return None
+
+    def needs(self, **kwargs):
+        return {
+            need for generator in self.requesters for need in generator.needs(**kwargs)
+        }
+
+    def excludes(self, **kwargs):
+        return {
+            exclude
+            for generator in self.requesters
+            for exclude in generator.excludes(**kwargs)
+        }
+
+    def query_filters(self, **kwargs):
+        return [
+            query_filter
+            for generator in self.requesters
+            for query_filter in generator.query_filter(**kwargs)
+        ]
 
 
 @dataclasses.dataclass
@@ -34,8 +56,28 @@ class WorkflowTransitions:
     """
 
     submitted: Optional[str] = None
-    approved: Optional[str] = None
-    rejected: Optional[str] = None
+    accepted: Optional[str] = None
+    declined: Optional[str] = None
+
+    def __getitem__(self, item):
+        try:
+            return getattr(self, item)
+        except AttributeError:
+            raise KeyError(
+                f"Transition {item} not defined in {self.__class__.__name__}"
+            )
+
+
+@dataclasses.dataclass
+class WorkflowRequestEscalation:
+    """
+    If the request is not approved/declined/cancelled in time, it might be passed to another recipient
+    (such as a supervisor, administrator, ...). The escalation is defined by the time after which the
+    request is escalated and the recipients of the escalation.
+    """
+
+    after: timedelta
+    recipients: List[Generator] | Tuple[Generator]
 
 
 class WorkflowRequestPolicy:
@@ -68,6 +110,9 @@ class WorkflowRequestPolicy:
             raise KeyError(
                 f"Request type {item} not defined in {self.__class__.__name__}"
             )
+
+    def items(self):
+        return inspect.getmembers(self, lambda x: isinstance(x, WorkflowRequest))
 
 
 class RecipientGeneratorMixin:

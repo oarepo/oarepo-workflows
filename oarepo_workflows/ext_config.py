@@ -1,4 +1,4 @@
-from oarepo_workflows.permissions.policy import WorkflowPermissionPolicy
+from oarepo_workflows.services.permissions.policy import WorkflowPermissionPolicy
 
 OAREPO_PERMISSIONS_PRESETS = {
     "workflow": WorkflowPermissionPolicy,
