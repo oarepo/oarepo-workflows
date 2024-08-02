@@ -1,6 +1,7 @@
 from .policy import (
     RecipientGeneratorMixin,
     WorkflowRequest,
+    WorkflowRequestEscalation,
     WorkflowRequestPolicy,
     WorkflowTransitions,
 )
@@ -10,4 +11,5 @@ __all__ = (
     "WorkflowRequest",
     "WorkflowTransitions",
     "RecipientGeneratorMixin",
+    "WorkflowRequestEscalation",
 )

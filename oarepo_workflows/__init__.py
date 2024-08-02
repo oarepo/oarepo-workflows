@@ -8,7 +8,12 @@ from oarepo_workflows.services.permissions import (
 )
 
 from .base import Workflow
-from .requests import WorkflowRequest, WorkflowRequestPolicy, WorkflowTransitions
+from .requests import (
+    WorkflowRequest,
+    WorkflowRequestEscalation,
+    WorkflowRequestPolicy,
+    WorkflowTransitions,
+)
 
 __all__ = (
     "IfInState",
@@ -21,4 +26,5 @@ __all__ = (
     "WorkflowTransitions",
     "AutoApprove",
     "AutoRequest",
+    "WorkflowRequestEscalation",
 )
