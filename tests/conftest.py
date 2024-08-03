@@ -214,4 +214,4 @@ def app_config(app_config):
 
 @pytest.fixture()
 def default_workflow_json():
-    return {"parent": {"workflow_id": "my_workflow"}}
+    return {"parent": {"workflow": "my_workflow"}}
