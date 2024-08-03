@@ -25,6 +25,7 @@ class DefaultWorkflowPermissionPolicy(RecordPermissionPolicy):
         "draft_read_files": "read_files",
         "draft_update_files": "update_files",
         "search_drafts": "search",
+        "search_versions": "search"
     }
 
     system_process = SystemProcess()
@@ -48,6 +49,7 @@ class DefaultWorkflowPermissionPolicy(RecordPermissionPolicy):
     ]
     can_create = [AuthenticatedUser()]
     can_publish = [AuthenticatedUser()]
+    can_new_version = [AuthenticatedUser()]
 
 
 class WorkflowPermissionPolicy(RecordPermissionPolicy):
@@ -75,6 +77,9 @@ class WorkflowPermissionPolicy(RecordPermissionPolicy):
     can_draft_commit_files = [WorkflowPermission("commit_files")]
     can_draft_read_files = [WorkflowPermission("read_files")]
     can_draft_update_files = [WorkflowPermission("update_files")]
+
+    can_new_version = [WorkflowPermission("new_version")]
+    can_search_versions = [SystemProcess(), AnyUser()]
 
     @property
     def query_filters(self):
