@@ -73,7 +73,7 @@ def test_query_filter(users, logged_client, default_workflow_json, search_clear)
     )
     record_w2 = user_client1.post(
         ThesisResourceConfig.url_prefix,
-        json={"parent": {"workflow_id": "record_owners_can_read"}},
+        json={"parent": {"workflow": "record_owners_can_read"}},
     )
 
     draft_json = record_w1.json
@@ -99,7 +99,7 @@ def test_invalid_workflow_input(users, logged_client, search_clear):
     user_client1 = logged_client(users[0])
     invalid_wf_response = user_client1.post(
         ThesisResourceConfig.url_prefix,
-        json={"parent": {"workflow_id": "rglknjgidlrg"}},
+        json={"parent": {"workflow": "rglknjgidlrg"}},
     )
     assert invalid_wf_response.status_code == 400
     assert invalid_wf_response.json["errors"][0]["messages"] == [
