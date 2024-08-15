@@ -95,14 +95,20 @@ class OARepoWorkflows(object):
     def record_workflows(self):
         return self.app.config["WORKFLOWS"]
 
+    def _get_id_from_record(self, record):
+        # community record doesn't have id in dict form, only uuid
+        return record["id"] if "id" in record else record.id
+
     def get_workflow(self, record):
         try:
             return self.record_workflows[record.parent.workflow]
         except AttributeError:
-            raise MissingWorkflowError(f"Workflow not found on record {record['id']}.")
+            raise MissingWorkflowError(
+                f"Workflow not found on record {self._get_id_from_record(record)}."
+            )
         except KeyError:
             raise InvalidWorkflowError(
-                f"Workflow {record.parent.workflow} on record {record['id']} doesn't exist."
+                f"Workflow {record.parent.workflow} on record {self._get_id_from_record(record)} doesn't exist."
             )
 
     def init_app(self, app):
