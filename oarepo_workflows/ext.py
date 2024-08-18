@@ -29,6 +29,8 @@ class OARepoWorkflows(object):
                     ext_config.OAREPO_PERMISSIONS_PRESETS[k]
                 )
 
+        app.config.setdefault("WORKFLOWS", ext_config.WORKFLOWS)
+
     @cached_property
     def state_changed_notifiers(self):
         group_name = "oarepo_workflows.state_changed_notifiers"
