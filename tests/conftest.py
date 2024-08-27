@@ -18,12 +18,12 @@ from oarepo_workflows.requests import (
     WorkflowTransitions,
 )
 from oarepo_workflows.services.permissions import (
-    DefaultWorkflowPermissionPolicy,
+    DefaultWorkflowPermissions,
     IfInState,
 )
 
 
-class RecordOwnersReadTestWorkflowPermissionPolicy(DefaultWorkflowPermissionPolicy):
+class RecordOwnersReadTestWorkflowPermissionPolicy(DefaultWorkflowPermissions):
     can_read = [RecordOwners()]
 
 
@@ -55,7 +55,7 @@ class MyWorkflowRequests(WorkflowRequestPolicy):
 WORKFLOWS = {
     "my_workflow": Workflow(
         label=_("Default workflow"),
-        permission_policy_cls=DefaultWorkflowPermissionPolicy,
+        permission_policy_cls=DefaultWorkflowPermissions,
         request_policy_cls=MyWorkflowRequests,
     ),
     "record_owners_can_read": Workflow(

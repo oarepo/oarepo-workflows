@@ -19,9 +19,7 @@ class WorkflowPermission(Generator):
             if not workflow_id:
                 raise MissingWorkflowError("Workflow not defined on record.")
         else:
-            workflow_id = (
-                kwargs.get("data", {}).get("parent", {}).get("workflow", {})
-            )
+            workflow_id = kwargs.get("data", {}).get("parent", {}).get("workflow", {})
             if not workflow_id:
                 raise MissingWorkflowError("Workflow not defined in input.")
         return workflow_id
