@@ -1,7 +1,7 @@
 from oarepo_workflows.services.permissions import (
     AutoApprove,
     AutoRequest,
-    DefaultWorkflowPermissionPolicy,
+    DefaultWorkflowPermissions,
     IfInState,
     WorkflowPermission,
     WorkflowPermissionPolicy,
@@ -19,7 +19,7 @@ __all__ = (
     "IfInState",
     "Workflow",
     "WorkflowPermission",
-    "DefaultWorkflowPermissionPolicy",
+    "DefaultWorkflowPermissions",
     "WorkflowPermissionPolicy",
     "WorkflowRequestPolicy",
     "WorkflowRequest",

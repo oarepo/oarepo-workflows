@@ -13,7 +13,19 @@ from ...proxies import current_oarepo_workflows
 from .generators import IfInState, WorkflowPermission
 
 
-class DefaultWorkflowPermissionPolicy(RecordPermissionPolicy):
+class DefaultWorkflowPermissions(RecordPermissionPolicy):
+    """
+    Base class for workflow permissions, subclass from it and put the result to Workflow constructor.
+    Example:
+        class MyWorkflowPermissions(DefaultWorkflowPermissions):
+            can_read = [AnyUser()]
+    in invenio.cfg
+    WORKFLOWS = {
+        'default': Workflow(
+            permission_policy_cls = MyWorkflowPermissions, ...
+        )
+    }
+    """
     PERMISSIONS_REMAP = {
         "read_draft": "read",
         "update_draft": "update",
@@ -25,13 +37,13 @@ class DefaultWorkflowPermissionPolicy(RecordPermissionPolicy):
         "draft_read_files": "read_files",
         "draft_update_files": "update_files",
         "search_drafts": "search",
-        "search_versions": "search"
+        "search_versions": "search",
     }
 
     system_process = SystemProcess()
 
     def __init__(self, action_name=None, **over):
-        action_name = DefaultWorkflowPermissionPolicy.PERMISSIONS_REMAP.get(
+        action_name = DefaultWorkflowPermissions.PERMISSIONS_REMAP.get(
             action_name, action_name
         )
         can = getattr(self, f"can_{action_name}")
@@ -53,6 +65,10 @@ class DefaultWorkflowPermissionPolicy(RecordPermissionPolicy):
 
 
 class WorkflowPermissionPolicy(RecordPermissionPolicy):
+    """
+    Permission policy to be used in permission presets directly on RecordServiceConfig.permission_policy_cls
+    Do not use this class in Workflow constructor.
+    """
     can_create = [WorkflowPermission("create")]
     can_publish = [WorkflowPermission("publish")]
     can_search = [SystemProcess(), AnyUser()]

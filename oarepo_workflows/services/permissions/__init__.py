@@ -1,10 +1,10 @@
 from .generators import AutoApprove, AutoRequest, IfInState, WorkflowPermission
-from .policy import DefaultWorkflowPermissionPolicy, WorkflowPermissionPolicy
+from .policy import DefaultWorkflowPermissions, WorkflowPermissionPolicy
 
 __all__ = (
     "IfInState",
     "WorkflowPermission",
-    "DefaultWorkflowPermissionPolicy",
+    "DefaultWorkflowPermissions",
     "WorkflowPermissionPolicy",
     "AutoApprove",
     "AutoRequest",
