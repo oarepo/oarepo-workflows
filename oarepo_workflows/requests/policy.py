@@ -1,16 +1,21 @@
 import dataclasses
 import inspect
 from datetime import timedelta
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from invenio_access.permissions import SystemRoleNeed
 from invenio_records_permissions.generators import Generator
+
+from oarepo_workflows.requests.events import WorkflowEvent
 
 
 @dataclasses.dataclass
 class WorkflowRequest:
     requesters: List[Generator] | Tuple[Generator]
     recipients: List[Generator] | Tuple[Generator]
+    events: Dict[
+        str, WorkflowEvent
+    ]  # makes this optional with configurable default or something like that to avoid backward incompatibility?
     transitions: Optional["WorkflowTransitions"] = dataclasses.field(
         default_factory=lambda: WorkflowTransitions()
     )
