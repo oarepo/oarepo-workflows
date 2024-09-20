@@ -1,16 +1,20 @@
 import dataclasses
 import inspect
 from datetime import timedelta
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from invenio_access.permissions import SystemRoleNeed
 from invenio_records_permissions.generators import Generator
+
+from oarepo_workflows.proxies import current_oarepo_workflows
+from oarepo_workflows.requests.events import WorkflowEvent
 
 
 @dataclasses.dataclass
 class WorkflowRequest:
     requesters: List[Generator] | Tuple[Generator]
     recipients: List[Generator] | Tuple[Generator]
+    events: Dict[str, WorkflowEvent] = dataclasses.field(default_factory=lambda: {})
     transitions: Optional["WorkflowTransitions"] = dataclasses.field(
         default_factory=lambda: WorkflowTransitions()
     )
@@ -44,6 +48,10 @@ class WorkflowRequest:
             for generator in self.requesters
             for query_filter in generator.query_filter(**kwargs)
         ]
+
+    @property
+    def allowed_events(self):
+        return current_oarepo_workflows.default_workflow_event_submitters | self.events
 
 
 @dataclasses.dataclass

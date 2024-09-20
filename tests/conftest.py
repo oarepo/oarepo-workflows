@@ -17,10 +17,7 @@ from oarepo_workflows.requests import (
     WorkflowRequestPolicy,
     WorkflowTransitions,
 )
-from oarepo_workflows.services.permissions import (
-    DefaultWorkflowPermissions,
-    IfInState,
-)
+from oarepo_workflows.services.permissions import DefaultWorkflowPermissions, IfInState
 
 
 class RecordOwnersReadTestWorkflowPermissionPolicy(DefaultWorkflowPermissions):

@@ -97,6 +97,13 @@ class OARepoWorkflows(object):
     def record_workflows(self):
         return self.app.config["WORKFLOWS"]
 
+    @property
+    def default_workflow_event_submitters(self):
+        if "DEFAULT_WORKFLOW_EVENT_SUBMITTERS" in self.app.config:
+            return self.app.config["DEFAULT_WORKFLOW_EVENT_SUBMITTERS"]
+        else:
+            return {}
+
     def _get_id_from_record(self, record):
         # community record doesn't have id in dict form, only uuid
         return record["id"] if "id" in record else record.id

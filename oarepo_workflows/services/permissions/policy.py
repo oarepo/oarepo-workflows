@@ -26,6 +26,7 @@ class DefaultWorkflowPermissions(RecordPermissionPolicy):
         )
     }
     """
+
     PERMISSIONS_REMAP = {
         "read_draft": "read",
         "update_draft": "update",
@@ -69,6 +70,7 @@ class WorkflowPermissionPolicy(RecordPermissionPolicy):
     Permission policy to be used in permission presets directly on RecordServiceConfig.permission_policy_cls
     Do not use this class in Workflow constructor.
     """
+
     can_create = [WorkflowPermission("create")]
     can_publish = [WorkflowPermission("publish")]
     can_search = [SystemProcess(), AnyUser()]
