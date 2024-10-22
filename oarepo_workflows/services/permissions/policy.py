@@ -4,6 +4,7 @@ from invenio_records_permissions import RecordPermissionPolicy
 from invenio_records_permissions.generators import (
     AnyUser,
     AuthenticatedUser,
+    Disable,
     SystemProcess,
 )
 from invenio_search.engine import dsl
@@ -27,26 +28,38 @@ class DefaultWorkflowPermissions(RecordPermissionPolicy):
     }
     """
 
+    """
     PERMISSIONS_REMAP = {
-        "read_draft": "read",
-        "update_draft": "update",
-        "delete_draft": "delete",
-        "draft_create_files": "create_files",
-        "draft_set_content_files": "set_content_files",
-        "draft_get_content_files": "get_content_files",
-        "draft_commit_files": "commit_files",
-        "draft_read_files": "read_files",
-        "draft_update_files": "update_files",
-        "search_drafts": "search",
-        "search_versions": "search",
+        #"get_content_files": "read", # change when embargo available
+        #"read_files": "read",  # change when embargo available
+        #"draft_create_files": "create_files", #new version - update; edit current version - disable
+
+        #"search_drafts": "search",
+        #"search_versions": "search",
+        
+        # these are in rdm (but i can't trivially find where there are used) but not in vanilla invenio
+        # "draft_set_content_files": "set_content_files", #new version - update; edit current version - disable
+        # "draft_get_content_files": "read", # change when embargo available
+        # "draft_commit_files": "commit_files", #new version - update; edit current version - disable
+        # "draft_read_files": "read", # change when embargo available
+        # "draft_update_files": "update_files", #new version - update; edit current version - disable
+        # "draft_delete_files": "delete_files",  # new version - update; edit current version - disable
     }
+    """
+
+    # new version - update; edit current version - disable -> idk if there's other way than something like IfNoEditDraft/IfNoNewVersionDraft generators-
+    @classmethod
+    def same_as(cls, type_):
+        return getattr(cls, type_)
+
+    files_edit = [
+        IfInState("draft", [RecordOwners()]),
+        IfInState("published", [Disable()]),
+    ]
 
     system_process = SystemProcess()
 
     def __init__(self, action_name=None, **over):
-        action_name = DefaultWorkflowPermissions.PERMISSIONS_REMAP.get(
-            action_name, action_name
-        )
         can = getattr(self, f"can_{action_name}")
         if self.system_process not in can:
             can.append(self.system_process)
@@ -64,6 +77,42 @@ class DefaultWorkflowPermissions(RecordPermissionPolicy):
     can_publish = [AuthenticatedUser()]
     can_new_version = [AuthenticatedUser()]
 
+    can_create_files = files_edit
+    can_set_content_files = files_edit
+    can_commit_files = files_edit
+    can_update_files = files_edit
+    can_delete_files = files_edit
+
+    @classmethod
+    @property
+    def can_draft_create_files(cls):  # used for files import
+        return cls.same_as("can_create_files")
+
+    @classmethod
+    @property
+    def can_read_files(cls):
+        return cls.same_as("can_read")
+
+    @classmethod
+    @property
+    def can_get_content_files(cls):
+        return cls.same_as("can_read")
+
+    @classmethod
+    @property
+    def can_read_draft(cls):
+        return cls.same_as("can_read")
+
+    @classmethod
+    @property
+    def can_update_draft(cls):
+        return cls.same_as("can_update")
+
+    @classmethod
+    @property
+    def can_delete_draft(cls):
+        return cls.same_as("can_delete")
+
 
 class WorkflowPermissionPolicy(RecordPermissionPolicy):
     """
@@ -73,7 +122,6 @@ class WorkflowPermissionPolicy(RecordPermissionPolicy):
 
     can_create = [WorkflowPermission("create")]
     can_publish = [WorkflowPermission("publish")]
-    can_search = [SystemProcess(), AnyUser()]
     can_read = [WorkflowPermission("read")]
     can_update = [WorkflowPermission("update")]
     can_delete = [WorkflowPermission("delete")]
@@ -83,20 +131,17 @@ class WorkflowPermissionPolicy(RecordPermissionPolicy):
     can_commit_files = [WorkflowPermission("commit_files")]
     can_read_files = [WorkflowPermission("read_files")]
     can_update_files = [WorkflowPermission("update_files")]
+    can_delete_files = [WorkflowPermission("delete_files")]
+
+    can_read_draft = [WorkflowPermission("read_draft")]
+    can_update_draft = [WorkflowPermission("update_draft")]
+    can_delete_draft = [WorkflowPermission("delete_draft")]
     can_edit = [WorkflowPermission("edit")]
-
-    can_search_drafts = [SystemProcess(), AnyUser()]
-    can_read_draft = [WorkflowPermission("read")]
-    can_update_draft = [WorkflowPermission("update")]
-    can_delete_draft = [WorkflowPermission("delete")]
-    can_draft_create_files = [WorkflowPermission("create_files")]
-    can_draft_set_content_files = [WorkflowPermission("set_content_files")]
-    can_draft_get_content_files = [WorkflowPermission("get_content_files")]
-    can_draft_commit_files = [WorkflowPermission("commit_files")]
-    can_draft_read_files = [WorkflowPermission("read_files")]
-    can_draft_update_files = [WorkflowPermission("update_files")]
-
     can_new_version = [WorkflowPermission("new_version")]
+    can_draft_create_files = [WorkflowPermission("draft_create_files")]
+
+    can_search = [SystemProcess(), AnyUser()]
+    can_search_drafts = [SystemProcess(), AnyUser()]
     can_search_versions = [SystemProcess(), AnyUser()]
 
     @property
