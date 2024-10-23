@@ -48,9 +48,6 @@ class DefaultWorkflowPermissions(RecordPermissionPolicy):
     """
 
     # new version - update; edit current version - disable -> idk if there's other way than something like IfNoEditDraft/IfNoNewVersionDraft generators-
-    @classmethod
-    def same_as(cls, type_):
-        return getattr(cls, type_)
 
     files_edit = [
         IfInState("draft", [RecordOwners()]),
@@ -77,41 +74,60 @@ class DefaultWorkflowPermissions(RecordPermissionPolicy):
     can_publish = [AuthenticatedUser()]
     can_new_version = [AuthenticatedUser()]
 
-    can_create_files = files_edit
-    can_set_content_files = files_edit
-    can_commit_files = files_edit
-    can_update_files = files_edit
-    can_delete_files = files_edit
+    @classmethod
+    @property
+    def can_create_files(cls):  # used for files import
+        return cls.files_edit
+
+    @classmethod
+    @property
+    def can_set_content_files(cls):  # used for files import
+        return cls.files_edit
+
+    @classmethod
+    @property
+    def can_commit_files(cls):  # used for files import
+        return cls.files_edit
+
+    @classmethod
+    @property
+    def can_update_files(cls):  # used for files import
+        return cls.files_edit
+
+    @classmethod
+    @property
+    def can_delete_files(cls):  # used for files import
+        return cls.files_edit
 
     @classmethod
     @property
     def can_draft_create_files(cls):  # used for files import
-        return cls.same_as("can_create_files")
+        return cls.can_create_files
 
     @classmethod
     @property
     def can_read_files(cls):
-        return cls.same_as("can_read")
+        return cls.can_read
 
     @classmethod
     @property
     def can_get_content_files(cls):
-        return cls.same_as("can_read")
+        return cls.can_read
 
     @classmethod
     @property
     def can_read_draft(cls):
-        return cls.same_as("can_read")
+        return cls.can_read
 
     @classmethod
     @property
     def can_update_draft(cls):
-        return cls.same_as("can_update")
+        return cls.can_update
 
     @classmethod
     @property
     def can_delete_draft(cls):
-        return cls.same_as("can_delete")
+        return cls.can_delete
 
 
 class WorkflowPermissionPolicy(RecordPermissionPolicy):
