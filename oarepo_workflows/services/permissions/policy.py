@@ -11,7 +11,7 @@ from invenio_search.engine import dsl
 from oarepo_runtime.services.generators import RecordOwners
 
 from ...proxies import current_oarepo_workflows
-from .generators import IfInState, WorkflowPermission
+from .generators import IfInState, SameAs, WorkflowPermission
 
 
 class DefaultWorkflowPermissions(RecordPermissionPolicy):
@@ -60,6 +60,7 @@ class DefaultWorkflowPermissions(RecordPermissionPolicy):
         can = getattr(self, f"can_{action_name}")
         if self.system_process not in can:
             can.append(self.system_process)
+        over["policy"] = self
         super().__init__(action_name, **over)
 
     can_read = [
@@ -74,60 +75,18 @@ class DefaultWorkflowPermissions(RecordPermissionPolicy):
     can_publish = [AuthenticatedUser()]
     can_new_version = [AuthenticatedUser()]
 
-    @classmethod
-    @property
-    def can_create_files(cls):  # used for files import
-        return cls.files_edit
+    can_create_files = [SameAs("files_edit")]
+    can_set_content_files = [SameAs("files_edit")]
+    can_commit_files = [SameAs("files_edit")]
+    can_update_files = [SameAs("files_edit")]
+    can_delete_files = [SameAs("files_edit")]
+    can_draft_create_files = [SameAs("files_edit")]
+    can_read_files = [SameAs("can_read")]
+    can_get_content_files = [SameAs("can_read")]
 
-    @classmethod
-    @property
-    def can_set_content_files(cls):  # used for files import
-        return cls.files_edit
-
-    @classmethod
-    @property
-    def can_commit_files(cls):  # used for files import
-        return cls.files_edit
-
-    @classmethod
-    @property
-    def can_update_files(cls):  # used for files import
-        return cls.files_edit
-
-    @classmethod
-    @property
-    def can_delete_files(cls):  # used for files import
-        return cls.files_edit
-
-    @classmethod
-    @property
-    def can_draft_create_files(cls):  # used for files import
-        return cls.can_create_files
-
-    @classmethod
-    @property
-    def can_read_files(cls):
-        return cls.can_read
-
-    @classmethod
-    @property
-    def can_get_content_files(cls):
-        return cls.can_read
-
-    @classmethod
-    @property
-    def can_read_draft(cls):
-        return cls.can_read
-
-    @classmethod
-    @property
-    def can_update_draft(cls):
-        return cls.can_update
-
-    @classmethod
-    @property
-    def can_delete_draft(cls):
-        return cls.can_delete
+    can_read_draft = [SameAs("can_read")]
+    can_update_draft = [SameAs("can_update")]
+    can_delete_draft = [SameAs("can_delete")]
 
 
 class WorkflowPermissionPolicy(RecordPermissionPolicy):
