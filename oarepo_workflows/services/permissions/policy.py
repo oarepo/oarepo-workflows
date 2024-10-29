@@ -28,25 +28,6 @@ class DefaultWorkflowPermissions(RecordPermissionPolicy):
     }
     """
 
-    """
-    PERMISSIONS_REMAP = {
-        #"get_content_files": "read", # change when embargo available
-        #"read_files": "read",  # change when embargo available
-        #"draft_create_files": "create_files", #new version - update; edit current version - disable
-
-        #"search_drafts": "search",
-        #"search_versions": "search",
-        
-        # these are in rdm (but i can't trivially find where there are used) but not in vanilla invenio
-        # "draft_set_content_files": "set_content_files", #new version - update; edit current version - disable
-        # "draft_get_content_files": "read", # change when embargo available
-        # "draft_commit_files": "commit_files", #new version - update; edit current version - disable
-        # "draft_read_files": "read", # change when embargo available
-        # "draft_update_files": "update_files", #new version - update; edit current version - disable
-        # "draft_delete_files": "delete_files",  # new version - update; edit current version - disable
-    }
-    """
-
     # new version - update; edit current version - disable -> idk if there's other way than something like IfNoEditDraft/IfNoNewVersionDraft generators-
 
     files_edit = [
