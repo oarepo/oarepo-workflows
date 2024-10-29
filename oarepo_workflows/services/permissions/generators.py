@@ -1,3 +1,7 @@
+import operator
+from functools import reduce
+from itertools import chain
+
 from invenio_records_permissions.generators import ConditionalGenerator, Generator
 from invenio_search.engine import dsl
 
@@ -5,6 +9,13 @@ from oarepo_workflows.errors import InvalidWorkflowError, MissingWorkflowError
 from oarepo_workflows.proxies import current_oarepo_workflows
 from oarepo_workflows.requests.policy import RecipientGeneratorMixin
 from oarepo_workflows.services.permissions.identity import auto_request_need
+
+
+# invenio_records_permissions.generators.ConditionalGenerator._make_query
+def _make_query(generators, **kwargs):
+    queries = [g.query_filter(**kwargs) for g in generators]
+    queries = [q for q in queries if q]
+    return reduce(operator.or_, queries) if queries else None
 
 
 class WorkflowPermission(Generator):
@@ -62,6 +73,33 @@ class IfInState(ConditionalGenerator):
         then_query = self._make_query(self.then_, **kwargs)
 
         return q_instate & then_query
+
+
+class SameAs(Generator):
+    def __init__(self, as_):
+        self.as_ = as_
+
+    def _generators(self, policy, **kwargs):
+        return getattr(policy, self.as_)
+
+    def needs(self, policy, **kwargs):
+        needs = [
+            generator.needs(**kwargs)
+            for generator in self._generators(policy, **kwargs)
+        ]
+        return set(chain.from_iterable(needs))
+
+    def excludes(self, policy, **kwargs):
+        """Preventing Needs."""
+        excludes = [
+            generator.excludes(**kwargs)
+            for generator in self._generators(policy, **kwargs)
+        ]
+        return set(chain.from_iterable(excludes))
+
+    def query_filter(self, policy, **kwargs):
+        """Search filters."""
+        return _make_query(self._generators(policy, **kwargs), **kwargs)
 
 
 class AutoRequest(Generator):

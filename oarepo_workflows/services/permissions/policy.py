@@ -4,13 +4,14 @@ from invenio_records_permissions import RecordPermissionPolicy
 from invenio_records_permissions.generators import (
     AnyUser,
     AuthenticatedUser,
+    Disable,
     SystemProcess,
 )
 from invenio_search.engine import dsl
 from oarepo_runtime.services.generators import RecordOwners
 
 from ...proxies import current_oarepo_workflows
-from .generators import IfInState, WorkflowPermission
+from .generators import IfInState, SameAs, WorkflowPermission
 
 
 class DefaultWorkflowPermissions(RecordPermissionPolicy):
@@ -27,29 +28,20 @@ class DefaultWorkflowPermissions(RecordPermissionPolicy):
     }
     """
 
-    PERMISSIONS_REMAP = {
-        "read_draft": "read",
-        "update_draft": "update",
-        "delete_draft": "delete",
-        "draft_create_files": "create_files",
-        "draft_set_content_files": "set_content_files",
-        "draft_get_content_files": "get_content_files",
-        "draft_commit_files": "commit_files",
-        "draft_read_files": "read_files",
-        "draft_update_files": "update_files",
-        "search_drafts": "search",
-        "search_versions": "search",
-    }
+    # new version - update; edit current version - disable -> idk if there's other way than something like IfNoEditDraft/IfNoNewVersionDraft generators-
+
+    files_edit = [
+        IfInState("draft", [RecordOwners()]),
+        IfInState("published", [Disable()]),
+    ]
 
     system_process = SystemProcess()
 
     def __init__(self, action_name=None, **over):
-        action_name = DefaultWorkflowPermissions.PERMISSIONS_REMAP.get(
-            action_name, action_name
-        )
         can = getattr(self, f"can_{action_name}")
         if self.system_process not in can:
             can.append(self.system_process)
+        over["policy"] = self
         super().__init__(action_name, **over)
 
     can_read = [
@@ -64,6 +56,19 @@ class DefaultWorkflowPermissions(RecordPermissionPolicy):
     can_publish = [AuthenticatedUser()]
     can_new_version = [AuthenticatedUser()]
 
+    can_create_files = [SameAs("files_edit")]
+    can_set_content_files = [SameAs("files_edit")]
+    can_commit_files = [SameAs("files_edit")]
+    can_update_files = [SameAs("files_edit")]
+    can_delete_files = [SameAs("files_edit")]
+    can_draft_create_files = [SameAs("files_edit")]
+    can_read_files = [SameAs("can_read")]
+    can_get_content_files = [SameAs("can_read")]
+
+    can_read_draft = [SameAs("can_read")]
+    can_update_draft = [SameAs("can_update")]
+    can_delete_draft = [SameAs("can_delete")]
+
 
 class WorkflowPermissionPolicy(RecordPermissionPolicy):
     """
@@ -73,7 +78,6 @@ class WorkflowPermissionPolicy(RecordPermissionPolicy):
 
     can_create = [WorkflowPermission("create")]
     can_publish = [WorkflowPermission("publish")]
-    can_search = [SystemProcess(), AnyUser()]
     can_read = [WorkflowPermission("read")]
     can_update = [WorkflowPermission("update")]
     can_delete = [WorkflowPermission("delete")]
@@ -83,20 +87,17 @@ class WorkflowPermissionPolicy(RecordPermissionPolicy):
     can_commit_files = [WorkflowPermission("commit_files")]
     can_read_files = [WorkflowPermission("read_files")]
     can_update_files = [WorkflowPermission("update_files")]
+    can_delete_files = [WorkflowPermission("delete_files")]
+
+    can_read_draft = [WorkflowPermission("read_draft")]
+    can_update_draft = [WorkflowPermission("update_draft")]
+    can_delete_draft = [WorkflowPermission("delete_draft")]
     can_edit = [WorkflowPermission("edit")]
-
-    can_search_drafts = [SystemProcess(), AnyUser()]
-    can_read_draft = [WorkflowPermission("read")]
-    can_update_draft = [WorkflowPermission("update")]
-    can_delete_draft = [WorkflowPermission("delete")]
-    can_draft_create_files = [WorkflowPermission("create_files")]
-    can_draft_set_content_files = [WorkflowPermission("set_content_files")]
-    can_draft_get_content_files = [WorkflowPermission("get_content_files")]
-    can_draft_commit_files = [WorkflowPermission("commit_files")]
-    can_draft_read_files = [WorkflowPermission("read_files")]
-    can_draft_update_files = [WorkflowPermission("update_files")]
-
     can_new_version = [WorkflowPermission("new_version")]
+    can_draft_create_files = [WorkflowPermission("draft_create_files")]
+
+    can_search = [SystemProcess(), AnyUser()]
+    can_search_drafts = [SystemProcess(), AnyUser()]
     can_search_versions = [SystemProcess(), AnyUser()]
 
     @property
