@@ -9,6 +9,7 @@ from oarepo_workflows.errors import InvalidWorkflowError, MissingWorkflowError
 from oarepo_workflows.proxies import current_oarepo_workflows
 from oarepo_workflows.requests.policy import RecipientGeneratorMixin
 from oarepo_workflows.services.permissions.identity import auto_request_need
+from typing import Optional
 
 
 # invenio_records_permissions.generators.ConditionalGenerator._make_query
@@ -35,7 +36,7 @@ class WorkflowPermission(Generator):
                 raise MissingWorkflowError("Workflow not defined in input.")
         return workflow_id
 
-    def _get_permissions_from_workflow(self, record=None, action_name=None, **kwargs):
+    def _get_permissions_from_workflow(self, record=None, action_name: Optional[str]=None, **kwargs):
         workflow_id = self._get_workflow_id(record, **kwargs)
         if workflow_id not in current_oarepo_workflows.record_workflows:
             raise InvalidWorkflowError(

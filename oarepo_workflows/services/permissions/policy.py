@@ -12,6 +12,7 @@ from oarepo_runtime.services.generators import RecordOwners
 
 from ...proxies import current_oarepo_workflows
 from .generators import IfInState, SameAs, WorkflowPermission
+from typing import Optional
 
 
 class DefaultWorkflowPermissions(RecordPermissionPolicy):
@@ -37,7 +38,7 @@ class DefaultWorkflowPermissions(RecordPermissionPolicy):
 
     system_process = SystemProcess()
 
-    def __init__(self, action_name=None, **over) -> None:
+    def __init__(self, action_name: Optional[str]=None, **over) -> None:
         can = getattr(self, f"can_{action_name}")
         if self.system_process not in can:
             can.append(self.system_process)

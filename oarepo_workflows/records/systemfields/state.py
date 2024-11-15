@@ -3,7 +3,7 @@ from oarepo_runtime.records.systemfields import MappingSystemFieldMixin
 
 
 class RecordStateField(MappingSystemFieldMixin, SystemField):
-    def __init__(self, key="state", initial="draft", config=None) -> None:
+    def __init__(self, key: str="state", initial: str="draft", config=None) -> None:
         self._config = config
         self._initial = initial
         super().__init__(key=key)

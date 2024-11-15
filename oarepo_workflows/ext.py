@@ -54,7 +54,7 @@ class OARepoWorkflows(object):
         ]
 
     def set_state(
-        self, identity, record, value, *args, uow=None, commit=True, **kwargs
+        self, identity, record, value, *args, uow=None, commit: bool=True, **kwargs
     ) -> None:
         previous_value = record.state
         record.state = value
@@ -67,7 +67,7 @@ class OARepoWorkflows(object):
             )
 
     def set_workflow(
-        self, identity, record, new_workflow_id, *args, uow=None, commit=True, **kwargs
+        self, identity, record, new_workflow_id, *args, uow=None, commit: bool=True, **kwargs
     ):
         if new_workflow_id not in current_oarepo_workflows.record_workflows:
             raise InvalidWorkflowError(
