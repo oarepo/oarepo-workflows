@@ -1,19 +1,14 @@
-from oarepo_workflows.services.permissions import (
-    AutoApprove,
-    AutoRequest,
-    DefaultWorkflowPermissions,
-    IfInState,
-    WorkflowPermission,
-    WorkflowPermissionPolicy,
-)
+from __future__ import annotations
+
+from oarepo_workflows.services.permissions import (AutoApprove, AutoRequest,
+                                                   DefaultWorkflowPermissions,
+                                                   IfInState,
+                                                   WorkflowPermission,
+                                                   WorkflowPermissionPolicy)
 
 from .base import Workflow
-from .requests import (
-    WorkflowRequest,
-    WorkflowRequestEscalation,
-    WorkflowRequestPolicy,
-    WorkflowTransitions,
-)
+from .requests import (WorkflowRequest, WorkflowRequestEscalation,
+                       WorkflowRequestPolicy, WorkflowTransitions)
 
 __all__ = (
     "IfInState",

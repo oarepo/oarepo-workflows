@@ -1,6 +1,9 @@
-from flask import Blueprint
+from __future__ import annotations
 
+from flask import Blueprint
 from flask.blueprints import Blueprint
+
+
 def create_api_blueprint(app) -> Blueprint:
     """Create requests blueprint."""
     blueprint = Blueprint("oarepo-workflows", __name__)

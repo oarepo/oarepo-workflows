@@ -1,18 +1,16 @@
+from __future__ import annotations
+
 from functools import reduce
+from typing import Optional
 
 from invenio_records_permissions import RecordPermissionPolicy
-from invenio_records_permissions.generators import (
-    AnyUser,
-    AuthenticatedUser,
-    Disable,
-    SystemProcess,
-)
+from invenio_records_permissions.generators import (AnyUser, AuthenticatedUser,
+                                                    Disable, SystemProcess)
 from invenio_search.engine import dsl
 from oarepo_runtime.services.generators import RecordOwners
 
 from ...proxies import current_oarepo_workflows
 from .generators import IfInState, SameAs, WorkflowPermission
-from typing import Optional
 
 
 class DefaultWorkflowPermissions(RecordPermissionPolicy):

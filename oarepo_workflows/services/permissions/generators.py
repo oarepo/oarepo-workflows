@@ -1,16 +1,19 @@
+from __future__ import annotations
+
 import operator
 from functools import reduce
 from itertools import chain
+from typing import Optional
 
-from invenio_records_permissions.generators import ConditionalGenerator, Generator
+from flask import Need
+from invenio_records_permissions.generators import (ConditionalGenerator,
+                                                    Generator)
 from invenio_search.engine import dsl
 
 from oarepo_workflows.errors import InvalidWorkflowError, MissingWorkflowError
 from oarepo_workflows.proxies import current_oarepo_workflows
 from oarepo_workflows.requests.policy import RecipientGeneratorMixin
 from oarepo_workflows.services.permissions.identity import auto_request_need
-from typing import Optional
-from flask import Need
 
 
 # invenio_records_permissions.generators.ConditionalGenerator._make_query

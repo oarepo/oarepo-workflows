@@ -1,4 +1,7 @@
-from invenio_records_resources.services.records.components.base import ServiceComponent
+from __future__ import annotations
+
+from invenio_records_resources.services.records.components.base import \
+    ServiceComponent
 
 from oarepo_workflows.errors import MissingWorkflowError
 from oarepo_workflows.proxies import current_oarepo_workflows

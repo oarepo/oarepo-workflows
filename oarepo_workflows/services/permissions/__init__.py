@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from .generators import AutoApprove, AutoRequest, IfInState, WorkflowPermission
 from .policy import DefaultWorkflowPermissions, WorkflowPermissionPolicy
 

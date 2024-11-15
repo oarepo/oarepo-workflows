@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from oarepo_runtime.services.entity.config import KeywordEntityServiceConfig
 from oarepo_runtime.services.entity.service import KeywordEntityService
 

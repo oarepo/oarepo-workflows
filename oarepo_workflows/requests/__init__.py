@@ -1,14 +1,9 @@
-from .policy import (
-    RecipientGeneratorMixin,
-    WorkflowRequest,
-    WorkflowRequestEscalation,
-    WorkflowRequestPolicy,
-    WorkflowTransitions,
-    AutoApprove,
-    AutoRequest,
-    RequesterGenerator,
-    RecipientEntityReference
-)
+from __future__ import annotations
+
+from .policy import (AutoApprove, AutoRequest, RecipientEntityReference,
+                     RecipientGeneratorMixin, RequesterGenerator,
+                     WorkflowRequest, WorkflowRequestEscalation,
+                     WorkflowRequestPolicy, WorkflowTransitions)
 
 __all__ = (
     "WorkflowRequestPolicy",

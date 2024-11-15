@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import dataclasses
-from functools import cached_property
 from datetime import timedelta
+from functools import cached_property
 from logging import getLogger
 from typing import Dict, List, Optional, Tuple
 
-from flask_principal import Need, Permission, Identity
+from flask_principal import Identity, Need, Permission
 from invenio_access.permissions import SystemRoleNeed
 from invenio_records_permissions.generators import Generator
 

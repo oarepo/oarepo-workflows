@@ -1,8 +1,10 @@
 from __future__ import annotations
+
+from typing import Self
+
 from invenio_records.systemfields.base import SystemField
 from oarepo_runtime.records.systemfields import MappingSystemFieldMixin
 
-from typing import Self
 
 class RecordStateField(MappingSystemFieldMixin, SystemField):
     def __init__(self, key: str="state", initial: str="draft", config=None) -> None:

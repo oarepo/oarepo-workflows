@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from functools import cached_property
 
 import importlib_metadata
@@ -7,8 +9,8 @@ from oarepo_runtime.datastreams.utils import get_record_service_for_record
 
 from oarepo_workflows.errors import InvalidWorkflowError, MissingWorkflowError
 from oarepo_workflows.proxies import current_oarepo_workflows
-from oarepo_workflows.services.auto_approve import AutoApproveEntityService, \
-    AutoApproveEntityServiceConfig
+from oarepo_workflows.services.auto_approve import (
+    AutoApproveEntityService, AutoApproveEntityServiceConfig)
 
 
 class OARepoWorkflows(object):

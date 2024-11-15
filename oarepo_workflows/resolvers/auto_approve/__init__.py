@@ -1,6 +1,9 @@
-from invenio_records_resources.references.entity_resolvers import EntityProxy
-from invenio_records_resources.references.entity_resolvers.base import EntityResolver
+from __future__ import annotations
+
 from flask_principal import Need
+from invenio_records_resources.references.entity_resolvers import EntityProxy
+from invenio_records_resources.references.entity_resolvers.base import \
+    EntityResolver
 
 
 class AutoApprover:

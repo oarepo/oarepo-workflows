@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from invenio_records.systemfields.model import ModelField
 from oarepo_runtime.records.systemfields import MappingSystemFieldMixin
 
