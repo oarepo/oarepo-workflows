@@ -1,0 +1,348 @@
+[
+    {
+        "path": "oarepo_workflows/base.py",
+        "line": 23,
+        "func_name": "Workflow.requests",
+        "type_comments": [
+            "() -> tests.conftest.MyWorkflowRequests"
+        ],
+        "samples": 1
+    },
+    {
+        "path": "oarepo_workflows/records/systemfields/state.py",
+        "line": 15,
+        "func_name": "RecordStateField.post_create",
+        "type_comments": [
+            "(thesis.thesis.records.api.ThesisRecord) -> pyannotate_runtime.collect_types.NoReturnType"
+        ],
+        "samples": 1
+    },
+    {
+        "path": "oarepo_workflows/records/systemfields/state.py",
+        "line": 18,
+        "func_name": "RecordStateField.post_init",
+        "type_comments": [
+            "(thesis.thesis.records.api.ThesisRecord, Dict[str, str], thesis.records.models.ThesisMetadata) -> pyannotate_runtime.collect_types.NoReturnType"
+        ],
+        "samples": 1
+    },
+    {
+        "path": "oarepo_workflows/records/systemfields/state.py",
+        "line": 22,
+        "func_name": "RecordStateField.__get__",
+        "type_comments": [
+            "(thesis.thesis.records.api.ThesisRecord, invenio_records.systemfields.base.SystemFieldsMeta) -> None"
+        ],
+        "samples": 1
+    },
+    {
+        "path": "oarepo_workflows/requests/policy.py",
+        "line": 44,
+        "func_name": "requester_generator",
+        "type_comments": [
+            "() -> oarepo_workflows.requests.policy.RequesterGenerator"
+        ],
+        "samples": 3
+    },
+    {
+        "path": "oarepo_workflows/requests/policy.py",
+        "line": 51,
+        "func_name": "WorkflowRequest.recipient_entity_reference",
+        "type_comments": [
+            "() -> Dict[str, str]"
+        ],
+        "samples": 1
+    },
+    {
+        "path": "oarepo_workflows/requests/policy.py",
+        "line": 61,
+        "func_name": "WorkflowRequest.is_applicable",
+        "type_comments": [
+            "(flask_principal.Identity) -> bool"
+        ],
+        "samples": 6
+    },
+    {
+        "path": "oarepo_workflows/requests/policy.py",
+        "line": 151,
+        "func_name": "items",
+        "type_comments": [
+            "() -> List[Tuple[str, oarepo_workflows.requests.policy.WorkflowRequest]]"
+        ],
+        "samples": 1
+    },
+    {
+        "path": "oarepo_workflows/requests/policy.py",
+        "line": 165,
+        "func_name": "WorkflowRequestPolicy.applicable_workflow_requests",
+        "type_comments": [
+            "(flask_principal.Identity) -> List[Tuple[str, oarepo_workflows.requests.policy.WorkflowRequest]]"
+        ],
+        "samples": 2
+    },
+    {
+        "path": "oarepo_workflows/requests/policy.py",
+        "line": 221,
+        "func_name": "RequesterGenerator.__init__",
+        "type_comments": [
+            "(List[oarepo_runtime.services.permissions.generators.UserWithRole]) -> pyannotate_runtime.collect_types.NoReturnType",
+            "(List[oarepo_runtime.services.permissions.generators.RecordOwners]) -> pyannotate_runtime.collect_types.NoReturnType"
+        ],
+        "samples": 3
+    },
+    {
+        "path": "oarepo_workflows/requests/policy.py",
+        "line": 225,
+        "func_name": "RequesterGenerator.needs",
+        "type_comments": [
+            "() -> Set[flask_principal.Need]"
+        ],
+        "samples": 6
+    },
+    {
+        "path": "oarepo_workflows/requests/policy.py",
+        "line": 237,
+        "func_name": "RequesterGenerator.excludes",
+        "type_comments": [
+            "() -> Set"
+        ],
+        "samples": 6
+    },
+    {
+        "path": "oarepo_workflows/requests/policy.py",
+        "line": 264,
+        "func_name": "RecipientEntityReference",
+        "type_comments": [
+            "(oarepo_workflows.requests.policy.WorkflowRequest) -> Dict[str, str]"
+        ],
+        "samples": 1
+    },
+    {
+        "path": "oarepo_workflows/services/permissions/generators.py",
+        "line": 32,
+        "func_name": "WorkflowPermission._get_workflow_id",
+        "type_comments": [
+            "(None) -> pyannotate_runtime.collect_types.NoReturnType"
+        ],
+        "samples": 10
+    },
+    {
+        "path": "oarepo_workflows/services/permissions/generators.py",
+        "line": 43,
+        "func_name": "WorkflowPermission._get_permissions_from_workflow",
+        "type_comments": [
+            "(None, str) -> pyannotate_runtime.collect_types.NoReturnType"
+        ],
+        "samples": 10
+    },
+    {
+        "path": "oarepo_workflows/services/permissions/generators.py",
+        "line": 52,
+        "func_name": "WorkflowPermission.needs",
+        "type_comments": [
+            "(None) -> pyannotate_runtime.collect_types.NoReturnType"
+        ],
+        "samples": 10
+    },
+    {
+        "path": "tests/conftest.py",
+        "line": 153,
+        "func_name": "LoggedClient.__init__",
+        "type_comments": [
+            "(flask.testing.FlaskClient, pytest_invenio.user.UserFixtureBase) -> pyannotate_runtime.collect_types.NoReturnType"
+        ],
+        "samples": 7
+    },
+    {
+        "path": "tests/conftest.py",
+        "line": 157,
+        "func_name": "LoggedClient._login",
+        "type_comments": [
+            "() -> pyannotate_runtime.collect_types.NoReturnType"
+        ],
+        "samples": 5
+    },
+    {
+        "path": "tests/conftest.py",
+        "line": 161,
+        "func_name": "LoggedClient.post",
+        "type_comments": [
+            "(*str) -> werkzeug.test.WrapperTestResponse",
+            "(*str) -> werkzeug.test.WrapperTestResponse",
+            "(*str) -> werkzeug.test.WrapperTestResponse",
+            "(*str) -> werkzeug.test.WrapperTestResponse"
+        ],
+        "samples": 5
+    },
+    {
+        "path": "tests/conftest.py",
+        "line": 180,
+        "func_name": "_logged_client",
+        "type_comments": [
+            "(pytest_invenio.user.UserFixtureBase) -> tests.conftest.LoggedClient"
+        ],
+        "samples": 7
+    },
+    {
+        "path": "tests/test_workflow.py",
+        "line": 8,
+        "func_name": "test_workflow_read",
+        "type_comments": [
+            "(List[pytest_invenio.user.UserFixtureBase], function, Dict[str, Dict[str, str]], werkzeug.local.LocalProxy) -> pyannotate_runtime.collect_types.NoReturnType"
+        ],
+        "samples": 1
+    },
+    {
+        "path": "tests/test_workflow.py",
+        "line": 42,
+        "func_name": "test_workflow_publish",
+        "type_comments": [
+            "(List[pytest_invenio.user.UserFixtureBase], function, Dict[str, Dict[str, str]], werkzeug.local.LocalProxy) -> pyannotate_runtime.collect_types.NoReturnType"
+        ],
+        "samples": 1
+    },
+    {
+        "path": "tests/test_workflow.py",
+        "line": 67,
+        "func_name": "test_query_filter",
+        "type_comments": [
+            "(List[pytest_invenio.user.UserFixtureBase], function, Dict[str, Dict[str, str]], werkzeug.local.LocalProxy) -> pyannotate_runtime.collect_types.NoReturnType"
+        ],
+        "samples": 1
+    },
+    {
+        "path": "tests/test_workflow.py",
+        "line": 98,
+        "func_name": "test_invalid_workflow_input",
+        "type_comments": [
+            "(List[pytest_invenio.user.UserFixtureBase], function, werkzeug.local.LocalProxy) -> pyannotate_runtime.collect_types.NoReturnType"
+        ],
+        "samples": 1
+    },
+    {
+        "path": "tests/test_workflow.py",
+        "line": 115,
+        "func_name": "test_state_change",
+        "type_comments": [
+            "(List[pytest_invenio.user.UserFixtureBase], werkzeug.local.LocalProxy, method, Dict[str, Dict[str, str]], werkzeug.local.LocalProxy) -> pyannotate_runtime.collect_types.NoReturnType"
+        ],
+        "samples": 1
+    },
+    {
+        "path": "tests/test_workflow.py",
+        "line": 123,
+        "func_name": "test_set_workflow",
+        "type_comments": [
+            "(List[pytest_invenio.user.UserFixtureBase], function, Dict[str, Dict[str, str]], werkzeug.local.LocalProxy, method, werkzeug.local.LocalProxy) -> pyannotate_runtime.collect_types.NoReturnType"
+        ],
+        "samples": 1
+    },
+    {
+        "path": "tests/test_workflow.py",
+        "line": 142,
+        "func_name": "test_state_change_entrypoint_hookup",
+        "type_comments": [
+            "(List[pytest_invenio.user.UserFixtureBase], werkzeug.local.LocalProxy, method, Dict[str, Dict[str, str]], werkzeug.local.LocalProxy) -> pyannotate_runtime.collect_types.NoReturnType"
+        ],
+        "samples": 1
+    },
+    {
+        "path": "tests/test_workflow.py",
+        "line": 150,
+        "func_name": "test_set_workflow_entrypoint_hookup",
+        "type_comments": [
+            "(List[pytest_invenio.user.UserFixtureBase], function, Dict[str, Dict[str, str]], werkzeug.local.LocalProxy, method, werkzeug.local.LocalProxy) -> pyannotate_runtime.collect_types.NoReturnType"
+        ],
+        "samples": 1
+    },
+    {
+        "path": "tests/test_workflow_field.py",
+        "line": 4,
+        "func_name": "test_workflow_read",
+        "type_comments": [
+            "(List[pytest_invenio.user.UserFixtureBase], function, Dict[str, Dict[str, str]], werkzeug.local.LocalProxy, werkzeug.local.LocalProxy) -> pyannotate_runtime.collect_types.NoReturnType"
+        ],
+        "samples": 1
+    },
+    {
+        "path": "tests/test_workflow_requests.py",
+        "line": 15,
+        "func_name": "TestRecipient.reference_receivers",
+        "type_comments": [
+            "(thesis.thesis.records.api.ThesisRecord, None) -> List[Dict[str, str]]"
+        ],
+        "samples": 1
+    },
+    {
+        "path": "tests/test_workflow_requests.py",
+        "line": 21,
+        "func_name": "NullRecipient.reference_receivers",
+        "type_comments": [
+            "(thesis.thesis.records.api.ThesisRecord, None) -> pyannotate_runtime.collect_types.NoReturnType"
+        ],
+        "samples": 1
+    },
+    {
+        "path": "tests/test_workflow_requests.py",
+        "line": 25,
+        "func_name": "test_workflow_requests",
+        "type_comments": [
+            "(List[pytest_invenio.user.UserFixtureBase], function, werkzeug.local.LocalProxy, werkzeug.local.LocalProxy) -> pyannotate_runtime.collect_types.NoReturnType"
+        ],
+        "samples": 1
+    },
+    {
+        "path": "tests/test_workflow_requests.py",
+        "line": 34,
+        "func_name": "test_request_policy_access",
+        "type_comments": [
+            "(invenio_app.factory:flask.Flask) -> pyannotate_runtime.collect_types.NoReturnType"
+        ],
+        "samples": 1
+    },
+    {
+        "path": "tests/test_workflow_requests.py",
+        "line": 39,
+        "func_name": "test_is_applicable",
+        "type_comments": [
+            "(List[pytest_invenio.user.UserFixtureBase], function, werkzeug.local.LocalProxy, werkzeug.local.LocalProxy) -> pyannotate_runtime.collect_types.NoReturnType"
+        ],
+        "samples": 1
+    },
+    {
+        "path": "tests/test_workflow_requests.py",
+        "line": 54,
+        "func_name": "test_list_applicable_requests",
+        "type_comments": [
+            "(List[pytest_invenio.user.UserFixtureBase], function, werkzeug.local.LocalProxy, werkzeug.local.LocalProxy) -> pyannotate_runtime.collect_types.NoReturnType"
+        ],
+        "samples": 1
+    },
+    {
+        "path": "tests/test_workflow_requests.py",
+        "line": 55,
+        "func_name": "R",
+        "type_comments": [
+            "() -> pyannotate_runtime.collect_types.NoReturnType"
+        ],
+        "samples": 1
+    },
+    {
+        "path": "thesis/thesis/resources/records/config.py",
+        "line": 14,
+        "func_name": "response_handlers",
+        "type_comments": [
+            "() -> Dict[str, flask_resources.responses.ResponseHandler]"
+        ],
+        "samples": 5
+    },
+    {
+        "path": "thesis/thesis/resources/records/ui.py",
+        "line": 12,
+        "func_name": "ThesisUIJSONSerializer.__init__",
+        "type_comments": [
+            "() -> pyannotate_runtime.collect_types.NoReturnType"
+        ],
+        "samples": 5
+    }
+]

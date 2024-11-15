@@ -1,31 +1,36 @@
+#
+# Copyright (C) 2024 CESNET z.s.p.o.
+#
+# oarepo-workflows is free software; you can redistribute it and/or
+# modify it under the terms of the MIT License; see LICENSE file for more
+# details.
+#
+"""Events for workflow requests."""
+
 from __future__ import annotations
 
 import dataclasses
-from typing import List, Tuple
+from functools import cached_property
+from typing import TYPE_CHECKING
 
-from flask_principal import Need
-from invenio_records_permissions.generators import Generator
+from oarepo_workflows.requests import MultipleGeneratorsGenerator
+
+if TYPE_CHECKING:
+    from invenio_records_permissions.generators import Generator
 
 
 @dataclasses.dataclass
 class WorkflowEvent:
-    submitters: List[Generator] | Tuple[Generator]
+    """Class representing a workflow event."""
 
-    def needs(self, **kwargs) -> set[Need]:
-        return {
-            need for generator in self.submitters for need in generator.needs(**kwargs)
-        }
+    submitters: list[Generator] | tuple[Generator]
+    """List of submitters to be used for the event.
 
-    def excludes(self, **kwargs) -> set[Need]:
-        return {
-            exclude
-            for generator in self.submitters
-            for exclude in generator.excludes(**kwargs)
-        }
+       The generators supply needs. The user must have at least one of the needs 
+       to be able to create a workflow event.
+    """
 
-    def query_filters(self, **kwargs) -> list[dict]:
-        return [
-            query_filter
-            for generator in self.submitters
-            for query_filter in generator.query_filter(**kwargs)
-        ]
+    @cached_property
+    def submitter_generator(self) -> Generator:
+        """Return the requesters as a single requester generator."""
+        return MultipleGeneratorsGenerator(self.submitters)

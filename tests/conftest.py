@@ -1,3 +1,10 @@
+#
+# Copyright (C) 2024 CESNET z.s.p.o.
+#
+# oarepo-workflows is free software; you can redistribute it and/or
+# modify it under the terms of the MIT License; see LICENSE file for more
+# details.
+#
 import os
 
 import pytest
@@ -25,7 +32,6 @@ class RecordOwnersReadTestWorkflowPermissionPolicy(DefaultWorkflowPermissions):
 
 
 class Administration(Generator):
-
     def needs(self, **kwargs):
         """Enabling Needs."""
         return [ActionNeed("administration")]
@@ -128,7 +134,6 @@ def input_data(sample_metadata_list):
 
 @pytest.fixture()
 def users(app, db, UserFixture):
-
     user1 = UserFixture(
         email="user1@example.org",
         password="password",

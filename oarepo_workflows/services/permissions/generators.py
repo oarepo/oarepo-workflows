@@ -1,128 +1,201 @@
+#
+# Copyright (C) 2024 CESNET z.s.p.o.
+#
+# oarepo-workflows is free software; you can redistribute it and/or
+# modify it under the terms of the MIT License; see LICENSE file for more
+# details.
+#
+"""Permission generators usable in workflow configurations."""
+
 from __future__ import annotations
 
 import operator
 from functools import reduce
 from itertools import chain
-from typing import Optional
+from typing import TYPE_CHECKING, Any, Iterable
 
-from flask import Need
-from invenio_records_permissions.generators import (ConditionalGenerator,
-                                                    Generator)
+from invenio_records_permissions.generators import ConditionalGenerator, Generator
 from invenio_search.engine import dsl
 
 from oarepo_workflows.errors import InvalidWorkflowError, MissingWorkflowError
 from oarepo_workflows.proxies import current_oarepo_workflows
-from oarepo_workflows.requests.policy import RecipientGeneratorMixin
-from oarepo_workflows.services.permissions.identity import auto_request_need
+
+if TYPE_CHECKING:
+    from flask_principal import Need
+    from invenio_records_permissions import RecordPermissionPolicy
+    from invenio_records_resources.records import Record
 
 
 # invenio_records_permissions.generators.ConditionalGenerator._make_query
-def _make_query(generators, **kwargs) -> dict:
-    queries = [g.query_filter(**kwargs) for g in generators]
+def _make_query(generators: Iterable[Generator], **context: Any) -> dict:
+    queries = [g.query_filter(**context) for g in generators]
     queries = [q for q in queries if q]
     return reduce(operator.or_, queries) if queries else None
 
 
 class WorkflowPermission(Generator):
-    def __init__(self, action=None) -> None:
+    """Permission delegating check to workflow.
+
+    The implementation of the permission gets the workflow id from the passed context
+    (record or data) and then looks up the workflow definition in the configuration.
+
+    The workflow definition must contain a permissions policy that is then used to
+    determine the permissions for the action.
+    """
+
+    def __init__(self, action: str | None = None) -> None:
+        """Initialize the permission."""
         # might not be needed in subclasses
         super().__init__()
         self._action = action
 
-    def _get_workflow_id(self, record=None, **kwargs):
+    def _get_workflow_id(self, record: Record = None, **context: Any) -> str:
+        """Get the workflow id from the context.
+
+        If the record is passed, the workflow is determined from the record.
+        If the record is not passed, the workflow is determined from the input data.
+
+        If the workflow is not found, an error is raised.
+
+        :param record: Record to get the workflow from.
+        :param context: Context to get the workflow from.
+        :return: Workflow id.
+        :raises MissingWorkflowError: If the workflow is not found on the record/data.
+        """
         if record:
             workflow_id = current_oarepo_workflows.get_workflow_from_record(record)
             if not workflow_id:
-                raise MissingWorkflowError("Workflow not defined on record.")
+                raise MissingWorkflowError(
+                    "Workflow not defined on record.", record=record
+                )
         else:
-            workflow_id = kwargs.get("data", {}).get("parent", {}).get("workflow", {})
+            data = context.get("data", {})
+            workflow_id = data.get("parent", {}).get("workflow", {})
             if not workflow_id:
-                raise MissingWorkflowError("Workflow not defined in input.")
+                raise MissingWorkflowError(
+                    "Workflow not defined in input.", record=data
+                )
         return workflow_id
 
-    def _get_permissions_from_workflow(self, record=None, action_name: Optional[str]=None, **kwargs):
-        workflow_id = self._get_workflow_id(record, **kwargs)
+    def _get_permissions_from_workflow(
+        self, record: Record = None, action_name: str | None = None, **context: Any
+    ) -> RecordPermissionPolicy:
+        """Get the permissions policy from the workflow.
+
+        At first the workflow id is determined from the context.
+        Then the permissions policy is determined from the workflow configuration,
+        is instantiated with the action name and the context and the permissions
+        for the action are returned.
+        """
+        workflow_id = self._get_workflow_id(record, **context)
         if workflow_id not in current_oarepo_workflows.record_workflows:
             raise InvalidWorkflowError(
-                f"Workflow {workflow_id} does not exist in the configuration."
+                f"Workflow {workflow_id} does not exist in the configuration.",
+                record=record or context.get("data", {}),
             )
         policy = current_oarepo_workflows.record_workflows[workflow_id].permissions
-        return policy(action_name, record=record, **kwargs)
+        return policy(action_name, record=record, **context)
 
-    def needs(self, record=None, **kwargs):
-        return self._get_permissions_from_workflow(record, self._action, **kwargs).needs
-
-    def query_filter(self, record=None, **kwargs):
+    def needs(self, record: Record = None, **context: Any) -> set[Need]:
+        """Return needs that are generated by the workflow permission."""
         return self._get_permissions_from_workflow(
-            record, self._action, **kwargs
+            record, self._action, **context
+        ).needs
+
+    def query_filter(self, record: Record = None, **context: Any) -> dict:
+        """Return query filters that are generated by the workflow permission."""
+        return self._get_permissions_from_workflow(
+            record, self._action, **context
         ).query_filters
 
 
 class IfInState(ConditionalGenerator):
-    def __init__(self, state, then_) -> None:
-        super().__init__(then_, else_=[])
+    """Generator that checks if the record is in a specific state.
+
+    If it is in the state, the then_ generators are used, otherwise the else_ generators are used.
+
+    Example:
+        .. code-block:: python
+
+            can_edit = [ IfInState("draft", [RecordOwners()]) ]
+
+    """
+
+    def __init__(
+        self,
+        state: str,
+        then_: list[Generator] | tuple[Generator] | None = None,
+        else_: list[Generator] | tuple[Generator] | None = None,
+    ) -> None:
+        """Initialize the generator."""
+        super().__init__(then_ or [], else_=else_ or [])
         self.state = state
 
-    def _condition(self, record, **kwargs) -> bool:
+    def _condition(self, record: Record, **context: Any) -> bool:
+        """Check if the record is in the state."""
         try:
-            state = record.state
+            return record.state == self.state  # noqa as AttributeError is caught
         except AttributeError:
             return False
-        return state == self.state
 
-    def query_filter(self, **kwargs):
-        """Filters for queries."""
+    def query_filter(self, **context: Any) -> dsl.Q:
+        """Apply then or else filter."""
         field = "state"
 
         q_instate = dsl.Q("term", **{field: self.state})
-        then_query = self._make_query(self.then_, **kwargs)
+        if self.then_:
+            then_query = self._make_query(self.then_, **context)
+        else:
+            then_query = dsl.Q("match_none")
 
-        return q_instate & then_query
+        if self.else_:
+            else_query = self._make_query(self.else_, **context)
+        else:
+            else_query = dsl.Q("match_none")
+
+        return (q_instate & then_query) | (~q_instate & else_query)
 
 
 class SameAs(Generator):
-    def __init__(self, as_) -> None:
-        self.as_ = as_
+    """Generator that delegates the permissions to another action.
 
-    def _generators(self, policy, **kwargs):
-        return getattr(policy, self.as_)
+    Example:
+        .. code-block:: python
+            class Perms:
+                can_create_files = [SameAs("edit_files")]
+                can_edit_files = [RecordOwners()]
 
-    def needs(self, policy, **kwargs) -> set[Need]:
+    would mean that the permissions for creating files are the same as for editing files.
+    This works even if you inherit from the class and override the can_edit_files.
+
+    """
+
+    def __init__(self, action: str) -> None:
+        """Initialize the generator."""
+        self.action_generator_name = f"can_{action}"
+
+    def _generators(
+        self, policy: RecordPermissionPolicy, **context: Any
+    ) -> list[Generator]:
+        """Get the generators from the policy."""
+        return getattr(policy, self.action_generator_name)
+
+    def needs(self, policy: RecordPermissionPolicy, **context: Any) -> set[Need]:
+        """Get the needs from the policy."""
         needs = [
-            generator.needs(**kwargs)
-            for generator in self._generators(policy, **kwargs)
+            generator.needs(**context)
+            for generator in self._generators(policy, **context)
         ]
         return set(chain.from_iterable(needs))
 
-    def excludes(self, policy, **kwargs) -> set[Need]:
-        """Preventing Needs."""
+    def excludes(self, policy: RecordPermissionPolicy, **context: Any) -> set[Need]:
+        """Get the excludes from the policy."""
         excludes = [
-            generator.excludes(**kwargs)
-            for generator in self._generators(policy, **kwargs)
+            generator.excludes(**context)
+            for generator in self._generators(policy, **context)
         ]
         return set(chain.from_iterable(excludes))
 
-    def query_filter(self, policy, **kwargs) -> dict:
+    def query_filter(self, policy: RecordPermissionPolicy, **context: Any) -> dict:
         """Search filters."""
-        return _make_query(self._generators(policy, **kwargs), **kwargs)
-
-
-class AutoRequest(Generator):
-    """
-    Auto request generator. This generator is used to automatically create a request
-    when a record is moved to a specific state.
-    """
-
-    def needs(self, **kwargs) -> list[Need]:
-        """Enabling Needs."""
-        return [auto_request_need]
-
-
-class AutoApprove(RecipientGeneratorMixin, Generator):
-    """
-    Auto approve generator. If the generator is used within recipients of a request,
-    the request will be automatically approved when the request is submitted.
-    """
-
-    def reference_receivers(self, record=None, request_type=None, **kwargs) -> list[dict[str, str]]:
-        return [{"auto_approve": "true"}]
+        return _make_query(self._generators(policy, **context), **context)
