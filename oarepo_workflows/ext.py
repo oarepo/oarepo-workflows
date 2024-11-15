@@ -13,13 +13,13 @@ from oarepo_workflows.services.auto_approve import AutoApproveEntityService, \
 
 class OARepoWorkflows(object):
 
-    def __init__(self, app=None):
+    def __init__(self, app=None) -> None:
         if app:
             self.init_config(app)
             self.init_app(app)
             self.init_services(app)
 
-    def init_config(self, app):
+    def init_config(self, app) -> None:
         """Initialize configuration."""
         from . import ext_config
 
@@ -34,7 +34,7 @@ class OARepoWorkflows(object):
 
         app.config.setdefault("WORKFLOWS", ext_config.WORKFLOWS)
 
-    def init_services(self, app):
+    def init_services(self, app) -> None:
         self.autoapprove_service = AutoApproveEntityService(
             config=AutoApproveEntityServiceConfig()
         )
@@ -55,7 +55,7 @@ class OARepoWorkflows(object):
 
     def set_state(
         self, identity, record, value, *args, uow=None, commit=True, **kwargs
-    ):
+    ) -> None:
         previous_value = record.state
         record.state = value
         if commit:
@@ -128,12 +128,12 @@ class OARepoWorkflows(object):
                 f"Workflow {record.parent.workflow} on record {self._get_id_from_record(record)} doesn't exist."
             )
 
-    def init_app(self, app):
+    def init_app(self, app) -> None:
         """Flask application initialization."""
         self.app = app
         app.extensions["oarepo-workflows"] = self
 
-def finalize_app(app):
+def finalize_app(app) -> None:
     records_resources = app.extensions["invenio-records-resources"]
 
     ext = app.extensions["oarepo-workflows"]

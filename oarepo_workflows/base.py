@@ -22,7 +22,7 @@ class Workflow:
         """Return instance of request policy for this workflow."""
         return self.request_policy_cls()
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         assert not issubclass(self.permission_policy_cls, WorkflowPermissionPolicy)
         assert issubclass(self.permission_policy_cls, DefaultWorkflowPermissions)
 

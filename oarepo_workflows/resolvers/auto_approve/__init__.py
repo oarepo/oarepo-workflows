@@ -4,7 +4,7 @@ from flask_principal import Need
 
 
 class AutoApprover:
-    def __init__(self, value: bool):
+    def __init__(self, value: bool) -> None:
         self.value = value
 
 
@@ -23,7 +23,7 @@ class AutoApproveProxy(EntityProxy):
 class AutoApproveResolver(EntityResolver):
     type_id = "auto_approve"
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.type_key = self.type_id
         super().__init__(
             "auto_approve",

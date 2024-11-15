@@ -37,7 +37,7 @@ class DefaultWorkflowPermissions(RecordPermissionPolicy):
 
     system_process = SystemProcess()
 
-    def __init__(self, action_name=None, **over):
+    def __init__(self, action_name=None, **over) -> None:
         can = getattr(self, f"can_{action_name}")
         if self.system_process not in can:
             can.append(self.system_process)

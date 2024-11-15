@@ -3,15 +3,15 @@ from oarepo_runtime.records.systemfields import MappingSystemFieldMixin
 
 
 class RecordStateField(MappingSystemFieldMixin, SystemField):
-    def __init__(self, key="state", initial="draft", config=None):
+    def __init__(self, key="state", initial="draft", config=None) -> None:
         self._config = config
         self._initial = initial
         super().__init__(key=key)
 
-    def post_create(self, record):
+    def post_create(self, record) -> None:
         self.set_dictkey(record, self._initial)
 
-    def post_init(self, record, data, model=None, **kwargs):
+    def post_init(self, record, data, model=None, **kwargs) -> None:
         if not record.state:
             self.set_dictkey(record, self._initial)
 
@@ -21,7 +21,7 @@ class RecordStateField(MappingSystemFieldMixin, SystemField):
             return self
         return self.get_dictkey(record)
 
-    def __set__(self, record, value):
+    def __set__(self, record, value) -> None:
         self.set_dictkey(record, value)
 
     @property

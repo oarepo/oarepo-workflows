@@ -19,7 +19,7 @@ def _make_query(generators, **kwargs):
 
 
 class WorkflowPermission(Generator):
-    def __init__(self, action=None):
+    def __init__(self, action=None) -> None:
         # might not be needed in subclasses
         super().__init__()
         self._action = action
@@ -54,7 +54,7 @@ class WorkflowPermission(Generator):
 
 
 class IfInState(ConditionalGenerator):
-    def __init__(self, state, then_):
+    def __init__(self, state, then_) -> None:
         super().__init__(then_, else_=[])
         self.state = state
 
@@ -76,7 +76,7 @@ class IfInState(ConditionalGenerator):
 
 
 class SameAs(Generator):
-    def __init__(self, as_):
+    def __init__(self, as_) -> None:
         self.as_ = as_
 
     def _generators(self, policy, **kwargs):

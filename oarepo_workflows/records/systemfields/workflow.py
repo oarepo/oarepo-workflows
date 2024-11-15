@@ -4,7 +4,7 @@ from oarepo_runtime.records.systemfields import MappingSystemFieldMixin
 
 class WorkflowField(MappingSystemFieldMixin, ModelField):
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._workflow = None  # added in db
         super().__init__(model_field_name="workflow", key="workflow")
 
