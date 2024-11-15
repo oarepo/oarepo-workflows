@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 from invenio_access import SystemRoleNeed
 from invenio_records_permissions.generators import Generator
@@ -85,7 +85,10 @@ class RecipientGeneratorMixin:
     """Mixin for permission generators that can be used as recipients in WorkflowRequest."""
 
     def reference_receivers(
-        self, record: Record = None, request_type: RequestType = None, **context: Any
+        self,
+        record: Optional[Record] = None,
+        request_type: Optional[RequestType] = None,
+        **context: Any,
     ) -> list[dict[str, str]]:
         """Return the reference receiver(s) of the request.
 
@@ -107,7 +110,10 @@ class AutoApprove(RecipientGeneratorMixin, Generator):
     """
 
     def reference_receivers(
-        self, record: Record = None, request_type: RequestType = None, **kwargs: Any
+        self,
+        record: Optional[Record] = None,
+        request_type: Optional[RequestType] = None,
+        **kwargs: Any,
     ) -> list[dict[str, str]]:
         """Return the reference receiver(s) of the auto-approve request.
 

@@ -9,7 +9,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 from invenio_records_resources.services.records.components.base import ServiceComponent
 
@@ -31,11 +31,13 @@ class WorkflowComponent(ServiceComponent):
     def create(
         self,
         identity: Identity,
-        data: dict = None,
-        record: Record = None,
+        data: Optional[dict] = None,
+        record: Optional[Record] = None,
         **kwargs: Any,
     ) -> None:
         """Implement record creation checks and set the workflow on the created record."""
+        if not data:
+            raise MissingWorkflowError("Workflow not defined in input.", record=data)
         try:
             workflow_id = data["parent"]["workflow"]
         except KeyError as e:

@@ -5,6 +5,8 @@
 # modify it under the terms of the MIT License; see LICENSE file for more
 # details.
 #
+"""Setup module for oarepo_workflows."""
+
 from setuptools import setup
 
 setup()

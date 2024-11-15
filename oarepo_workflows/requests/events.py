@@ -13,7 +13,7 @@ import dataclasses
 from functools import cached_property
 from typing import TYPE_CHECKING
 
-from oarepo_workflows.requests import MultipleGeneratorsGenerator
+from oarepo_workflows.requests.generators import MultipleGeneratorsGenerator
 
 if TYPE_CHECKING:
     from invenio_records_permissions.generators import Generator

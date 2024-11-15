@@ -9,7 +9,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Protocol, Self, overload
+from typing import Any, Optional, Protocol, Self, overload
 
 from invenio_records.systemfields.base import SystemField
 from oarepo_runtime.records.systemfields import MappingSystemFieldMixin
@@ -40,7 +40,7 @@ class RecordStateField(MappingSystemFieldMixin, SystemField):
         self.set_dictkey(record, self._initial)
 
     def post_init(
-        self, record: WithState, data: dict, model: Any = None, **kwargs: Any
+        self, record: WithState, data: dict, model: Optional[Any] = None, **kwargs: Any
     ) -> None:
         """Set the initial state when record is created."""
         if not record.state:

@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 from functools import cached_property
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 import importlib_metadata
 from invenio_drafts_resources.services.records.uow import ParentRecordCommitOp
@@ -41,7 +41,7 @@ if TYPE_CHECKING:
 class OARepoWorkflows:
     """OARepo workflows extension."""
 
-    def __init__(self, app: Flask = None) -> None:
+    def __init__(self, app: Optional[Flask] = None) -> None:
         """Initialize the extension.
 
         :param app: Flask application to initialize with.
@@ -50,7 +50,7 @@ class OARepoWorkflows:
         if app:
             self.init_config(app)
             self.init_app(app)
-            self.init_services(app)
+            self.init_services()
 
     def init_config(self, app: Flask) -> None:
         """Initialize configuration.

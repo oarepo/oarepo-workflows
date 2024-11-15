@@ -5,17 +5,18 @@
 # modify it under the terms of the MIT License; see LICENSE file for more
 # details.
 #
+"""App blueprints."""
+
 from __future__ import annotations
 
-from flask import Blueprint
-from flask.blueprints import Blueprint
+from flask.blueprints import Blueprint, BlueprintSetupState, Flask
 
 
-def create_app_blueprint(app) -> Blueprint:
+def create_app_blueprint(app: Flask) -> Blueprint:
     """Create requests blueprint."""
     blueprint = Blueprint("oarepo-workflows", __name__)
 
-    def register_autoapprove_entity_resolver(state) -> None:
+    def register_autoapprove_entity_resolver(state: BlueprintSetupState) -> None:
         from oarepo_workflows.resolvers.auto_approve import AutoApproveResolver
 
         requests = app.extensions["invenio-requests"]

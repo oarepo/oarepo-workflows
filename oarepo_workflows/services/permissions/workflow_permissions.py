@@ -1,6 +1,15 @@
+#
+# Copyright (C) 2024 CESNET z.s.p.o.
+#
+# oarepo-workflows is free software; you can redistribute it and/or
+# modify it under the terms of the MIT License; see LICENSE file for more
+# details.
+#
+"""Definition of workflow permissions."""
+
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any
 
 from invenio_records_permissions import RecordPermissionPolicy
 from invenio_records_permissions.generators import (
@@ -38,7 +47,8 @@ class DefaultWorkflowPermissions(RecordPermissionPolicy):
 
     system_process = SystemProcess()
 
-    def __init__(self, action_name: Optional[str] = None, **over) -> None:
+    def __init__(self, action_name: str | None = None, **over: Any) -> None:
+        """Initialize the workflow permissions."""
         can = getattr(self, f"can_{action_name}")
         if self.system_process not in can:
             can.append(self.system_process)

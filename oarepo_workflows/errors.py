@@ -9,7 +9,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from marshmallow import ValidationError
 
@@ -24,7 +24,11 @@ def _get_id_from_record(record: Record | dict) -> str:
     :return str: The id of the record.
     """
     # community record doesn't have id in dict form, only uuid
-    return str(record["id"]) if "id" in record else str(record.id)
+    if "id" in record:
+        return str(record["id"])
+    if hasattr(record, "id"):
+        return str(record.id)
+    raise ValueError(f"Record {record} doesn't have an id.")
 
 
 def _format_record(record: Record | dict) -> str:
@@ -55,7 +59,7 @@ class InvalidWorkflowError(ValidationError):
         self,
         message: str,
         record: Record | dict | None = None,
-        community_id: str = None,
+        community_id: Optional[str] = None,
     ) -> None:
         """Initialize the exception."""
         self.record = record
