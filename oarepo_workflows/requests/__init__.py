@@ -4,6 +4,10 @@ from .policy import (
     WorkflowRequestEscalation,
     WorkflowRequestPolicy,
     WorkflowTransitions,
+    AutoApprove,
+    AutoRequest,
+    RequesterGenerator,
+    RecipientEntityReference
 )
 
 __all__ = (
@@ -12,4 +16,8 @@ __all__ = (
     "WorkflowTransitions",
     "RecipientGeneratorMixin",
     "WorkflowRequestEscalation",
+    "AutoApprove",
+    "AutoRequest",
+    "RequesterGenerator",
+    "RecipientEntityReference"
 )

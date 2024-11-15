@@ -7,6 +7,8 @@ from oarepo_runtime.datastreams.utils import get_record_service_for_record
 
 from oarepo_workflows.errors import InvalidWorkflowError, MissingWorkflowError
 from oarepo_workflows.proxies import current_oarepo_workflows
+from oarepo_workflows.services.auto_approve import AutoApproveEntityService, \
+    AutoApproveEntityServiceConfig
 
 
 class OARepoWorkflows(object):
@@ -15,6 +17,7 @@ class OARepoWorkflows(object):
         if app:
             self.init_config(app)
             self.init_app(app)
+            self.init_services(app)
 
     def init_config(self, app):
         """Initialize configuration."""
@@ -30,6 +33,11 @@ class OARepoWorkflows(object):
                 )
 
         app.config.setdefault("WORKFLOWS", ext_config.WORKFLOWS)
+
+    def init_services(self, app):
+        self.autoapprove_service = AutoApproveEntityService(
+            config=AutoApproveEntityServiceConfig()
+        )
 
     @cached_property
     def state_changed_notifiers(self):
@@ -124,3 +132,14 @@ class OARepoWorkflows(object):
         """Flask application initialization."""
         self.app = app
         app.extensions["oarepo-workflows"] = self
+
+def finalize_app(app):
+    records_resources = app.extensions["invenio-records-resources"]
+
+    ext = app.extensions["oarepo-workflows"]
+
+    records_resources.registry.register(
+        ext.autoapprove_service,
+        service_id=ext.autoapprove_service.config.service_id,
+    )
+
