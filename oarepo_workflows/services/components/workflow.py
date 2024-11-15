@@ -5,7 +5,7 @@ from oarepo_workflows.proxies import current_oarepo_workflows
 
 
 class WorkflowComponent(ServiceComponent):
-    def create(self, identity, data=None, record=None, **kwargs):
+    def create(self, identity, data=None, record=None, **kwargs) -> None:
         try:
             workflow_id = data["parent"]["workflow"]
         except KeyError:

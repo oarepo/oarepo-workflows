@@ -10,10 +10,11 @@ from oarepo_workflows.proxies import current_oarepo_workflows
 from oarepo_workflows.requests.policy import RecipientGeneratorMixin
 from oarepo_workflows.services.permissions.identity import auto_request_need
 from typing import Optional
+from flask import Need
 
 
 # invenio_records_permissions.generators.ConditionalGenerator._make_query
-def _make_query(generators, **kwargs):
+def _make_query(generators, **kwargs) -> dict:
     queries = [g.query_filter(**kwargs) for g in generators]
     queries = [q for q in queries if q]
     return reduce(operator.or_, queries) if queries else None
@@ -59,7 +60,7 @@ class IfInState(ConditionalGenerator):
         super().__init__(then_, else_=[])
         self.state = state
 
-    def _condition(self, record, **kwargs):
+    def _condition(self, record, **kwargs) -> bool:
         try:
             state = record.state
         except AttributeError:
@@ -83,14 +84,14 @@ class SameAs(Generator):
     def _generators(self, policy, **kwargs):
         return getattr(policy, self.as_)
 
-    def needs(self, policy, **kwargs):
+    def needs(self, policy, **kwargs) -> set[Need]:
         needs = [
             generator.needs(**kwargs)
             for generator in self._generators(policy, **kwargs)
         ]
         return set(chain.from_iterable(needs))
 
-    def excludes(self, policy, **kwargs):
+    def excludes(self, policy, **kwargs) -> set[Need]:
         """Preventing Needs."""
         excludes = [
             generator.excludes(**kwargs)
@@ -98,7 +99,7 @@ class SameAs(Generator):
         ]
         return set(chain.from_iterable(excludes))
 
-    def query_filter(self, policy, **kwargs):
+    def query_filter(self, policy, **kwargs) -> dict:
         """Search filters."""
         return _make_query(self._generators(policy, **kwargs), **kwargs)
 
@@ -109,7 +110,7 @@ class AutoRequest(Generator):
     when a record is moved to a specific state.
     """
 
-    def needs(self, **kwargs):
+    def needs(self, **kwargs) -> list[Need]:
         """Enabling Needs."""
         return [auto_request_need]
 
@@ -120,5 +121,5 @@ class AutoApprove(RecipientGeneratorMixin, Generator):
     the request will be automatically approved when the request is submitted.
     """
 
-    def reference_receivers(self, record=None, request_type=None, **kwargs):
+    def reference_receivers(self, record=None, request_type=None, **kwargs) -> list[dict[str, str]]:
         return [{"auto_approve": "true"}]

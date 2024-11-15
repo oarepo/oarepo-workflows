@@ -1,6 +1,8 @@
+from __future__ import annotations
 from invenio_records.systemfields.base import SystemField
 from oarepo_runtime.records.systemfields import MappingSystemFieldMixin
 
+from typing import Self
 
 class RecordStateField(MappingSystemFieldMixin, SystemField):
     def __init__(self, key: str="state", initial: str="draft", config=None) -> None:
@@ -15,7 +17,7 @@ class RecordStateField(MappingSystemFieldMixin, SystemField):
         if not record.state:
             self.set_dictkey(record, self._initial)
 
-    def __get__(self, record, owner=None):
+    def __get__(self, record, owner=None) -> str | Self:
         """Get the persistent identifier."""
         if record is None:
             return self
@@ -25,5 +27,5 @@ class RecordStateField(MappingSystemFieldMixin, SystemField):
         self.set_dictkey(record, value)
 
     @property
-    def mapping(self):
+    def mapping(self) -> dict[str, dict[str, str]]:
         return {self.attr_name: {"type": "keyword"}}

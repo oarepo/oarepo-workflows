@@ -102,7 +102,7 @@ class WorkflowPermissionPolicy(RecordPermissionPolicy):
     can_search_versions = [SystemProcess(), AnyUser()]
 
     @property
-    def query_filters(self):
+    def query_filters(self) -> list[dict]:
         if not (self.action == "read" or self.action == "read_draft"):
             return super().query_filters
         workflows = current_oarepo_workflows.record_workflows

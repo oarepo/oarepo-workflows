@@ -9,5 +9,5 @@ class WorkflowField(MappingSystemFieldMixin, ModelField):
         super().__init__(model_field_name="workflow", key="workflow")
 
     @property
-    def mapping(self):
+    def mapping(self) -> dict[str, dict[str, str]]:
         return {self.attr_name: {"type": "keyword"}}

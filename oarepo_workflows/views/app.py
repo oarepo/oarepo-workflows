@@ -1,6 +1,7 @@
 from flask import Blueprint
 
-def create_app_blueprint(app):
+from flask.blueprints import Blueprint
+def create_app_blueprint(app) -> Blueprint:
     """Create requests blueprint."""
     blueprint = Blueprint("oarepo-workflows", __name__)
 

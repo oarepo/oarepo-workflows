@@ -149,7 +149,7 @@ class WorkflowRequestPolicy:
             )
 
     @cached_property
-    def items(self):
+    def items(self) -> list[tuple[str, WorkflowRequest]]:
         ret = []
         parent_attrs = set(dir(WorkflowRequestPolicy))
         for attr in dir(self.__class__):
@@ -162,7 +162,7 @@ class WorkflowRequestPolicy:
                 ret.append((attr, possible_request))
         return ret
 
-    def applicable_workflow_requests(self, identity, **context):
+    def applicable_workflow_requests(self, identity, **context) -> list[tuple[str, WorkflowRequest]]:
         """
         Return a list of applicable requests for the identity and context.
         """
@@ -184,7 +184,7 @@ class AutoRequest(Generator):
     when a record is moved to a specific state.
     """
 
-    def needs(self, **kwargs):
+    def needs(self, **kwargs) -> list[Need]:
         """Enabling Needs."""
         return [auto_request_need]
 
@@ -213,7 +213,7 @@ class AutoApprove(RecipientGeneratorMixin, Generator):
     the request will be automatically approved when the request is submitted.
     """
 
-    def reference_receivers(self, record=None, request_type=None, **kwargs):
+    def reference_receivers(self, record=None, request_type=None, **kwargs) -> list[dict[str, str]]:
         return [{"auto_approve": "true"}]
 
 

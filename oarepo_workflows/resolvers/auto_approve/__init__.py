@@ -29,14 +29,14 @@ class AutoApproveResolver(EntityResolver):
             "auto_approve",
         )
 
-    def matches_reference_dict(self, ref_dict):
+    def matches_reference_dict(self, ref_dict) -> bool:
         return self._parse_ref_dict_type(ref_dict) == self.type_id
 
-    def _reference_entity(self, entity):
+    def _reference_entity(self, entity) -> dict[str, str]:
         return {self.type_key: str(entity.value)}
 
-    def matches_entity(self, entity):
+    def matches_entity(self, entity) -> bool:
         return isinstance(entity, AutoApprover)
 
-    def _get_entity_proxy(self, ref_dict):
+    def _get_entity_proxy(self, ref_dict) -> AutoApproveProxy:
         return AutoApproveProxy(self, ref_dict)

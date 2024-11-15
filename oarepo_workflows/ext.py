@@ -40,14 +40,14 @@ class OARepoWorkflows(object):
         )
 
     @cached_property
-    def state_changed_notifiers(self):
+    def state_changed_notifiers(self) -> list:
         group_name = "oarepo_workflows.state_changed_notifiers"
         return [
             x.load() for x in importlib_metadata.entry_points().select(group=group_name)
         ]
 
     @cached_property
-    def workflow_changed_notifiers(self):
+    def workflow_changed_notifiers(self) -> list:
         group_name = "oarepo_workflows.workflow_changed_notifiers"
         return [
             x.load() for x in importlib_metadata.entry_points().select(group=group_name)
@@ -68,7 +68,7 @@ class OARepoWorkflows(object):
 
     def set_workflow(
         self, identity, record, new_workflow_id, *args, uow=None, commit: bool=True, **kwargs
-    ):
+    ) -> None:
         if new_workflow_id not in current_oarepo_workflows.record_workflows:
             raise InvalidWorkflowError(
                 f"Workflow {new_workflow_id} does not exist in the configuration."
@@ -106,7 +106,7 @@ class OARepoWorkflows(object):
         return self.app.config["WORKFLOWS"]
 
     @property
-    def default_workflow_event_submitters(self):
+    def default_workflow_event_submitters(self) -> dict:
         if "DEFAULT_WORKFLOW_EVENT_SUBMITTERS" in self.app.config:
             return self.app.config["DEFAULT_WORKFLOW_EVENT_SUBMITTERS"]
         else:
