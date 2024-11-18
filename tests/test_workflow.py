@@ -110,7 +110,7 @@ def test_invalid_workflow_input(users, logged_client, search_clear):
     )
     assert invalid_wf_response.status_code == 400
     assert invalid_wf_response.json["errors"][0]["messages"] == [
-        "Workflow rglknjgidlrg does not exist in the configuration."
+        "Workflow rglknjgidlrg does not exist in the configuration. Used on record dict[{'parent': {'workflow': 'rglknjgidlrg'}}]"
     ]
     missing_wf_response = user_client1.post(ThesisResourceConfig.url_prefix, json={})
     assert missing_wf_response.status_code == 400

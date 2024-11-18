@@ -9,7 +9,12 @@
 
 from __future__ import annotations
 
-from flask.blueprints import Blueprint, BlueprintSetupState, Flask
+from typing import TYPE_CHECKING
+
+from flask import Blueprint, Flask
+
+if TYPE_CHECKING:
+    from flask.blueprints import BlueprintSetupState
 
 
 def create_app_blueprint(app: Flask) -> Blueprint:

@@ -19,8 +19,7 @@ from invenio_records_permissions.generators import (
 )
 from oarepo_runtime.services.permissions import RecordOwners
 
-from oarepo_workflows import IfInState
-from oarepo_workflows.services.permissions.generators import SameAs
+from .generators import IfInState, SameAs
 
 
 class DefaultWorkflowPermissions(RecordPermissionPolicy):

@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any, Optional
 
 import importlib_metadata
 from invenio_drafts_resources.services.records.uow import ParentRecordCommitOp
-from invenio_records_resources.services.uow import RecordCommitOp
+from invenio_records_resources.services.uow import RecordCommitOp, unit_of_work
 from oarepo_runtime.datastreams.utils import get_record_service_for_record
 
 from oarepo_workflows.errors import InvalidWorkflowError, MissingWorkflowError
@@ -102,6 +102,7 @@ class OARepoWorkflows:
             x.load() for x in importlib_metadata.entry_points().select(group=group_name)
         ]
 
+    @unit_of_work()
     def set_state(
         self,
         identity: Identity,
@@ -132,6 +133,7 @@ class OARepoWorkflows:
                 identity, record, previous_value, new_state, *args, uow=uow, **kwargs
             )
 
+    @unit_of_work()
     def set_workflow(
         self,
         identity: Identity,

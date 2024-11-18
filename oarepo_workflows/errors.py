@@ -28,7 +28,7 @@ def _get_id_from_record(record: Record | dict) -> str:
         return str(record["id"])
     if hasattr(record, "id"):
         return str(record.id)
-    raise ValueError(f"Record {record} doesn't have an id.")
+    return str(record)
 
 
 def _format_record(record: Record | dict) -> str:

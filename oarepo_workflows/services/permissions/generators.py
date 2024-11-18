@@ -173,34 +173,39 @@ class SameAs(Generator):
 
     """
 
-    def __init__(self, action: str) -> None:
-        """Initialize the generator."""
-        self.action_generator_name = f"can_{action}"
+    def __init__(self, permission_name: str) -> None:
+        """Initialize the generator.
+
+        :param permission_name: Name of the permission to delegate to. In most cases,
+        it will look like "can_<action>". A property with this name must exist on the policy
+        and its value must be a list of generators.
+        """
+        self.delegated_permission_name = permission_name
 
     def _generators(
-        self, policy: RecordPermissionPolicy, **context: Any
+        self, *, policy: RecordPermissionPolicy, **context: Any
     ) -> list[Generator]:
         """Get the generators from the policy."""
-        return getattr(policy, self.action_generator_name)
+        return getattr(policy, self.delegated_permission_name)
 
-    def needs(self, policy: RecordPermissionPolicy, **context: Any) -> set[Need]:
+    def needs(self, *, policy: RecordPermissionPolicy, **context: Any) -> list[Need]:
         """Get the needs from the policy."""
         needs = [
             generator.needs(**context)
-            for generator in self._generators(policy, **context)
+            for generator in self._generators(policy=policy, **context)
         ]
-        return set(chain.from_iterable(needs))
+        return list(chain.from_iterable(needs))
 
-    def excludes(self, policy: RecordPermissionPolicy, **context: Any) -> set[Need]:
+    def excludes(self, *, policy: RecordPermissionPolicy, **context: Any) -> list[Need]:
         """Get the excludes from the policy."""
         excludes = [
             generator.excludes(**context)
-            for generator in self._generators(policy, **context)
+            for generator in self._generators(policy=policy, **context)
         ]
-        return set(chain.from_iterable(excludes))
+        return list(chain.from_iterable(excludes))
 
     def query_filter(
-        self, policy: RecordPermissionPolicy, **context: Any
+        self, *, policy: RecordPermissionPolicy, **context: Any
     ) -> dict | None:
         """Search filters."""
-        return _make_query(self._generators(policy, **context), **context)
+        return _make_query(self._generators(policy=policy, **context), **context)
