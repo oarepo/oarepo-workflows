@@ -1,3 +1,10 @@
+#
+# Copyright (C) 2024 CESNET z.s.p.o.
+#
+# oarepo-workflows is free software; you can redistribute it and/or
+# modify it under the terms of the MIT License; see LICENSE file for more
+# details.
+#
 from oarepo_workflows.requests.generators import AutoApprove, auto_approve_need
 import pytest
 from invenio_requests.resolvers.registry import ResolverRegistry

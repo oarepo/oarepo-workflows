@@ -59,7 +59,7 @@ class MultipleGeneratorsGenerator(Generator):
 
         :param context: Context.
         """
-        ret = []
+        ret: list[dict] = []
         for generator in self.generators:
             query_filter = generator.query_filter(**context)
             if query_filter:
@@ -94,7 +94,7 @@ class RecipientGeneratorMixin:
         record: Optional[Record] = None,
         request_type: Optional[RequestType] = None,
         **context: Any,
-    ) -> list[dict[str, str]]: # pragma: no cover
+    ) -> list[dict[str, str]]:  # pragma: no cover
         """Return the reference receiver(s) of the request.
 
         This call requires the context to contain at least "record" and "request_type"
@@ -126,17 +126,23 @@ class AutoApprove(RecipientGeneratorMixin, Generator):
         """
         return [{"auto_approve": "True"}]
 
-    def needs(self, **kwargs):
+    def needs(self, **context: Any) -> list[Need]:
         """Get needs that signal workflow to automatically approve the request."""
-        raise ValueError("Auto-approve generator can not create needs and "
-                         "should be used only in `recipient` section of WorkflowRequest.")
+        raise ValueError(
+            "Auto-approve generator can not create needs and "
+            "should be used only in `recipient` section of WorkflowRequest."
+        )
 
-    def excludes(self, **kwargs):
+    def excludes(self, **context: Any) -> list[Need]:
         """Get needs that signal workflow to automatically approve the request."""
-        raise ValueError("Auto-approve generator can not create needs and "
-                         "should be used only in `recipient` section of WorkflowRequest.")
+        raise ValueError(
+            "Auto-approve generator can not create needs and "
+            "should be used only in `recipient` section of WorkflowRequest."
+        )
 
-    def query_filter(self, **kwargs):
+    def query_filter(self, **context: Any) -> list[dict]:
         """Get needs that signal workflow to automatically approve the request."""
-        raise ValueError("Auto-approve generator can not create needs and "
-                         "should be used only in `recipient` section of WorkflowRequest.")
+        raise ValueError(
+            "Auto-approve generator can not create needs and "
+            "should be used only in `recipient` section of WorkflowRequest."
+        )

@@ -29,6 +29,7 @@ class NullRecipient(RecipientGeneratorMixin, Generator):
     def reference_receivers(self, record=None, request_type=None, **kwargs):
         return None
 
+
 class FailingGenerator(Generator):
     def needs(self, **context):
         raise ValueError("Failing generator")
@@ -38,6 +39,7 @@ class FailingGenerator(Generator):
 
     def query_filter(self, **context):
         raise ValueError("Failing generator")
+
 
 class R(WorkflowRequestPolicy):
     req = WorkflowRequest(
@@ -56,13 +58,14 @@ class R(WorkflowRequestPolicy):
         recipients=[NullRecipient(), TestRecipient()],
     )
     req2 = WorkflowRequest(
-        requesters = [],    # never applicable, must be created by, for example, system identity
-        recipients = []
+        requesters=[],  # never applicable, must be created by, for example, system identity
+        recipients=[],
     )
     req3 = WorkflowRequest(
-        requesters = [FailingGenerator()],
-        recipients = [NullRecipient(), TestRecipient()],
+        requesters=[FailingGenerator()],
+        recipients=[NullRecipient(), TestRecipient()],
     )
+
 
 def test_workflow_requests(users, logged_client, search_clear, record_service):
     req = WorkflowRequest(
@@ -72,7 +75,10 @@ def test_workflow_requests(users, logged_client, search_clear, record_service):
     rec = ThesisRecord.create({})
     assert req.recipient_entity_reference(record=rec) == {"user": "1"}
 
-def test_workflow_requests_no_recipient(users, logged_client, search_clear, record_service):
+
+def test_workflow_requests_no_recipient(
+    users, logged_client, search_clear, record_service
+):
     req1 = WorkflowRequest(
         requesters=[RecordOwners()],
         recipients=[NullRecipient()],
@@ -85,6 +91,7 @@ def test_workflow_requests_no_recipient(users, logged_client, search_clear, reco
         recipients=[],
     )
     assert req2.recipient_entity_reference(record=rec) is None
+
 
 def test_request_policy_access(app):
     request_policy = app.config["WORKFLOWS"]["my_workflow"].requests()
@@ -109,8 +116,6 @@ def test_is_applicable(users, logged_client, search_clear, record_service):
 
 
 def test_list_applicable_requests(users, logged_client, search_clear, record_service):
-
-
     requests = R()
 
     id1 = Identity(id=1)
@@ -136,23 +141,28 @@ def test_get_request_type(users, logged_client, search_clear, record_service):
     assert requests["req"] == requests.req
     assert requests["req1"] == requests.req1
     with pytest.raises(KeyError):
-        requests["non_existing_request"]        # noqa
+        requests["non_existing_request"]  # noqa
+
 
 def test_transition_getter(users, logged_client, search_clear, record_service):
     requests = R()
-    assert requests.req.transitions['submitted'] == 'pending'
-    assert requests.req.transitions['accepted'] == 'accepted'
-    assert requests.req.transitions['declined'] == 'declined'
+    assert requests.req.transitions["submitted"] == "pending"
+    assert requests.req.transitions["accepted"] == "accepted"
+    assert requests.req.transitions["declined"] == "declined"
     with pytest.raises(KeyError):
-        requests.req.transitions['non_existing_transition']        # noqa
+        requests.req.transitions["non_existing_transition"]  # noqa
 
 
 def test_requestor_filter(users, logged_client, search_clear, record_service):
     requests = R()
-    sample_record = SimpleNamespace(parent=SimpleNamespace(owners=[SimpleNamespace(id=1)]))
+    sample_record = SimpleNamespace(
+        parent=SimpleNamespace(owners=[SimpleNamespace(id=1)])
+    )
 
     id1 = Identity(id=1)
     id1.provides.add(UserNeed(1))
 
     generator = requests.req.requester_generator
-    assert generator.query_filter(identity=id1, record=sample_record) == [Terms(parent__owners__user=[1])]
+    assert generator.query_filter(identity=id1, record=sample_record) == [
+        Terms(parent__owners__user=[1])
+    ]

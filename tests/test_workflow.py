@@ -12,15 +12,18 @@ from thesis.resources.records.config import ThesisResourceConfig
 from thesis.thesis.records.api import ThesisDraft, ThesisRecord
 
 
-def test_create_without_workflow(users, logged_client, default_workflow_json, search_clear):
+def test_create_without_workflow(
+    users, logged_client, default_workflow_json, search_clear
+):
     # create draft
     user_client1 = logged_client(users[0])
 
-    create_response = user_client1.post(
-        ThesisResourceConfig.url_prefix, json={}
-    )
+    create_response = user_client1.post(ThesisResourceConfig.url_prefix, json={})
     assert create_response.status_code == 400
-    assert create_response.json["errors"][0]["messages"] == ['Workflow not defined in input.']
+    assert create_response.json["errors"][0]["messages"] == [
+        "Workflow not defined in input."
+    ]
+
 
 def test_workflow_read(users, logged_client, default_workflow_json, search_clear):
     # create draft

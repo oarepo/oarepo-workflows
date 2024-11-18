@@ -1,3 +1,10 @@
+#
+# Copyright (C) 2024 CESNET z.s.p.o.
+#
+# oarepo-workflows is free software; you can redistribute it and/or
+# modify it under the terms of the MIT License; see LICENSE file for more
+# details.
+#
 from types import SimpleNamespace
 
 from oarepo_workflows import WorkflowPermission
@@ -17,6 +24,7 @@ def test_get_workflow_id(users, logged_client, search_clear, record_service):
     fake_thesis = SimpleNamespace(parent=SimpleNamespace(workflow=""))
     with pytest.raises(MissingWorkflowError):
         assert wp._get_workflow_id(record=fake_thesis)  # noqa
+
 
 def test_query_filter(users, logged_client, search_clear, record_service):
     wp = WorkflowPermission("read")

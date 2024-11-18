@@ -115,6 +115,7 @@ class WorkflowTransitions:
             )
         return getattr(self, transition_name)
 
+
 @dataclasses.dataclass
 class WorkflowRequestEscalation:
     """Escalation of the request.
