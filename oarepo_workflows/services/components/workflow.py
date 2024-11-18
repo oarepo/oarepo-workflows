@@ -37,12 +37,16 @@ class WorkflowComponent(ServiceComponent):
     ) -> None:
         """Implement record creation checks and set the workflow on the created record."""
         if not data:
-            raise MissingWorkflowError("Workflow not defined in input.", record=data)
+            # sanity check, should be handled by policy before the component is called
+            raise MissingWorkflowError("Workflow not defined in input. As this should be handled by a policy, "
+                                       "make sure you are using workflow-enabled policy.", record=data)   # pragma: no cover
         try:
             workflow_id = data["parent"]["workflow"]
-        except KeyError as e:
-            raise MissingWorkflowError(
-                "Workflow not defined in input.", record=data
+        except KeyError as e:               # pragma: no cover
+            # sanity check, should be handled by policy before the component is called
+            raise MissingWorkflowError(     # pragma: no cover
+                "Workflow not defined in input. As this should be handled by a policy, "
+                "make sure you are using workflow-enabled policy.", record=data
             ) from e
 
         current_oarepo_workflows.set_workflow(

@@ -109,13 +109,11 @@ class WorkflowTransitions:
 
     def __getitem__(self, transition_name: str):
         """Get the transition by name."""
-        try:
-            return getattr(self, transition_name)
-        except AttributeError:
+        if transition_name not in ["submitted", "accepted", "declined"]:
             raise KeyError(
                 f"Transition {transition_name} not defined in {self.__class__.__name__}"
-            ) from None
-
+            )
+        return getattr(self, transition_name)
 
 @dataclasses.dataclass
 class WorkflowRequestEscalation:

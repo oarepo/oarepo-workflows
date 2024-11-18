@@ -24,8 +24,11 @@ def _get_id_from_record(record: Record | dict) -> str:
     :return str: The id of the record.
     """
     # community record doesn't have id in dict form, only uuid
-    if "id" in record:
-        return str(record["id"])
+    try:
+        if "id" in record:
+            return str(record["id"])
+    except TypeError:
+        pass
     if hasattr(record, "id"):
         return str(record.id)
     return str(record)

@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import dataclasses
+from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, Optional
 
 from invenio_access import SystemRoleNeed
@@ -50,7 +51,7 @@ class MultipleGeneratorsGenerator(Generator):
             for exclude in generator.excludes(**context)
         }
 
-    def query_filters(self, **context: Any) -> list[dict]:
+    def query_filter(self, **context: Any) -> list[dict]:
         """Generate a list of opensearch query filters.
 
          These filters are used to filter objects. These objects are governed by a policy
@@ -58,11 +59,15 @@ class MultipleGeneratorsGenerator(Generator):
 
         :param context: Context.
         """
-        return [
-            query_filter
-            for generator in self.generators
-            for query_filter in generator.query_filter(**context)
-        ]
+        ret = []
+        for generator in self.generators:
+            query_filter = generator.query_filter(**context)
+            if query_filter:
+                if isinstance(query_filter, Iterable):
+                    ret.extend(query_filter)
+                else:
+                    ret.append(query_filter)
+        return ret
 
 
 auto_request_need = SystemRoleNeed("auto_request")
@@ -89,7 +94,7 @@ class RecipientGeneratorMixin:
         record: Optional[Record] = None,
         request_type: Optional[RequestType] = None,
         **context: Any,
-    ) -> list[dict[str, str]]:
+    ) -> list[dict[str, str]]: # pragma: no cover
         """Return the reference receiver(s) of the request.
 
         This call requires the context to contain at least "record" and "request_type"
@@ -119,4 +124,19 @@ class AutoApprove(RecipientGeneratorMixin, Generator):
 
         Returning "auto_approve" is a signal to the workflow that the request should be auto-approved.
         """
-        return [{"auto_approve": "true"}]
+        return [{"auto_approve": "True"}]
+
+    def needs(self, **kwargs):
+        """Get needs that signal workflow to automatically approve the request."""
+        raise ValueError("Auto-approve generator can not create needs and "
+                         "should be used only in `recipient` section of WorkflowRequest.")
+
+    def excludes(self, **kwargs):
+        """Get needs that signal workflow to automatically approve the request."""
+        raise ValueError("Auto-approve generator can not create needs and "
+                         "should be used only in `recipient` section of WorkflowRequest.")
+
+    def query_filter(self, **kwargs):
+        """Get needs that signal workflow to automatically approve the request."""
+        raise ValueError("Auto-approve generator can not create needs and "
+                         "should be used only in `recipient` section of WorkflowRequest.")
