@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any, Optional
 
 import importlib_metadata
 from invenio_drafts_resources.services.records.uow import ParentRecordCommitOp
+from invenio_records_resources.records import Record
 from invenio_records_resources.services.uow import RecordCommitOp, unit_of_work
 from oarepo_runtime.datastreams.utils import get_record_service_for_record
 
@@ -28,7 +29,6 @@ if TYPE_CHECKING:
     from flask import Flask
     from flask_principal import Identity
     from invenio_drafts_resources.records import ParentRecord
-    from invenio_records_resources.records import Record
     from invenio_records_resources.services.uow import UnitOfWork
 
     from oarepo_workflows.base import (
@@ -207,18 +207,37 @@ class OARepoWorkflows:
         """
         return self.app.config.get("DEFAULT_WORKFLOW_EVENTS", {})
 
-    def get_workflow(self, record: Record) -> Workflow:
+    def get_workflow(self, record: Record | dict) -> Workflow:
         """Get the workflow for a record.
 
         :param record:  record to get the workflow for
         :raises MissingWorkflowError: if the workflow is not found
         :raises InvalidWorkflowError: if the workflow is invalid
         """
-        parent = record.parent  # noqa for typing: we do not have a better type for record with parent
+        if isinstance(record, Record):
+            try:
+                parent = record.parent  # noqa for typing: we do not have a better type for record with parent
+            except AttributeError as e:
+                raise MissingWorkflowError("Record does not have a parent attribute, is it a draft-enabled record?",
+                                           record=record) from e
+            try:
+                workflow_id = parent.workflow
+            except AttributeError as e:
+                raise MissingWorkflowError("Parent record does not have a workflow attribute.",
+                                           record=record) from e
+        else:
+            try:
+                parent = record["parent"]
+            except KeyError as e:
+                raise MissingWorkflowError("Record does not have a parent attribute.",
+                                           record=record) from e
+            try:
+                workflow_id = parent["workflow"]
+            except KeyError as e:
+                raise MissingWorkflowError("Parent record does not have a workflow attribute.", record=record) from e
+
         try:
-            return self.record_workflows[parent.workflow]
-        except AttributeError as e:
-            raise MissingWorkflowError("Workflow not found.", record=record) from e
+            return self.record_workflows[workflow_id]
         except KeyError as e:
             raise InvalidWorkflowError(
                 f"Workflow {parent.workflow} doesn't exist in the configuration.",

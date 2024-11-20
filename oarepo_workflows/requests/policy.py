@@ -17,6 +17,7 @@ from .requests import (
 
 if TYPE_CHECKING:
     from flask_principal import Identity
+    from invenio_records_resources.records.api import Record
 
 
 class WorkflowRequestPolicy:
@@ -76,7 +77,7 @@ class WorkflowRequestPolicy:
         return ret
 
     def applicable_workflow_requests(
-        self, identity: Identity, **context: Any
+        self, identity: Identity, *, record: Record, **context: Any
     ) -> list[tuple[str, WorkflowRequest]]:
         """Return a list of applicable requests for the identity and context.
 
@@ -87,6 +88,6 @@ class WorkflowRequestPolicy:
         ret = []
 
         for name, request in self.items():
-            if request.is_applicable(identity, **context):
+            if request.is_applicable(identity, record=record, **context):
                 ret.append((name, request))
         return ret
