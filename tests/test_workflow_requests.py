@@ -99,7 +99,9 @@ def test_request_policy_access(app):
     assert not getattr(request_policy, "non_existing_request", None)
 
 
-def test_is_applicable(users, logged_client, search_clear, record_service, extra_request_types):
+def test_is_applicable(
+    users, logged_client, search_clear, record_service, extra_request_types
+):
     req = WorkflowRequest(
         requesters=[RecordOwners()],
         recipients=[NullRecipient(), TestRecipient()],

@@ -17,10 +17,10 @@ from typing import TYPE_CHECKING, Any, Optional
 from flask_principal import Identity, Permission
 from invenio_requests.proxies import current_request_type_registry
 
+from oarepo_workflows.errors import InvalidConfigurationError
 from oarepo_workflows.proxies import current_oarepo_workflows
 from oarepo_workflows.requests import RecipientGeneratorMixin
 from oarepo_workflows.requests.generators import MultipleGeneratorsGenerator
-from oarepo_workflows.errors import InvalidConfigurationError
 
 if TYPE_CHECKING:
     from datetime import timedelta
