@@ -129,6 +129,7 @@ class WorkflowRequestEscalation:
     recipients: list[Generator] | tuple[Generator]
 
 
+# noinspection PyPep8Naming
 def RecipientEntityReference(request: WorkflowRequest, **context: Any) -> dict | None:
     """Return the reference receiver of the workflow request with the given context.
 

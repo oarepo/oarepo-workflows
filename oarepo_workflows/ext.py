@@ -52,6 +52,7 @@ class OARepoWorkflows:
             self.init_app(app)
             self.init_services()
 
+    # noinspection PyMethodMayBeStatic
     def init_config(self, app: Flask) -> None:
         """Initialize configuration.
 
@@ -72,7 +73,8 @@ class OARepoWorkflows:
 
     def init_services(self) -> None:
         """Initialize workflow services."""
-        self.autoapprove_service = AutoApproveEntityService(
+        # noinspection PyAttributeOutsideInit
+        self.auto_approve_service = AutoApproveEntityService(
             config=AutoApproveEntityServiceConfig()
         )
 
@@ -178,6 +180,7 @@ class OARepoWorkflows:
                 **kwargs,
             )
 
+    # noinspection PyMethodMayBeStatic
     def get_workflow_from_record(self, record: Record | ParentRecord) -> str | None:
         """Get the workflow from a record.
 
@@ -224,6 +227,7 @@ class OARepoWorkflows:
 
     def init_app(self, app: Flask) -> None:
         """Flask application initialization."""
+        # noinspection PyAttributeOutsideInit
         self.app = app
         app.extensions["oarepo-workflows"] = self
 
@@ -241,6 +245,6 @@ def finalize_app(app: Flask) -> None:
     ext = app.extensions["oarepo-workflows"]
 
     records_resources.registry.register(
-        ext.autoapprove_service,
-        service_id=ext.autoapprove_service.config.service_id,
+        ext.auto_approve_service,
+        service_id=ext.auto_approve_service.config.service_id,
     )

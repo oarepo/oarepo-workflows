@@ -7,7 +7,7 @@
 #
 from types import SimpleNamespace
 
-from oarepo_workflows import WorkflowPermission
+from oarepo_workflows import FromRecordWorkflow
 from oarepo_workflows.errors import MissingWorkflowError
 from thesis.thesis.records.api import ThesisRecord
 import pytest
@@ -17,7 +17,7 @@ from flask_principal import Identity, UserNeed
 
 def test_get_workflow_id(users, logged_client, search_clear, record_service):
     thesis = ThesisRecord.create({})
-    wp = WorkflowPermission("read")
+    wp = FromRecordWorkflow("read")
     with pytest.raises(MissingWorkflowError):
         wp._get_workflow_id(record=thesis)
 
@@ -27,7 +27,7 @@ def test_get_workflow_id(users, logged_client, search_clear, record_service):
 
 
 def test_query_filter(users, logged_client, search_clear, record_service):
-    wp = WorkflowPermission("read")
+    wp = FromRecordWorkflow("read")
 
     id1 = Identity(id=1)
     id1.provides.add(UserNeed(1))

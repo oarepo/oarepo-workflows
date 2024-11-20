@@ -19,7 +19,7 @@ from invenio_records_permissions.generators import (
 from invenio_search.engine import dsl
 
 from ...proxies import current_oarepo_workflows
-from .generators import WorkflowPermission
+from .generators import FromRecordWorkflow
 
 
 class WorkflowRecordPermissionPolicy(RecordPermissionPolicy):
@@ -28,25 +28,25 @@ class WorkflowRecordPermissionPolicy(RecordPermissionPolicy):
     Do not use this class in Workflow constructor.
     """
 
-    can_create = [WorkflowPermission("create")]
-    can_publish = [WorkflowPermission("publish")]
-    can_read = [WorkflowPermission("read")]
-    can_update = [WorkflowPermission("update")]
-    can_delete = [WorkflowPermission("delete")]
-    can_create_files = [WorkflowPermission("create_files")]
-    can_set_content_files = [WorkflowPermission("set_content_files")]
-    can_get_content_files = [WorkflowPermission("get_content_files")]
-    can_commit_files = [WorkflowPermission("commit_files")]
-    can_read_files = [WorkflowPermission("read_files")]
-    can_update_files = [WorkflowPermission("update_files")]
-    can_delete_files = [WorkflowPermission("delete_files")]
+    can_create = [FromRecordWorkflow("create")]
+    can_publish = [FromRecordWorkflow("publish")]
+    can_read = [FromRecordWorkflow("read")]
+    can_update = [FromRecordWorkflow("update")]
+    can_delete = [FromRecordWorkflow("delete")]
+    can_create_files = [FromRecordWorkflow("create_files")]
+    can_set_content_files = [FromRecordWorkflow("set_content_files")]
+    can_get_content_files = [FromRecordWorkflow("get_content_files")]
+    can_commit_files = [FromRecordWorkflow("commit_files")]
+    can_read_files = [FromRecordWorkflow("read_files")]
+    can_update_files = [FromRecordWorkflow("update_files")]
+    can_delete_files = [FromRecordWorkflow("delete_files")]
 
-    can_read_draft = [WorkflowPermission("read_draft")]
-    can_update_draft = [WorkflowPermission("update_draft")]
-    can_delete_draft = [WorkflowPermission("delete_draft")]
-    can_edit = [WorkflowPermission("edit")]
-    can_new_version = [WorkflowPermission("new_version")]
-    can_draft_create_files = [WorkflowPermission("draft_create_files")]
+    can_read_draft = [FromRecordWorkflow("read_draft")]
+    can_update_draft = [FromRecordWorkflow("update_draft")]
+    can_delete_draft = [FromRecordWorkflow("delete_draft")]
+    can_edit = [FromRecordWorkflow("edit")]
+    can_new_version = [FromRecordWorkflow("new_version")]
+    can_draft_create_files = [FromRecordWorkflow("draft_create_files")]
 
     can_search = [SystemProcess(), AnyUser()]
     can_search_drafts = [SystemProcess(), AnyUser()]
@@ -60,12 +60,12 @@ class WorkflowRecordPermissionPolicy(RecordPermissionPolicy):
         workflows = current_oarepo_workflows.record_workflows
         queries = []
         for workflow_id, workflow in workflows.items():
-            q_inworkflow = dsl.Q("term", **{"parent.workflow": workflow_id})
+            q_in_workflow = dsl.Q("term", **{"parent.workflow": workflow_id})
             workflow_filters = workflow.permissions(
                 self.action, **self.over
             ).query_filters
             if not workflow_filters:
                 workflow_filters = [dsl.Q("match_none")]
-            query = reduce(lambda f1, f2: f1 | f2, workflow_filters) & q_inworkflow
+            query = reduce(lambda f1, f2: f1 | f2, workflow_filters) & q_in_workflow
             queries.append(query)
         return [q for q in queries if q]

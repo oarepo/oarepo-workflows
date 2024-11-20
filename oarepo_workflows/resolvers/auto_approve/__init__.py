@@ -31,7 +31,7 @@ class AutoApproveProxy(EntityProxy):
 
     def get_needs(self, ctx: dict | None = None) -> list[Need]:
         """Get needs that the entity generate."""
-        return []  # granttokens calls this
+        return []  # grant_tokens calls this
 
     def pick_resolved_fields(self, identity: Identity, resolved_dict: dict) -> dict:
         """Pick resolved fields for serialization of the entity to json."""

@@ -9,7 +9,6 @@
 
 from __future__ import annotations
 
-from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
 from .requests import (
@@ -54,7 +53,6 @@ class WorkflowRequestPolicy:
                 f"Request type {request_type_id} not defined in {self.__class__.__name__}"
             ) from None
 
-    @cached_property
     def items(self) -> list[tuple[str, WorkflowRequest]]:
         """Return the list of request types and their instances.
 
@@ -79,11 +77,11 @@ class WorkflowRequestPolicy:
 
         :param identity: Identity of the requester.
         :param context: Context of the request that is passed to the requester generators.
-        :return List of tuples (request_type_id, request) that are applicable for the identity and context.
+        :return: List of tuples (request_type_id, request) that are applicable for the identity and context.
         """
         ret = []
 
-        for name, request in self.items:
+        for name, request in self.items():
             if request.is_applicable(identity, **context):
                 ret.append((name, request))
         return ret
