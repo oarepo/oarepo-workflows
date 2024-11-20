@@ -12,7 +12,7 @@ from oarepo_runtime.services.permissions import RecordOwners, UserWithRole
 
 from oarepo_workflows import WorkflowRequestPolicy, WorkflowTransitions
 from oarepo_workflows.requests import RecipientGeneratorMixin, WorkflowRequest
-from thesis.thesis.records.api import ThesisRecord
+from thesis.records.api import ThesisRecord
 
 from flask_principal import Identity, UserNeed, RoleNeed
 import pytest
@@ -99,11 +99,13 @@ def test_request_policy_access(app):
     assert not getattr(request_policy, "non_existing_request", None)
 
 
-def test_is_applicable(users, logged_client, search_clear, record_service):
+def test_is_applicable(users, logged_client, search_clear, record_service, extra_request_types):
     req = WorkflowRequest(
         requesters=[RecordOwners()],
         recipients=[NullRecipient(), TestRecipient()],
     )
+    req._request_type = "req"
+
     id1 = Identity(id=1)
     id1.provides.add(UserNeed(1))
 
@@ -115,7 +117,9 @@ def test_is_applicable(users, logged_client, search_clear, record_service):
     assert req.is_applicable(id1, record=record) is True
 
 
-def test_list_applicable_requests(users, logged_client, search_clear, record_service):
+def test_list_applicable_requests(
+    users, logged_client, search_clear, record_service, extra_request_types
+):
     requests = R()
 
     id1 = Identity(id=1)
@@ -136,7 +140,9 @@ def test_list_applicable_requests(users, logged_client, search_clear, record_ser
     ) == {"req1"}
 
 
-def test_get_request_type(users, logged_client, search_clear, record_service):
+def test_get_workflow_request_via_index(
+    users, logged_client, search_clear, record_service, extra_request_types
+):
     requests = R()
     assert requests["req"] == requests.req
     assert requests["req1"] == requests.req1
@@ -144,7 +150,17 @@ def test_get_request_type(users, logged_client, search_clear, record_service):
         requests["non_existing_request"]  # noqa
 
 
-def test_transition_getter(users, logged_client, search_clear, record_service):
+def test_get_request_type(
+    users, logged_client, search_clear, record_service, extra_request_types
+):
+    requests = R()
+    for rt_code, wr in requests.items():
+        assert wr.request_type.type_id == rt_code
+
+
+def test_transition_getter(
+    users, logged_client, search_clear, record_service, extra_request_types
+):
     requests = R()
     assert requests.req.transitions["submitted"] == "pending"
     assert requests.req.transitions["accepted"] == "accepted"
@@ -153,7 +169,9 @@ def test_transition_getter(users, logged_client, search_clear, record_service):
         requests.req.transitions["non_existing_transition"]  # noqa
 
 
-def test_requestor_filter(users, logged_client, search_clear, record_service):
+def test_requestor_filter(
+    users, logged_client, search_clear, record_service, extra_request_types
+):
     requests = R()
     sample_record = SimpleNamespace(
         parent=SimpleNamespace(owners=[SimpleNamespace(id=1)])

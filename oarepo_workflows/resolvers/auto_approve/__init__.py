@@ -53,7 +53,7 @@ class AutoApproveResolver(EntityResolver):
 
     def _reference_entity(self, entity: Any) -> dict[str, str]:
         """Return a reference dictionary for the entity."""
-        return {self.type_id: str(True)}
+        return {self.type_id: "true"}
 
     def matches_entity(self, entity: Any) -> bool:
         """Check if the entity can be serialized to a reference by this resolver."""

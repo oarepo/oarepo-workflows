@@ -44,6 +44,11 @@ class WorkflowRequestPolicy:
 
     """
 
+    def __init__(self):
+        """Initialize the request policy."""
+        for rt_code, rt in self.items():
+            rt._request_type = rt_code
+
     def __getitem__(self, request_type_id: str) -> WorkflowRequest:
         """Get the workflow request type by its id."""
         try:

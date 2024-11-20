@@ -9,7 +9,7 @@ from types import SimpleNamespace
 
 from oarepo_workflows import FromRecordWorkflow
 from oarepo_workflows.errors import MissingWorkflowError
-from thesis.thesis.records.api import ThesisRecord
+from thesis.records.api import ThesisRecord
 import pytest
 
 from flask_principal import Identity, UserNeed

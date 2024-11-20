@@ -9,7 +9,7 @@ import pytest
 
 from oarepo_workflows.errors import InvalidWorkflowError
 from thesis.resources.records.config import ThesisResourceConfig
-from thesis.thesis.records.api import ThesisDraft, ThesisRecord
+from thesis.records.api import ThesisDraft, ThesisRecord
 
 
 def test_create_without_workflow(

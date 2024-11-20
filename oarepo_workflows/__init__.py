@@ -10,9 +10,9 @@
 from __future__ import annotations
 
 from oarepo_workflows.services.permissions import (
+    FromRecordWorkflow,
     IfInState,
     WorkflowPermission,
-    FromRecordWorkflow,
     WorkflowRecordPermissionPolicy,
 )
 

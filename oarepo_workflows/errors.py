@@ -72,3 +72,7 @@ class InvalidWorkflowError(ValidationError):
             super().__init__(f"{message} Used on community {community_id}")
         else:
             super().__init__(message)
+
+
+class InvalidConfigurationError(Exception):
+    """Exception raised when a configuration is invalid."""

@@ -16,7 +16,9 @@ from invenio_app.factory import create_api
 from invenio_i18n import lazy_gettext as _
 from invenio_records_permissions.generators import Generator
 from invenio_users_resources.records import UserAggregate
-from oarepo_runtime.services.generators import RecordOwners
+from invenio_requests.customizations.request_types import RequestType
+from invenio_requests.proxies import current_request_type_registry
+from oarepo_runtime.services.permissions import RecordOwners
 
 from oarepo_workflows.base import Workflow
 from oarepo_workflows.requests import (
@@ -217,3 +219,14 @@ def app_config(app_config):
 @pytest.fixture()
 def default_workflow_json():
     return {"parent": {"workflow": "my_workflow"}}
+
+
+@pytest.fixture()
+def extra_request_types():
+    def create_rt(type_id):
+        return type("Req", (RequestType,), {"type_id": type_id})
+
+    current_request_type_registry.register_type(create_rt("req"), force=True)
+    current_request_type_registry.register_type(create_rt("req1"), force=True)
+    current_request_type_registry.register_type(create_rt("req2"), force=True)
+    current_request_type_registry.register_type(create_rt("req3"), force=True)

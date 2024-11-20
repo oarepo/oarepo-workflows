@@ -124,7 +124,7 @@ class AutoApprove(RecipientGeneratorMixin, Generator):
 
         Returning "auto_approve" is a signal to the workflow that the request should be auto-approved.
         """
-        return [{"auto_approve": "True"}]
+        return [{"auto_approve": "true"}]
 
     def needs(self, **context: Any) -> list[Need]:
         """Get needs that signal workflow to automatically approve the request."""

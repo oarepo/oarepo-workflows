@@ -9,7 +9,7 @@
 
 from __future__ import annotations
 
-from .generators import IfInState, WorkflowPermission, FromRecordWorkflow
+from .generators import FromRecordWorkflow, IfInState, WorkflowPermission
 from .record_permission_policy import WorkflowRecordPermissionPolicy
 from .workflow_permissions import DefaultWorkflowPermissions
 
