@@ -77,7 +77,9 @@ class WorkflowRequest:
         """
         return RecipientEntityReference(self, **context)
 
-    def is_applicable(self, identity: Identity, *, record: Record, **context: Any) -> bool:
+    def is_applicable(
+        self, identity: Identity, *, record: Record, **context: Any
+    ) -> bool:
         """Check if the request is applicable for the identity and context (which might include record, community, ...).
 
         :param identity: Identity of the requester.
@@ -87,11 +89,15 @@ class WorkflowRequest:
             p = Permission(*self.requester_generator.needs(record=record, **context))
             if not p.needs:
                 return False
-            p.excludes.update(self.requester_generator.excludes(record=record, **context))
+            p.excludes.update(
+                self.requester_generator.excludes(record=record, **context)
+            )
             if not p.allows(identity):
                 return False
             if hasattr(self.request_type, "is_applicable_to"):
-                return self.request_type.is_applicable_to(identity, topic=record, **context)
+                return self.request_type.is_applicable_to(
+                    identity, topic=record, **context
+                )
             return True
         except InvalidConfigurationError:
             raise

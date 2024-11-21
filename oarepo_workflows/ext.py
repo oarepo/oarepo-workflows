@@ -218,23 +218,29 @@ class OARepoWorkflows:
             try:
                 parent = record.parent  # noqa for typing: we do not have a better type for record with parent
             except AttributeError as e:
-                raise MissingWorkflowError("Record does not have a parent attribute, is it a draft-enabled record?",
-                                           record=record) from e
+                raise MissingWorkflowError(
+                    "Record does not have a parent attribute, is it a draft-enabled record?",
+                    record=record,
+                ) from e
             try:
                 workflow_id = parent.workflow
             except AttributeError as e:
-                raise MissingWorkflowError("Parent record does not have a workflow attribute.",
-                                           record=record) from e
+                raise MissingWorkflowError(
+                    "Parent record does not have a workflow attribute.", record=record
+                ) from e
         else:
             try:
                 parent = record["parent"]
             except KeyError as e:
-                raise MissingWorkflowError("Record does not have a parent attribute.",
-                                           record=record) from e
+                raise MissingWorkflowError(
+                    "Record does not have a parent attribute.", record=record
+                ) from e
             try:
                 workflow_id = parent["workflow"]
             except KeyError as e:
-                raise MissingWorkflowError("Parent record does not have a workflow attribute.", record=record) from e
+                raise MissingWorkflowError(
+                    "Parent record does not have a workflow attribute.", record=record
+                ) from e
 
         try:
             return self.record_workflows[workflow_id]
