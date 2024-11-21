@@ -15,7 +15,7 @@ from logging import getLogger
 from typing import TYPE_CHECKING, Any, Optional
 
 from flask_principal import Identity, Permission
-from invenio_requests.proxies import current_request_type_registry
+from invenio_requests.proxies import current_request_type_registry, current_requests_service
 
 from oarepo_workflows.errors import InvalidConfigurationError
 from oarepo_workflows.proxies import current_oarepo_workflows
@@ -86,19 +86,15 @@ class WorkflowRequest:
         :param context: Context of the request that is passed to the requester generators.
         """
         try:
-            p = Permission(*self.requester_generator.needs(record=record, **context))
-            if not p.needs:
-                return False
-            p.excludes.update(
-                self.requester_generator.excludes(record=record, **context)
-            )
-            if not p.allows(identity):
-                return False
             if hasattr(self.request_type, "is_applicable_to"):
+                # the is_applicable_to must contain a permission check, so do not need to do any check here ...
                 return self.request_type.is_applicable_to(
                     identity, topic=record, **context
                 )
-            return True
+            else:
+                return current_requests_service.check_permission(
+                    identity, "create", record=record, request_type=self.request_type, **context
+                )
         except InvalidConfigurationError:
             raise
         except Exception as e:
