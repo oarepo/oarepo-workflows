@@ -29,6 +29,9 @@ pip install -U setuptools pip wheel
 install_python_package oarepo-model-builder
 install_python_package oarepo-model-builder-drafts
 
+# local development
+pip install -e ../oarepo-model-builder-workflows
+
 if test -d thesis ; then
   rm -rf thesis
 fi

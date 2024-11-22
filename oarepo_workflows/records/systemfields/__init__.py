@@ -7,10 +7,11 @@
 #
 """Record layer, system fields."""
 
-from .state import RecordStateField
+from .state import RecordStateField, RecordStateTimestampField
 from .workflow import WorkflowField
 
 __all__ = (
     "RecordStateField",
     "WorkflowField",
+    "RecordStateTimestampField",
 )
