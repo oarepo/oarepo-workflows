@@ -67,9 +67,15 @@ def test_workflow_publish(users, logged_client, default_workflow_json, search_cl
         ThesisResourceConfig.url_prefix, json=default_workflow_json
     )
     draft_json = create_response.json
-    user_client1.post(
+
+    assert draft_json["state_timestamp"] is not None
+
+    published_json = user_client1.post(
         f"{ThesisResourceConfig.url_prefix}{draft_json['id']}/draft/actions/publish"
-    )
+    ).json
+
+    assert draft_json["state_timestamp"] != published_json["state_timestamp"]
+    assert published_json["state"] == "published"
 
     # in published state, all authenticated users should be able to read, this tests that the preset covers
     # read in all states
@@ -82,6 +88,11 @@ def test_workflow_publish(users, logged_client, default_workflow_json, search_cl
 
     assert owner_response.status_code == 200
     assert other_response.status_code == 200
+
+    assert owner_response.json["state_timestamp"] == published_json["state_timestamp"]
+    assert owner_response.json["state"] == published_json["state"]
+    assert other_response.json["state_timestamp"] == published_json["state_timestamp"]
+    assert other_response.json["state"] == published_json["state"]
 
 
 def test_query_filter(users, logged_client, default_workflow_json, search_clear):
