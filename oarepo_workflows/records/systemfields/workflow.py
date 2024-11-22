@@ -9,8 +9,22 @@
 
 from __future__ import annotations
 
+from typing import Protocol
+
 from invenio_records.systemfields.model import ModelField
 from oarepo_runtime.records.systemfields import MappingSystemFieldMixin
+
+
+class WithWorkflow(Protocol):
+    """A protocol for a record's parent containing a workflow field.
+
+    Later on, if typing.Intersection is implemented,
+    one could use it to have the record correctly typed as
+    record: Intersection[WithWorkflow, ParentRecord]
+    """
+
+    workflow: str
+    """Workflow of the record."""
 
 
 class WorkflowField(MappingSystemFieldMixin, ModelField):

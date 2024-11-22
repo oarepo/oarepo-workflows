@@ -11,7 +11,8 @@ from invenio_records_permissions.generators import Generator
 from oarepo_runtime.services.permissions import RecordOwners, UserWithRole
 
 from oarepo_workflows import WorkflowRequestPolicy, WorkflowTransitions
-from oarepo_workflows.requests import RecipientGeneratorMixin, WorkflowRequest
+from oarepo_workflows.requests import WorkflowRequest
+from oarepo_workflows.requests.generators import RecipientGeneratorMixin
 from thesis.records.api import ThesisRecord
 
 from flask_principal import Identity, UserNeed, RoleNeed
@@ -114,7 +115,11 @@ def test_is_applicable(
     id2 = Identity(id=2)
     id2.provides.add(UserNeed(2))
 
-    record = SimpleNamespace(parent=SimpleNamespace(owners=[SimpleNamespace(id=1)]))
+    record = SimpleNamespace(
+        parent=SimpleNamespace(
+            owners=[SimpleNamespace(id=1)], workflow="is_applicable_workflow"
+        )
+    )
     assert req.is_applicable(id2, record=record) is False
     assert req.is_applicable(id1, record=record) is True
 
@@ -131,15 +136,20 @@ def test_list_applicable_requests(
     id2.provides.add(UserNeed(2))
     id2.provides.add(RoleNeed("administrator"))
 
-    record = SimpleNamespace(parent=SimpleNamespace(owners=[SimpleNamespace(id=1)]))
+    record = SimpleNamespace(
+        parent=SimpleNamespace(
+            owners=[SimpleNamespace(id=1)], workflow="is_applicable_workflow"
+        )
+    )
 
     assert set(
         x[0] for x in requests.applicable_workflow_requests(id1, record=record)
     ) == {"req"}
 
-    assert set(
-        x[0] for x in requests.applicable_workflow_requests(id2, record=record)
-    ) == {"req1"}
+    assert (
+        set(x[0] for x in requests.applicable_workflow_requests(id2, record=record))
+        == set()
+    )
 
 
 def test_get_workflow_request_via_index(

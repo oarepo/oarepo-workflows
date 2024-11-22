@@ -25,3 +25,5 @@ OAREPO_PERMISSIONS_PRESETS = {
 
 WORKFLOWS: dict[str, Workflow] = {}
 """Configuration of workflows, must be provided by the user inside, for example, invenio.cfg."""
+
+OAREPO_WORKFLOWS_SET_REQUEST_PERMISSIONS = True

@@ -5,7 +5,7 @@
 # modify it under the terms of the MIT License; see LICENSE file for more
 # details.
 #
-from oarepo_workflows.requests.generators import AutoApprove
+from oarepo_workflows.requests import AutoApprove
 import pytest
 from invenio_requests.resolvers.registry import ResolverRegistry
 

@@ -32,10 +32,10 @@ __all__ = (
     "WorkflowPermission",
     "WorkflowRecordPermissionPolicy",
     "WorkflowRequestPolicy",
-    "AutoApprove",
-    "AutoRequest",
     "WorkflowRequest",
     "WorkflowRequestEscalation",
     "WorkflowTransitions",
     "FromRecordWorkflow",
+    "AutoApprove",
+    "AutoRequest",
 )

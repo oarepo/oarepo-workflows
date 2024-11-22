@@ -57,6 +57,10 @@ class MyWorkflowRequests(WorkflowRequestPolicy):
     )
 
 
+class IsApplicableTestRequestPolicy(WorkflowRequestPolicy):
+    req = WorkflowRequest(requesters=[RecordOwners()], recipients=[])
+
+
 WORKFLOWS = {
     "my_workflow": Workflow(
         label=_("Default workflow"),
@@ -67,6 +71,11 @@ WORKFLOWS = {
         label=_("Record owners read workflow"),
         permission_policy_cls=RecordOwnersReadTestWorkflowPermissionPolicy,
         request_policy_cls=MyWorkflowRequests,
+    ),
+    "is_applicable_workflow": Workflow(
+        label=_("For testing is_applicable"),
+        permission_policy_cls=DefaultWorkflowPermissions,
+        request_policy_cls=IsApplicableTestRequestPolicy,
     ),
 }
 

@@ -14,7 +14,6 @@ from typing import TYPE_CHECKING, Any, Optional
 
 import importlib_metadata
 from invenio_drafts_resources.services.records.uow import ParentRecordCommitOp
-from invenio_records_resources.records import Record
 from invenio_records_resources.services.uow import RecordCommitOp, unit_of_work
 from oarepo_runtime.datastreams.utils import get_record_service_for_record
 
@@ -28,7 +27,7 @@ from oarepo_workflows.services.auto_approve import (
 if TYPE_CHECKING:
     from flask import Flask
     from flask_principal import Identity
-    from invenio_drafts_resources.records import ParentRecord
+    from invenio_drafts_resources.records import ParentRecord, Record
     from invenio_records_resources.services.uow import UnitOfWork
 
     from oarepo_workflows.base import (
@@ -36,6 +35,7 @@ if TYPE_CHECKING:
         Workflow,
         WorkflowChangeNotifier,
     )
+    from oarepo_workflows.records.systemfields.workflow import WithWorkflow
 
 
 class OARepoWorkflows:
@@ -70,6 +70,11 @@ class OARepoWorkflows:
                 )
 
         app.config.setdefault("WORKFLOWS", ext_config.WORKFLOWS)
+
+        app.config.setdefault(
+            "OAREPO_WORKFLOWS_SET_REQUEST_PERMISSIONS",
+            ext_config.OAREPO_WORKFLOWS_SET_REQUEST_PERMISSIONS,
+        )
 
     def init_services(self) -> None:
         """Initialize workflow services."""
@@ -214,29 +219,29 @@ class OARepoWorkflows:
         :raises MissingWorkflowError: if the workflow is not found
         :raises InvalidWorkflowError: if the workflow is invalid
         """
-        if isinstance(record, Record):
+        if hasattr(record, "parent"):
             try:
-                parent = record.parent  # noqa for typing: we do not have a better type for record with parent
+                record_parent: WithWorkflow = record.parent  # noqa for typing: we do not have a better type for record with parent
             except AttributeError as e:
                 raise MissingWorkflowError(
                     "Record does not have a parent attribute, is it a draft-enabled record?",
                     record=record,
                 ) from e
             try:
-                workflow_id = parent.workflow
+                workflow_id = record_parent.workflow
             except AttributeError as e:
                 raise MissingWorkflowError(
                     "Parent record does not have a workflow attribute.", record=record
                 ) from e
         else:
             try:
-                parent = record["parent"]
+                dict_parent: dict = record["parent"]
             except KeyError as e:
                 raise MissingWorkflowError(
                     "Record does not have a parent attribute.", record=record
                 ) from e
             try:
-                workflow_id = parent["workflow"]
+                workflow_id = dict_parent["workflow"]
             except KeyError as e:
                 raise MissingWorkflowError(
                     "Parent record does not have a workflow attribute.", record=record
@@ -246,7 +251,7 @@ class OARepoWorkflows:
             return self.record_workflows[workflow_id]
         except KeyError as e:
             raise InvalidWorkflowError(
-                f"Workflow {parent.workflow} doesn't exist in the configuration.",
+                f"Workflow {workflow_id} doesn't exist in the configuration.",
                 record=record,
             ) from e
 
@@ -273,3 +278,36 @@ def finalize_app(app: Flask) -> None:
         ext.auto_approve_service,
         service_id=ext.auto_approve_service.config.service_id,
     )
+
+    if app.config["OAREPO_WORKFLOWS_SET_REQUEST_PERMISSIONS"]:
+        patch_request_permissions(app)
+
+
+def patch_request_permissions(app: Flask) -> None:
+    """Replace invenio request permissions.
+
+    If permissions for requests are the plain invenio permissions,
+    replace those with workflow-based ones. If user set their own
+    permissions, keep those intact.
+    """
+    # patch invenio requests
+    from invenio_requests.services.permissions import (
+        PermissionPolicy as OriginalPermissionPolicy,
+    )
+
+    with app.app_context():
+        from invenio_requests.proxies import current_requests_service
+
+        from oarepo_workflows.requests.permissions import (
+            CreatorsFromWorkflowRequestsPermissionPolicy,
+        )
+
+        current_permission_policy = app.config.get("REQUESTS_PERMISSION_POLICY")
+        if current_permission_policy is OriginalPermissionPolicy:
+            app.config["REQUESTS_PERMISSION_POLICY"] = (
+                CreatorsFromWorkflowRequestsPermissionPolicy
+            )
+            assert (
+                current_requests_service.config.permission_policy_cls
+                is CreatorsFromWorkflowRequestsPermissionPolicy
+            )

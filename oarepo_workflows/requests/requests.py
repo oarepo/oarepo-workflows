@@ -14,17 +14,20 @@ from functools import cached_property
 from logging import getLogger
 from typing import TYPE_CHECKING, Any, Optional
 
-from flask_principal import Identity, Permission
-from invenio_requests.proxies import current_request_type_registry, current_requests_service
+from invenio_requests.proxies import (
+    current_request_type_registry,
+    current_requests_service,
+)
 
 from oarepo_workflows.errors import InvalidConfigurationError
 from oarepo_workflows.proxies import current_oarepo_workflows
-from oarepo_workflows.requests import RecipientGeneratorMixin
-from oarepo_workflows.requests.generators import MultipleGeneratorsGenerator
+from oarepo_workflows.requests.generators import RecipientGeneratorMixin
+from oarepo_workflows.requests.generators.multiple import MultipleGeneratorsGenerator
 
 if TYPE_CHECKING:
     from datetime import timedelta
 
+    from flask_principal import Identity
     from invenio_records_permissions.generators import Generator
     from invenio_records_resources.records.api import Record
     from invenio_requests.customizations.request_types import RequestType
@@ -93,7 +96,11 @@ class WorkflowRequest:
                 )
             else:
                 return current_requests_service.check_permission(
-                    identity, "create", record=record, request_type=self.request_type, **context
+                    identity,
+                    "create",
+                    record=record,
+                    request_type=self.request_type,
+                    **context,
                 )
         except InvalidConfigurationError:
             raise

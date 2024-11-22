@@ -5,8 +5,8 @@
 # modify it under the terms of the MIT License; see LICENSE file for more
 # details.
 #
-from oarepo_workflows import AutoRequest
-from oarepo_workflows.requests.generators import auto_request_need
+from oarepo_workflows.requests import AutoRequest
+from oarepo_workflows.requests.generators.auto import auto_request_need
 
 
 def test_auto_request_needs(app):

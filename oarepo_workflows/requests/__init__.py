@@ -9,7 +9,7 @@
 
 from __future__ import annotations
 
-from .generators import AutoApprove, AutoRequest, RecipientGeneratorMixin
+from .generators import AutoApprove, AutoRequest
 from .policy import (
     WorkflowRequestPolicy,
 )
@@ -22,11 +22,10 @@ from .requests import (
 
 __all__ = (
     "WorkflowRequestPolicy",
-    "AutoApprove",
-    "AutoRequest",
-    "RecipientGeneratorMixin",
     "RecipientEntityReference",
     "WorkflowRequest",
     "WorkflowRequestEscalation",
     "WorkflowTransitions",
+    "AutoApprove",
+    "AutoRequest",
 )
