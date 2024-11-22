@@ -1,3 +1,10 @@
+#
+# Copyright (C) 2024 CESNET z.s.p.o.
+#
+# oarepo-workflows is free software; you can redistribute it and/or
+# modify it under the terms of the MIT License; see LICENSE file for more
+# details.
+#
 import os
 
 import pytest
@@ -9,7 +16,9 @@ from invenio_app.factory import create_api
 from invenio_i18n import lazy_gettext as _
 from invenio_records_permissions.generators import Generator
 from invenio_users_resources.records import UserAggregate
-from oarepo_runtime.services.generators import RecordOwners
+from invenio_requests.customizations.request_types import RequestType
+from invenio_requests.proxies import current_request_type_registry
+from oarepo_runtime.services.permissions import RecordOwners
 
 from oarepo_workflows.base import Workflow
 from oarepo_workflows.requests import (
@@ -25,7 +34,6 @@ class RecordOwnersReadTestWorkflowPermissionPolicy(DefaultWorkflowPermissions):
 
 
 class Administration(Generator):
-
     def needs(self, **kwargs):
         """Enabling Needs."""
         return [ActionNeed("administration")]
@@ -49,6 +57,10 @@ class MyWorkflowRequests(WorkflowRequestPolicy):
     )
 
 
+class IsApplicableTestRequestPolicy(WorkflowRequestPolicy):
+    req = WorkflowRequest(requesters=[RecordOwners()], recipients=[])
+
+
 WORKFLOWS = {
     "my_workflow": Workflow(
         label=_("Default workflow"),
@@ -59,6 +71,11 @@ WORKFLOWS = {
         label=_("Record owners read workflow"),
         permission_policy_cls=RecordOwnersReadTestWorkflowPermissionPolicy,
         request_policy_cls=MyWorkflowRequests,
+    ),
+    "is_applicable_workflow": Workflow(
+        label=_("For testing is_applicable"),
+        permission_policy_cls=DefaultWorkflowPermissions,
+        request_policy_cls=IsApplicableTestRequestPolicy,
     ),
 }
 
@@ -128,7 +145,6 @@ def input_data(sample_metadata_list):
 
 @pytest.fixture()
 def users(app, db, UserFixture):
-
     user1 = UserFixture(
         email="user1@example.org",
         password="password",
@@ -212,3 +228,14 @@ def app_config(app_config):
 @pytest.fixture()
 def default_workflow_json():
     return {"parent": {"workflow": "my_workflow"}}
+
+
+@pytest.fixture()
+def extra_request_types():
+    def create_rt(type_id):
+        return type("Req", (RequestType,), {"type_id": type_id})
+
+    current_request_type_registry.register_type(create_rt("req"), force=True)
+    current_request_type_registry.register_type(create_rt("req1"), force=True)
+    current_request_type_registry.register_type(create_rt("req2"), force=True)
+    current_request_type_registry.register_type(create_rt("req3"), force=True)

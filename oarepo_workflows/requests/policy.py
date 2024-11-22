@@ -1,102 +1,35 @@
-import dataclasses
-import inspect
-from datetime import timedelta
-from typing import Dict, List, Optional, Tuple
+#
+# Copyright (C) 2024 CESNET z.s.p.o.
+#
+# oarepo-workflows is free software; you can redistribute it and/or
+# modify it under the terms of the MIT License; see LICENSE file for more
+# details.
+#
+"""Request workflow policy definition."""
 
-from invenio_access.permissions import SystemRoleNeed
-from invenio_records_permissions.generators import Generator
+from __future__ import annotations
 
-from oarepo_workflows.proxies import current_oarepo_workflows
-from oarepo_workflows.requests.events import WorkflowEvent
+from typing import TYPE_CHECKING, Any
 
+from .requests import (
+    WorkflowRequest,
+)
 
-@dataclasses.dataclass
-class WorkflowRequest:
-    requesters: List[Generator] | Tuple[Generator]
-    recipients: List[Generator] | Tuple[Generator]
-    events: Dict[str, WorkflowEvent] = dataclasses.field(default_factory=lambda: {})
-    transitions: Optional["WorkflowTransitions"] = dataclasses.field(
-        default_factory=lambda: WorkflowTransitions()
-    )
-    escalations: Optional[List["WorkflowRequestEscalation"]] = None
-
-    def reference_receivers(self, **kwargs):
-        if not self.recipients:
-            return None
-        for generator in self.recipients:
-            if isinstance(generator, RecipientGeneratorMixin):
-                ref = generator.reference_receivers(**kwargs)
-                if ref:
-                    return ref[0]
-        return None
-
-    def needs(self, **kwargs):
-        return {
-            need for generator in self.requesters for need in generator.needs(**kwargs)
-        }
-
-    def excludes(self, **kwargs):
-        return {
-            exclude
-            for generator in self.requesters
-            for exclude in generator.excludes(**kwargs)
-        }
-
-    def query_filters(self, **kwargs):
-        return [
-            query_filter
-            for generator in self.requesters
-            for query_filter in generator.query_filter(**kwargs)
-        ]
-
-    @property
-    def allowed_events(self):
-        return current_oarepo_workflows.default_workflow_event_submitters | self.events
-
-
-@dataclasses.dataclass
-class WorkflowTransitions:
-    """
-    Transitions for a workflow request. If the request is submitted and submitted is filled,
-    the record (topic) of the request will be moved to state defined in submitted.
-    If the request is approved, the record will be moved to state defined in approved.
-    If the request is rejected, the record will be moved to state defined in rejected.
-    """
-
-    submitted: Optional[str] = None
-    accepted: Optional[str] = None
-    declined: Optional[str] = None
-
-    def __getitem__(self, item):
-        try:
-            return getattr(self, item)
-        except AttributeError:
-            raise KeyError(
-                f"Transition {item} not defined in {self.__class__.__name__}"
-            )
-
-
-@dataclasses.dataclass
-class WorkflowRequestEscalation:
-    """
-    If the request is not approved/declined/cancelled in time, it might be passed to another recipient
-    (such as a supervisor, administrator, ...). The escalation is defined by the time after which the
-    request is escalated and the recipients of the escalation.
-    """
-
-    after: timedelta
-    recipients: List[Generator] | Tuple[Generator]
+if TYPE_CHECKING:
+    from flask_principal import Identity
+    from invenio_records_resources.records.api import Record
 
 
 class WorkflowRequestPolicy:
-    """Base class for workflow request policies. Inherit from this class
+    """Base class for workflow request policies.
+
+    Inherit from this class
     and add properties to define specific requests for a workflow.
 
     The name of the property is the request_type name and the value must be
     an instance of WorkflowRequest.
 
     Example:
-
         class MyWorkflowRequests(WorkflowRequestPolicy):
             delete_request = WorkflowRequest(
                 requesters = [
@@ -109,59 +42,52 @@ class WorkflowRequestPolicy:
                     rejected = 'published'
                 )
             )
+
     """
 
-    def __getitem__(self, item):
+    def __init__(self):
+        """Initialize the request policy."""
+        for rt_code, rt in self.items():
+            rt._request_type = rt_code
+
+    def __getitem__(self, request_type_id: str) -> WorkflowRequest:
+        """Get the workflow request type by its id."""
         try:
-            return getattr(self, item)
+            return getattr(self, request_type_id)
         except AttributeError:
             raise KeyError(
-                f"Request type {item} not defined in {self.__class__.__name__}"
-            )
+                f"Request type {request_type_id} not defined in {self.__class__.__name__}"
+            ) from None
 
-    def items(self):
-        return inspect.getmembers(self, lambda x: isinstance(x, WorkflowRequest))
+    def items(self) -> list[tuple[str, WorkflowRequest]]:
+        """Return the list of request types and their instances.
 
-
-class RecipientGeneratorMixin:
-    """
-    Mixin for permission generators that can be used as recipients in WorkflowRequest.
-    """
-
-    def reference_receivers(self, record=None, request_type=None, **kwargs):
+        This call mimics mapping items() method.
         """
-        Taken the context (will include record amd request type at least),
-        return the reference receiver(s) of the request.
+        ret = []
+        parent_attrs = set(dir(WorkflowRequestPolicy))
+        for attr in dir(self.__class__):
+            if parent_attrs and attr in parent_attrs:
+                continue
+            if attr.startswith("_"):
+                continue
+            possible_request = getattr(self, attr, None)
+            if isinstance(possible_request, WorkflowRequest):
+                ret.append((attr, possible_request))
+        return ret
 
-        Should return a list of receiver classes (whatever they are) or dictionary
-        serialization of the receiver classes.
+    def applicable_workflow_requests(
+        self, identity: Identity, *, record: Record, **context: Any
+    ) -> list[tuple[str, WorkflowRequest]]:
+        """Return a list of applicable requests for the identity and context.
 
-        Might return empty list or None to indicate that the generator does not
-        provide any receivers.
+        :param identity: Identity of the requester.
+        :param context: Context of the request that is passed to the requester generators.
+        :return: List of tuples (request_type_id, request) that are applicable for the identity and context.
         """
-        raise NotImplementedError("Implement reference receiver in your code")
+        ret = []
 
-
-auto_request_need = SystemRoleNeed("auto_request")
-auto_approve_need = SystemRoleNeed("auto_approve")
-
-
-class AutoRequest(Generator):
-    """
-    Auto request generator. This generator is used to automatically create a request
-    when a record is moved to a specific state.
-    """
-
-    def needs(self, **kwargs):
-        """Enabling Needs."""
-        return [auto_request_need]
-
-
-class AutoApprove(RecipientGeneratorMixin, Generator):
-    """
-    Auto approve generator. If the generator is used within recipients of a request,
-    the request will be automatically approved when the request is submitted.
-    """
-
-    def reference_receivers(self, record=None, request_type=None, **kwargs):
-        return [{"auto_approve": "true"}]
+        for name, request in self.items():
+            if request.is_applicable(identity, record=record, **context):
+                ret.append((name, request))
+        return ret
