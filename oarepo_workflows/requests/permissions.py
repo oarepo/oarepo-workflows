@@ -7,6 +7,8 @@
 #
 """Base permission policy that overwrites invenio-requests."""
 
+from __future__ import annotations
+
 from invenio_records_permissions.generators import SystemProcess
 from invenio_requests.customizations.event_types import CommentEventType, LogEventType
 from invenio_requests.services.generators import Creator, Receiver

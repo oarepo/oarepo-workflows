@@ -223,7 +223,7 @@ class OARepoWorkflows:
         """
         return self.app.config.get("DEFAULT_WORKFLOW_EVENTS", {})
 
-    def get_workflow(self, record: Record | dict) -> Workflow:
+    def get_workflow(self, record: Record | dict[str, Any]) -> Workflow:
         """Get the workflow for a record.
 
         :param record:  record to get the workflow for
@@ -246,7 +246,7 @@ class OARepoWorkflows:
                 ) from e
         else:
             try:
-                dict_parent: dict = record["parent"]
+                dict_parent: dict[str, Any] = record["parent"]
             except KeyError as e:
                 raise MissingWorkflowError(
                     "Record does not have a parent attribute.", record=record
