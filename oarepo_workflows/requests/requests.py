@@ -21,8 +21,9 @@ from invenio_requests.proxies import (
 
 from oarepo_workflows.errors import InvalidConfigurationError
 from oarepo_workflows.proxies import current_oarepo_workflows
-from oarepo_workflows.requests.generators import RecipientGeneratorMixin
-from oarepo_workflows.requests.generators.multiple import MultipleGeneratorsGenerator
+from oarepo_workflows.requests.generators.multiple_entities import (
+    MultipleEntitiesGenerator,
+)
 
 if TYPE_CHECKING:
     from datetime import timedelta
@@ -68,7 +69,7 @@ class WorkflowRequest:
     @cached_property
     def requester_generator(self) -> Generator:
         """Return the requesters as a single requester generator."""
-        return MultipleGeneratorsGenerator(self.requesters)
+        return MultipleEntitiesGenerator(self.requesters)
 
     def recipient_entity_reference(self, **context: Any) -> dict | None:
         """Return the reference receiver of the workflow request with the given context.
@@ -183,16 +184,6 @@ def RecipientEntityReference(request: WorkflowRequest, **context: Any) -> dict |
     if not request.recipients:
         return None
 
-    all_receivers = []
-    for generator in request.recipients:
-        if isinstance(generator, RecipientGeneratorMixin):
-            ref: list[dict] = generator.reference_receivers(**context)
-            if ref:
-                all_receivers.extend(ref)
-
-    if all_receivers:
-        if len(all_receivers) > 1:
-            log.debug("Multiple receivers for request %s: %s", request, all_receivers)
-        return all_receivers[0]
-
-    return None
+    generator = MultipleEntitiesGenerator(request.recipients)
+    receivers = generator.reference_receivers(**context)
+    return receivers[0] if receivers else None

@@ -23,6 +23,10 @@ from oarepo_workflows.services.auto_approve import (
     AutoApproveEntityService,
     AutoApproveEntityServiceConfig,
 )
+from oarepo_workflows.services.multiple_entities import (
+    MultipleEntitiesEntityService,
+    MultipleEntitiesEntityServiceConfig,
+)
 
 if TYPE_CHECKING:
     from flask import Flask
@@ -76,11 +80,18 @@ class OARepoWorkflows:
             ext_config.OAREPO_WORKFLOWS_SET_REQUEST_PERMISSIONS,
         )
 
+        app.config.setdefault("REQUESTS_ALLOWED_RECEIVERS", []).extend(
+            ext_config.WORKFLOWS_ALLOWED_REQUEST_RECEIVERS
+        )
+
     def init_services(self) -> None:
         """Initialize workflow services."""
         # noinspection PyAttributeOutsideInit
         self.auto_approve_service = AutoApproveEntityService(
             config=AutoApproveEntityServiceConfig()
+        )
+        self.multiple_recipients_service = MultipleEntitiesEntityService(
+            config=MultipleEntitiesEntityServiceConfig()
         )
 
     @cached_property
@@ -272,11 +283,16 @@ def finalize_app(app: Flask) -> None:
     """
     records_resources = app.extensions["invenio-records-resources"]
 
-    ext = app.extensions["oarepo-workflows"]
+    ext: OARepoWorkflows = app.extensions["oarepo-workflows"]
 
     records_resources.registry.register(
         ext.auto_approve_service,
         service_id=ext.auto_approve_service.config.service_id,
+    )
+
+    records_resources.registry.register(
+        ext.multiple_recipients_service,
+        service_id=ext.multiple_recipients_service.config.service_id,
     )
 
     if app.config["OAREPO_WORKFLOWS_SET_REQUEST_PERMISSIONS"]:
