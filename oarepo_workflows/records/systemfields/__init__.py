@@ -7,6 +7,8 @@
 #
 """Record layer, system fields."""
 
+from __future__ import annotations
+
 from .state import RecordStateField, RecordStateTimestampField
 from .workflow import WorkflowField
 

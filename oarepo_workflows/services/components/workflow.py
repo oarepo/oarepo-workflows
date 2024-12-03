@@ -31,7 +31,7 @@ class WorkflowComponent(ServiceComponent):
     def create(
         self,
         identity: Identity,
-        data: Optional[dict] = None,
+        data: Optional[dict[str, Any]] = None,
         record: Optional[Record] = None,
         **kwargs: Any,
     ) -> None:
