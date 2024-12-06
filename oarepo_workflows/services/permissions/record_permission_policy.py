@@ -40,6 +40,7 @@ class WorkflowRecordPermissionPolicy(RecordPermissionPolicy):
     can_read_files = [FromRecordWorkflow("read_files")]
     can_update_files = [FromRecordWorkflow("update_files")]
     can_delete_files = [FromRecordWorkflow("delete_files")]
+    can_list_files = [FromRecordWorkflow("list_files")]
 
     can_read_draft = [FromRecordWorkflow("read_draft")]
     can_update_draft = [FromRecordWorkflow("update_draft")]
