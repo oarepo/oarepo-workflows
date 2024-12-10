@@ -7,23 +7,28 @@
 #
 from types import SimpleNamespace
 
+import pytest
+from flask_principal import Identity, RoleNeed, UserNeed
 from invenio_records_permissions.generators import Generator
 from oarepo_runtime.services.permissions import RecordOwners, UserWithRole
+from opensearch_dsl.query import Terms
 
 from oarepo_workflows import WorkflowRequestPolicy, WorkflowTransitions
 from oarepo_workflows.requests import WorkflowRequest
 from oarepo_workflows.requests.generators import RecipientGeneratorMixin
 from thesis.records.api import ThesisRecord
 
-from flask_principal import Identity, UserNeed, RoleNeed
-import pytest
-from opensearch_dsl.query import Terms
-
 
 class TestRecipient(RecipientGeneratorMixin, Generator):
     def reference_receivers(self, record=None, request_type=None, **kwargs):
         assert record is not None
         return [{"user": "1"}]
+
+
+class TestRecipient2(RecipientGeneratorMixin, Generator):
+    def reference_receivers(self, record=None, request_type=None, **kwargs):
+        assert record is not None
+        return [{"user": "2"}]
 
 
 class NullRecipient(RecipientGeneratorMixin, Generator):
@@ -75,6 +80,22 @@ def test_workflow_requests(users, logged_client, search_clear, record_service):
     )
     rec = ThesisRecord.create({})
     assert req.recipient_entity_reference(record=rec) == {"user": "1"}
+
+
+def test_workflow_requests_multiple_recipients(
+    users, logged_client, search_clear, record_service
+):
+    req = WorkflowRequest(
+        requesters=[RecordOwners()],
+        recipients=[
+            TestRecipient(),
+            TestRecipient2(),
+        ],
+    )
+    rec = ThesisRecord.create({})
+    assert req.recipient_entity_reference(record=rec) == {
+        "multiple": '[{"user": "1"}, {"user": "2"}]'
+    }
 
 
 def test_workflow_requests_no_recipient(
