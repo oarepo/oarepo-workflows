@@ -99,7 +99,9 @@ class MultipleEntitiesGenerator(RecipientGeneratorMixin, Generator):
                     f"MultipleGeneratorsGenerator."
                 )
 
-            reference = generator.reference_receivers(record, request_type, **context)
+            reference = generator.reference_receivers(
+                record=record, request_type=request_type, **context
+            )
             if reference:
                 references.extend(reference)
         if not references:
