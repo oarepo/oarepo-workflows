@@ -144,10 +144,11 @@ class WorkflowTransitions:
     submitted: Optional[str] = None
     accepted: Optional[str] = None
     declined: Optional[str] = None
+    cancelled: Optional[str] = None
 
     def __getitem__(self, transition_name: str):
         """Get the transition by name."""
-        if transition_name not in ["submitted", "accepted", "declined"]:
+        if transition_name not in ["submitted", "accepted", "declined", "cancelled"]:
             raise KeyError(
                 f"Transition {transition_name} not defined in {self.__class__.__name__}"
             )
