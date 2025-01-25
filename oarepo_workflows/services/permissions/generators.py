@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 def _make_query(generators: Iterable[Generator], **context: Any) -> dict | None:
     queries = [g.query_filter(**context) for g in generators]
     queries = [q for q in queries if q]
-    return reduce(operator.or_, queries) if queries else None
+    return reduce(operator.or_, queries) if queries else dsl.Q("match_none")
 
 
 class FromRecordWorkflow(Generator):
