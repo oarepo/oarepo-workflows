@@ -106,7 +106,7 @@ class WorkflowRecordPermissionPolicy(RecordPermissionPolicy):
     @property
     def query_filters(self) -> list[dict]:
         """Return query filters from the delegated workflow permissions."""
-        if not (self.action == "read" or self.action == "read_draft"):
+        if self.action not in ("read", "read_draft", "read_deleted"):
             return super().query_filters
         workflows = current_oarepo_workflows.record_workflows
         queries = []
