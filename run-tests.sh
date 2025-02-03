@@ -3,6 +3,9 @@
 PYTHON="${PYTHON:-python3.12}"
 OAREPO_VERSION="${OAREPO_VERSION:-12}"
 
+export PIP_EXTRA_INDEX_URL=https://gitlab.cesnet.cz/api/v4/projects/1408/packages/pypi/simple
+export UV_EXTRA_INDEX_URL=https://gitlab.cesnet.cz/api/v4/projects/1408/packages/pypi/simple
+
 echo "Will run tests with python ${PYTHON} and oarepo version ${OAREPO_VERSION}"
 
 set -e
@@ -21,7 +24,6 @@ TESTS_VENV=.venv-tests
 if test -d $BUILDER_VENV ; then
 	rm -rf $BUILDER_VENV
 fi
-curl -L -o forked_install.sh https://github.com/oarepo/nrp-devtools/raw/main/tests/forked_install.sh
 
 $PYTHON -m venv $BUILDER_VENV
 . $BUILDER_VENV/bin/activate
@@ -41,10 +43,7 @@ fi
 $PYTHON -m venv $TESTS_VENV
 . $TESTS_VENV/bin/activate
 pip install -U setuptools pip wheel
-pip install "oarepo[tests]==${OAREPO_VERSION}.*"
-sh forked_install.sh invenio-records-resources
-sh forked_install.sh invenio-requests
-sh forked_install.sh invenio-drafts-resources
+pip install "oarepo[tests,rdm]==${OAREPO_VERSION}.*"
 pip install -e "./thesis[tests]"
 pip install -e .
 
