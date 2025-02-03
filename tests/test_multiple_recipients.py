@@ -43,7 +43,7 @@ class UserWithRole(RecipientGeneratorMixin, OriginalUserWithRole):
         return [{"role": role} for role in self.roles]
 
 
-def test_multiple_recipients_generator() -> None:
+def test_multiple_recipients_generator(app, search_clear) -> None:
     """Test multiple recipients generator."""
     a = MultipleEntitiesGenerator(
         [
@@ -69,7 +69,7 @@ def test_multiple_recipients_generator() -> None:
     ]
 
 
-def test_multiple_recipients_resolver(app: Flask) -> None:
+def test_multiple_recipients_resolver(app: Flask, search_clear) -> None:
     """Test multiple recipients resolver."""
     resolved = ResolverRegistry.resolve_entity(
         {"multiple": '[{"group":"admin"},{"group":"blah"}]'}
