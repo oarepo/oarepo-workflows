@@ -115,7 +115,7 @@ def test_workflow_requests_no_recipient(
     assert req2.recipient_entity_reference(record=rec) is None
 
 
-def test_request_policy_access(app):
+def test_request_policy_access(app, search_clear):
     request_policy = app.config["WORKFLOWS"]["my_workflow"].requests()
     assert getattr(request_policy, "delete_request", None)
     assert not getattr(request_policy, "non_existing_request", None)

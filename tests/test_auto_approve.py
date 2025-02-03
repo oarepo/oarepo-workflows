@@ -5,14 +5,14 @@
 # modify it under the terms of the MIT License; see LICENSE file for more
 # details.
 #
-from oarepo_workflows.requests import AutoApprove
 import pytest
 from invenio_requests.resolvers.registry import ResolverRegistry
 
+from oarepo_workflows.requests import AutoApprove
 from oarepo_workflows.resolvers.auto_approve import AutoApproveEntity
 
 
-def test_auto_approve_generator():
+def test_auto_approve_generator(app, search_clear):
     a = AutoApprove()
 
     with pytest.raises(ValueError):
@@ -27,7 +27,7 @@ def test_auto_approve_generator():
     assert a.reference_receivers() == [{"auto_approve": "true"}]
 
 
-def test_auto_approve_resolver(app):
+def test_auto_approve_resolver(app, search_clear):
     resolved = ResolverRegistry.resolve_entity({"auto_approve": "true"})
     assert isinstance(resolved, AutoApproveEntity)
     #
