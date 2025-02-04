@@ -82,6 +82,7 @@ class DefaultWorkflowPermissions(RecordPermissionPolicy):
     can_read_files = [SameAs("can_read")]
     can_get_content_files = [SameAs("can_read")]
     can_list_files = [SameAs("can_read")]
+    can_manage_files = [Disable()]
 
     can_read_draft = [SameAs("can_read")]
     can_update_draft = [SameAs("can_update")]
