@@ -167,24 +167,37 @@ class WorkflowRequestEscalation:
     after: timedelta
     recipients: list[Generator] | tuple[Generator]
 
+    @property
+    def escalation_id(self):
+        """Return the escalation ID."""
+        return str(self.after.total_seconds())
+
+    def __repr__(self):
+        """Representation of the WorkflowRequestEscalation."""
+        return str(self)
+
+    def __str__(self):
+        """String representation of WorkflowRequestEscalation containing after time and recipients."""
+        return f'{self.after=},{self.recipients=}'
 
 # noinspection PyPep8Naming
-def RecipientEntityReference(request: WorkflowRequest, **context: Any) -> dict | None:
-    """Return the reference receiver of the workflow request with the given context.
+def RecipientEntityReference(request_or_escalation: WorkflowRequest | WorkflowRequestEscalation,
+                             **context: Any) -> dict | None:
+    """Return the reference receiver of the workflow request or workflow request escalation with the given context.
 
     Note: invenio supports only one receiver, so the first one is returned at the moment.
     Later on, a composite receiver can be implemented.
 
-    :param request: Workflow request.
+    :param request_or_escalation: Workflow request or WorkflowRequestEscalation.
     :param context: Context of the request.
 
     :return: Reference receiver as a dictionary or None if no receiver has been resolved.
 
     Implementation note: intentionally looks like a class, later on might be converted into one extending from dict.
     """
-    if not request.recipients:
+    if not request_or_escalation.recipients:
         return None
 
-    generator = MultipleEntitiesGenerator(request.recipients)
+    generator = MultipleEntitiesGenerator(request_or_escalation.recipients)
     receivers = generator.reference_receivers(**context)
     return receivers[0] if receivers else None
