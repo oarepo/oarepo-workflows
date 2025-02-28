@@ -8,8 +8,8 @@
 import pytest
 
 from oarepo_workflows.errors import InvalidWorkflowError
-from thesis.resources.records.config import ThesisResourceConfig
 from thesis.records.api import ThesisDraft, ThesisRecord
+from thesis.resources.records.config import ThesisResourceConfig
 
 
 def test_create_without_workflow(
@@ -118,6 +118,7 @@ def test_query_filter(users, logged_client, default_workflow_json, search_clear)
     )
 
     ThesisRecord.index.refresh()
+    ThesisDraft.index.refresh()
 
     search_u1 = user_client1.get(ThesisResourceConfig.url_prefix).json
     search_u2 = user_client2.get(ThesisResourceConfig.url_prefix).json

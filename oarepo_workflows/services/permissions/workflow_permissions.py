@@ -58,6 +58,13 @@ class DefaultWorkflowPermissions(RecordPermissionPolicy):
         IfInState("draft", [RecordOwners()]),
         IfInState("published", [AuthenticatedUser()]),
     ]
+    # can_read_deleted is used by RDM. As long as workflows are
+    # not intended for rdm records only, we need to keep this permission
+    # simple and the implementation must use RDM-based implementation
+    #
+    # TODO: we should provide somewhere RDM aware workflow permissions
+    # so that repositories can use them out of the box
+    can_read_deleted = [SystemProcess()]
     can_update = [IfInState("draft", [RecordOwners()])]
     can_delete = [
         IfInState("draft", [RecordOwners()]),
@@ -75,6 +82,7 @@ class DefaultWorkflowPermissions(RecordPermissionPolicy):
     can_read_files = [SameAs("can_read")]
     can_get_content_files = [SameAs("can_read")]
     can_list_files = [SameAs("can_read")]
+    can_manage_files = [Disable()]
 
     can_read_draft = [SameAs("can_read")]
     can_update_draft = [SameAs("can_update")]

@@ -21,12 +21,22 @@ if TYPE_CHECKING:
     from invenio_records_resources.records import Record
 
 
+class WorkflowSetupComponent(ServiceComponent):
+    pass
+
+
 class WorkflowComponent(ServiceComponent):
     """Workflow component.
 
     This component is responsible for checking if the workflow is defined in the input data
     when record is created. If it is not present, it raises an error.
     """
+
+    depends_on = [WorkflowSetupComponent]
+    affects = "*"
+    # put it before metadata component to make sure that the workflow
+    # is set at the beginning of the record creation process. This makes sure
+    # that for example file checks are done with the correct workflow set.
 
     def create(
         self,

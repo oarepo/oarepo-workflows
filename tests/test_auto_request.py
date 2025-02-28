@@ -9,5 +9,5 @@ from oarepo_workflows.requests import AutoRequest
 from oarepo_workflows.requests.generators.auto import auto_request_need
 
 
-def test_auto_request_needs(app):
+def test_auto_request_needs(app, search_clear):
     assert AutoRequest().needs() == [auto_request_need]
