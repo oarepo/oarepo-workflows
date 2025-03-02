@@ -233,18 +233,30 @@ class SameAs(Generator):
         """Get the generators from the policy."""
         return getattr(policy, self.delegated_permission_name)
 
-    def needs(self, *, policy: RecordPermissionPolicy, **context: Any) -> list[Need]:
+    def needs(
+        self, *, policy: RecordPermissionPolicy | None = None, **context: Any
+    ) -> list[Need]:
         """Get the needs from the policy."""
+        if policy is None:
+            raise ValueError(
+                f"SameAs: Policy must be passed to the generator. Got the following context: {context.keys()}"
+            )
         needs = [
-            generator.needs(**context)
+            generator.needs(policy=policy, **context)
             for generator in self._generators(policy=policy, **context)
         ]
         return list(chain.from_iterable(needs))
 
-    def excludes(self, *, policy: RecordPermissionPolicy, **context: Any) -> list[Need]:
+    def excludes(
+        self, *, policy: RecordPermissionPolicy | None = None, **context: Any
+    ) -> list[Need]:
         """Get the excludes from the policy."""
+        if policy is None:
+            raise ValueError(
+                f"SameAs: Policy must be passed to the generator. Got the following context: {context.keys()}"
+            )
         excludes = [
-            generator.excludes(**context)
+            generator.excludes(policy=policy, **context)
             for generator in self._generators(policy=policy, **context)
         ]
         return list(chain.from_iterable(excludes))
