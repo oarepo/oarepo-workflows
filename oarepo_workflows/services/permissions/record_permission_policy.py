@@ -41,12 +41,14 @@ class WorkflowRecordPermissionPolicy(RecordPermissionPolicy):
     can_new_version = [FromRecordWorkflow("new_version")]
     can_publish = [FromRecordWorkflow("publish")]
     can_read = [FromRecordWorkflow("read")]
+    can_read_all_records = [FromRecordWorkflow("read_all_records")]
     can_read_deleted = [FromRecordWorkflow("read_deleted")]
     can_read_draft = [FromRecordWorkflow("read_draft")]
     can_read_files = [FromRecordWorkflow("read_files")]
     can_search = [SystemProcess(), AnyUser()]
     can_search_drafts = [SystemProcess(), AnyUser()]
     can_search_versions = [SystemProcess(), AnyUser()]
+    can_search_all_records = [SystemProcess(), AnyUser()]
     can_set_content_files = [FromRecordWorkflow("set_content_files")]
     can_update = [FromRecordWorkflow("update")]
     can_update_draft = [FromRecordWorkflow("update_draft")]
@@ -106,7 +108,12 @@ class WorkflowRecordPermissionPolicy(RecordPermissionPolicy):
     @property
     def query_filters(self) -> list[dict]:
         """Return query filters from the delegated workflow permissions."""
-        if self.action not in ("read", "read_draft", "read_deleted"):
+        if self.action not in (
+            "read",
+            "read_draft",
+            "read_deleted",
+            "read_all_records",
+        ):
             return super().query_filters
         workflows = current_oarepo_workflows.record_workflows
         queries = []
