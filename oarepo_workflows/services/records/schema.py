@@ -11,9 +11,14 @@ from __future__ import annotations
 
 import marshmallow as ma
 from invenio_drafts_resources.services.records.schema import ParentSchema
-
+from invenio_rdm_records.services.schemas.parent import RDMParentSchema
 
 class WorkflowParentSchema(ParentSchema):
     """Schema for parent record with workflow support."""
+
+    workflow = ma.fields.String()
+
+class RDMWorkflowParentSchema(RDMParentSchema):
+    """RDM based schema for parent record with workflow support."""
 
     workflow = ma.fields.String()
