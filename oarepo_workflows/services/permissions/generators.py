@@ -156,7 +156,7 @@ class IfInState(ConditionalGenerator):
 
     def __init__(
         self,
-        state: str,
+        state: str | list[str] | tuple[str, ...],
         then_: list[Generator] | tuple[Generator] | Generator | None = None,
         else_: list[Generator] | tuple[Generator] | Generator | None = None,
     ) -> None:
@@ -166,12 +166,18 @@ class IfInState(ConditionalGenerator):
         if isinstance(else_, Generator):
             else_ = [else_]
         super().__init__(then_ or [], else_=else_ or [])
+        if isinstance(state, str):
+            state = [state]
+        if not isinstance(state, (list, tuple)):
+            raise TypeError(
+                f"State must be a string, list or tuple. Got {type(state)}."
+            )
         self.state = state
 
     def _condition(self, record: Record, **context: Any) -> bool:
         """Check if the record is in the state."""
         try:
-            return record.state == self.state  # noqa as AttributeError is caught
+            return record.state in self.state  # noqa as AttributeError is caught
         except AttributeError:
             return False
 
@@ -179,7 +185,7 @@ class IfInState(ConditionalGenerator):
         """Apply then or else filter."""
         field = "state"
 
-        q_instate = dsl.Q("term", **{field: self.state})
+        q_instate = dsl.Q("terms", **{field: self.state})
         if self.then_:
             then_query = self._make_query(self.then_, **context)
         else:
