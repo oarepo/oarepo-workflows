@@ -9,7 +9,7 @@
 
 from __future__ import annotations
 
-from invenio_records_permissions.generators import SystemProcess
+from invenio_records_permissions.generators import AnyUser, SystemProcess
 from invenio_requests.customizations.event_types import CommentEventType, LogEventType
 from invenio_requests.services.generators import Creator, Receiver
 from invenio_requests.services.permissions import (
@@ -43,3 +43,8 @@ class CreatorsFromWorkflowRequestsPermissionPolicy(InvenioRequestsPermissionPoli
         ),
         EventCreatorsFromWorkflow(),
     ]
+
+    # any user can search for requests, but non-authenticated will not get a hit
+    # this is necessary to not have errors on a secret link page (edit/preview form)
+    # where the user is not authenticated and search for available requests is performed
+    can_search = [AnyUser()]
