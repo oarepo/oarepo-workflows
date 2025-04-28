@@ -47,4 +47,4 @@ class CreatorsFromWorkflowRequestsPermissionPolicy(InvenioRequestsPermissionPoli
     # any user can search for requests, but non-authenticated will not get a hit
     # this is necessary to not have errors on a secret link page (edit/preview form)
     # where the user is not authenticated and search for available requests is performed
-    can_search = [AnyUser()]
+    can_search = InvenioRequestsPermissionPolicy.can_search + [AnyUser()]
