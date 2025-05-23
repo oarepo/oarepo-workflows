@@ -19,7 +19,7 @@ from invenio_records_permissions.generators import (
 )
 from oarepo_runtime.services.permissions import RecordOwners
 
-from .generators import IfInState, SameAs
+from .generators import IfInState, SameAs, IfDraft
 
 
 class DefaultWorkflowPermissions(RecordPermissionPolicy):
@@ -58,6 +58,7 @@ class DefaultWorkflowPermissions(RecordPermissionPolicy):
         IfInState("draft", [RecordOwners()]),
         IfInState("published", [AuthenticatedUser()]),
     ]
+    can_read_all_records = [IfDraft([SameAs("can_read_draft")], [SameAs("can_read")])]
     # can_read_deleted is used by RDM. As long as workflows are
     # not intended for rdm records only, we need to keep this permission
     # simple and the implementation must use RDM-based implementation
