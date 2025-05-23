@@ -141,6 +141,35 @@ class WorkflowPermission(FromRecordWorkflow):
         )
         super().__init__(action)
 
+class IfDraft(ConditionalGenerator):
+    """Generator that depends on whether the record is a draft or not.
+
+    IfDraft(
+        then_=[...],
+        else_=[...],
+    )
+    """
+
+    def _condition(self, record: Record, **context: Any):
+        """Check if the record is a draft."""
+        return record.is_draft
+
+    def query_filter(self, **context: Any) -> dsl.Q:
+        """Apply then or else filter."""
+        field = "record_status"
+        q_instate = dsl.Q("term", **{field: "draft"})
+        q_outstate = dsl.Q("term", **{field: "published"})
+        if self.then_:
+            then_query = self._make_query(self.then_, **context)
+        else:
+            then_query = dsl.Q("match_none")
+
+        if self.else_:
+            else_query = self._make_query(self.else_, **context)
+        else:
+            else_query = dsl.Q("match_none")
+
+        return (q_instate & then_query) | (q_outstate & else_query)
 
 class IfInState(ConditionalGenerator):
     """Generator that checks if the record is in a specific state.
@@ -207,7 +236,6 @@ class IfInState(ConditionalGenerator):
     def __str__(self) -> str:
         """String representation of the generator."""
         return repr(self)
-
 
 class SameAs(Generator):
     """Generator that delegates the permissions to another action.
