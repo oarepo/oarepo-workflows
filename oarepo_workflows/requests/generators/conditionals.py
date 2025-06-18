@@ -56,3 +56,27 @@ class IfEventType(ConditionalGenerator):
 
     def _condition(self, event_type: EventType, **kwargs: Any) -> bool:
         return event_type.type_id in self.event_types
+
+class PrivilegedRole(ConditionalGenerator):
+    """Generator that checks if the record has no edit draft."""
+
+    def __init__(
+        self, role:Generator, read: bool=False, update: bool=False, action_accept: bool=False, action_decline: bool=False,
+            events:list[str] | None = None
+    ) -> None:
+        """Initialize the generator."""
+        self._role = role
+        self._actions = set()
+        if read:
+            self._actions.add("read")
+        if update:
+            self._actions.add("update")
+        if action_accept:
+            self._actions.add("action_accept")
+        if action_decline:
+            self._actions.add("action_decline")
+        self._events = events
+        super().__init__(then_=[self._role], else_=[])
+
+    def _condition(self, action: str, **kwargs) -> bool:
+        return action in self._actions

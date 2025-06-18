@@ -19,7 +19,7 @@ from invenio_requests.services.permissions import (
 from oarepo_workflows.requests.generators.conditionals import IfEventType
 from oarepo_workflows.requests.generators.workflow_based import (
     EventCreatorsFromWorkflow,
-    RequestCreatorsFromWorkflow,
+    RequestCreatorsFromWorkflow, PrivilegedAccess, EventsPrivilegedAccess,
 )
 
 
@@ -30,6 +30,11 @@ class CreatorsFromWorkflowRequestsPermissionPolicy(InvenioRequestsPermissionPoli
     This generator takes a topic, gets the workflow from the topic and returns the generator for
     creators defined on the WorkflowRequest.
     """
+    def __init__(self, action, **over):
+        """Constructor."""
+        over["generator_action"] = action
+        # action = RecordPermissionPolicy.NEED_LABEL_TO_ACTION.get(action, action)
+        super().__init__(action, **over)
 
     can_create = [
         SystemProcess(),
@@ -42,9 +47,15 @@ class CreatorsFromWorkflowRequestsPermissionPolicy(InvenioRequestsPermissionPoli
             [LogEventType.type_id, CommentEventType.type_id], [Creator(), Receiver()]
         ),
         EventCreatorsFromWorkflow(),
+        EventsPrivilegedAccess(),
     ]
 
     # any user can search for requests, but non-authenticated will not get a hit
     # this is necessary to not have errors on a secret link page (edit/preview form)
     # where the user is not authenticated and search for available requests is performed
     can_search = InvenioRequestsPermissionPolicy.can_search + [AnyUser()]
+
+    can_read = InvenioRequestsPermissionPolicy.can_read + [PrivilegedAccess()]
+    can_update = InvenioRequestsPermissionPolicy.can_update + [PrivilegedAccess()]
+    can_action_accept = InvenioRequestsPermissionPolicy.can_action_accept + [PrivilegedAccess()]
+    can_action_decline = InvenioRequestsPermissionPolicy.can_action_decline + [PrivilegedAccess()]

@@ -21,6 +21,7 @@ from invenio_requests.proxies import (
 
 from oarepo_workflows.errors import InvalidConfigurationError
 from oarepo_workflows.proxies import current_oarepo_workflows
+from oarepo_workflows.requests.generators.conditionals import PrivilegedRole
 from oarepo_workflows.requests.generators.multiple_entities import (
     MultipleEntitiesGenerator,
 )
@@ -52,6 +53,9 @@ class WorkflowRequest:
 
     recipients: list[Generator] | tuple[Generator]
     """Generators that define who can approve the request."""
+
+    privileged: Optional[list[PrivilegedRole] | tuple[PrivilegedRole]] = dataclasses.field(default_factory=lambda: [])
+    """List of privileged requesters."""
 
     events: dict[str, WorkflowEvent] = dataclasses.field(default_factory=lambda: {})
     """Events that can be submitted with the request."""
