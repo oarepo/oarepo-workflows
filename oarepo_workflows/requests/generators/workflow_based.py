@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, override, Optional
+from oarepo_workflows.requests.generators import MultipleEntitiesGenerator
 from opensearch_dsl.query import Query
 from invenio_records_permissions.generators import Generator
 from oarepo_workflows import FromRecordWorkflow, Workflow, WorkflowRequest
@@ -211,4 +212,7 @@ class EventsPrivilegedAccess(PrivilegedAccessBase):
             request_type.type_id,
             **kwargs,
         )
-        return workflow_request.events[event_type.type_id].privileged_generator
+        if event_type.type_id in workflow_request.events:
+            return workflow_request.events[event_type.type_id].privileged_generator
+        else:
+            return MultipleEntitiesGenerator([]) # hack to return generator
