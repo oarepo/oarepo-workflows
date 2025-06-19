@@ -57,26 +57,43 @@ class IfEventType(ConditionalGenerator):
     def _condition(self, event_type: EventType, **kwargs: Any) -> bool:
         return event_type.type_id in self.event_types
 
-class PrivilegedRole(ConditionalGenerator):
-    """Generator that checks if the record has no edit draft."""
+
+class PrivilegedRoleBase(ConditionalGenerator):
+    """Generator that allows access to some actions to roles outside the basic participants (creator, receiver..)."""
 
     def __init__(
-        self, role:Generator, read: bool=False, update: bool=False, action_accept: bool=False, action_decline: bool=False,
-            events:list[str] | None = None
+        self, roles:list[Generator] | tuple[Generator] | Generator, **actions
     ) -> None:
         """Initialize the generator."""
-        self._role = role
-        self._actions = set()
-        if read:
-            self._actions.add("read")
-        if update:
-            self._actions.add("update")
-        if action_accept:
-            self._actions.add("action_accept")
-        if action_decline:
-            self._actions.add("action_decline")
-        self._events = events
-        super().__init__(then_=[self._role], else_=[])
+        if not isinstance(roles, (list, tuple)):
+            roles = [roles]
+        self._roles = roles
+        self._actions = {k for k, v in actions.items() if v}
+        super().__init__(then_=roles, else_=[])
 
     def _condition(self, action: str, **kwargs) -> bool:
         return action in self._actions
+
+class RequestPrivilegedRole(PrivilegedRoleBase):
+    """Generator that allows access to request to some actions to roles outside the basic participants."""
+
+
+    def __init__(
+        self, roles:list[Generator] | tuple[Generator] | Generator,
+            read: bool=False, update: bool=False, accept: bool=False
+
+    ) -> None:
+        """Initialize the generator."""
+        super().__init__(roles, read=read, update=update, accept=accept)
+
+
+class EventPrivilegedRole(PrivilegedRoleBase):
+    """Generator that allows access to event to some actions to roles outside the basic participants."""
+
+    def __init__(
+        self, roles:list[Generator] | tuple[Generator] | Generator,
+            read: bool=False, create: bool=False
+
+    ) -> None:
+        """Initialize the generator."""
+        super().__init__(roles, read=read, create=create)
