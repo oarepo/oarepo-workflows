@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any, Optional
 
 import importlib_metadata
 from invenio_drafts_resources.services.records.uow import ParentRecordCommitOp
-from invenio_records_resources.services.uow import RecordCommitOp, unit_of_work
+from invenio_records_resources.services.uow import unit_of_work
 from oarepo_runtime.datastreams.utils import get_record_service_for_record
 
 from oarepo_workflows.errors import InvalidWorkflowError, MissingWorkflowError
@@ -27,6 +27,7 @@ from oarepo_workflows.services.multiple_entities import (
     MultipleEntitiesEntityService,
     MultipleEntitiesEntityServiceConfig,
 )
+from oarepo_workflows.services.uow import StateChangeOperation
 
 if TYPE_CHECKING:
     from flask import Flask
@@ -129,6 +130,7 @@ class OARepoWorkflows:
         *args: Any,
         uow: UnitOfWork,
         commit: bool = True,
+        notify_later: bool = True,
         **kwargs: Any,
     ) -> None:
         """Set a new state on a record.
@@ -139,17 +141,19 @@ class OARepoWorkflows:
         :param args:        additional arguments
         :param uow:         unit of work
         :param commit:      whether to commit the change
+        :param notify_later: run the notification in post commit hook, not immediately
         :param kwargs:      additional keyword arguments
         """
-        previous_value = record.state
-        record.state = new_state
-        if commit:
-            service = get_record_service_for_record(record)
-            uow.register(RecordCommitOp(record, indexer=service.indexer))
-        for state_changed_notifier in self.state_changed_notifiers:
-            state_changed_notifier(
-                identity, record, previous_value, new_state, *args, uow=uow, **kwargs
+        uow.register(
+            StateChangeOperation(
+                identity,
+                record,
+                new_state,
+                *args,
+                commit_record=commit,
+                notify_later=notify_later,
             )
+        )
 
     @unit_of_work()
     def set_workflow(
@@ -177,7 +181,9 @@ class OARepoWorkflows:
                 f"Workflow {new_workflow_id} does not exist in the configuration.",
                 record=record,
             )
-        parent = record.parent  # noqa for typing: we do not have a better type for record with parent
+        parent = (
+            record.parent
+        )  # noqa for typing: we do not have a better type for record with parent
         previous_value = parent.workflow
         parent.workflow = new_workflow_id
         if commit:
@@ -232,7 +238,9 @@ class OARepoWorkflows:
         """
         if hasattr(record, "parent"):
             try:
-                record_parent: WithWorkflow = record.parent  # noqa for typing: we do not have a better type for record with parent
+                record_parent: WithWorkflow = (
+                    record.parent
+                )  # noqa for typing: we do not have a better type for record with parent
             except AttributeError as e:
                 raise MissingWorkflowError(
                     "Record does not have a parent attribute, is it a draft-enabled record?",
