@@ -21,6 +21,7 @@ from invenio_requests.proxies import (
 
 from oarepo_workflows.errors import InvalidConfigurationError
 from oarepo_workflows.proxies import current_oarepo_workflows
+from oarepo_workflows.requests.generators.conditionals import PrivilegedRoleBase
 from oarepo_workflows.requests.generators.multiple_entities import (
     MultipleEntitiesGenerator,
 )
@@ -53,6 +54,9 @@ class WorkflowRequest:
     recipients: list[Generator] | tuple[Generator]
     """Generators that define who can approve the request."""
 
+    privileged: list[PrivilegedRoleBase] | tuple[PrivilegedRoleBase] = dataclasses.field(default_factory=lambda: [])
+    """Generators that define access to some other actions on the request without being its creator or recipient."""
+
     events: dict[str, WorkflowEvent] = dataclasses.field(default_factory=lambda: {})
     """Events that can be submitted with the request."""
 
@@ -70,6 +74,11 @@ class WorkflowRequest:
     def requester_generator(self) -> Generator:
         """Return the requesters as a single requester generator."""
         return MultipleEntitiesGenerator(self.requesters)
+
+    @cached_property
+    def privileged_generator(self) -> Generator:
+        """Return the privileged as a single privileged generator."""
+        return MultipleEntitiesGenerator(self.privileged)
 
     def recipient_entity_reference(self, **context: Any) -> dict | None:
         """Return the reference receiver of the workflow request with the given context.

@@ -56,3 +56,44 @@ class IfEventType(ConditionalGenerator):
 
     def _condition(self, event_type: EventType, **kwargs: Any) -> bool:
         return event_type.type_id in self.event_types
+
+
+class PrivilegedRoleBase(ConditionalGenerator):
+    """Generator that allows access to some actions to roles outside the basic participants (creator, receiver..)."""
+
+    def __init__(
+        self, roles:list[Generator] | tuple[Generator] | Generator, **actions
+    ) -> None:
+        """Initialize the generator."""
+        if not isinstance(roles, (list, tuple)):
+            roles = [roles]
+        self._roles = roles
+        self._actions = {k for k, v in actions.items() if v}
+        super().__init__(then_=roles, else_=[])
+
+    def _condition(self, action: str, **kwargs) -> bool:
+        return action in self._actions
+
+class RequestPrivilegedRole(PrivilegedRoleBase):
+    """Generator that allows access to request to some actions to roles outside the basic participants."""
+
+
+    def __init__(
+        self, roles:list[Generator] | tuple[Generator] | Generator,
+            update: bool=False, accept: bool=False
+
+    ) -> None:
+        """Initialize the generator."""
+        super().__init__(roles, update=update, accept=accept, read=True)
+
+
+class EventPrivilegedRole(PrivilegedRoleBase):
+    """Generator that allows access to event to some actions to roles outside the basic participants."""
+
+    def __init__(
+        self, roles:list[Generator] | tuple[Generator] | Generator,
+            create: bool=False
+
+    ) -> None:
+        """Initialize the generator."""
+        super().__init__(roles, create=create, read=True)

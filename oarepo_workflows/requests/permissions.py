@@ -19,7 +19,7 @@ from invenio_requests.services.permissions import (
 from oarepo_workflows.requests.generators.conditionals import IfEventType
 from oarepo_workflows.requests.generators.workflow_based import (
     EventCreatorsFromWorkflow,
-    RequestCreatorsFromWorkflow,
+    RequestCreatorsFromWorkflow, PrivilegedAccessFromWorkflow, EventsPrivilegedAccessFromWorkflow,
 )
 
 
@@ -42,9 +42,15 @@ class CreatorsFromWorkflowRequestsPermissionPolicy(InvenioRequestsPermissionPoli
             [LogEventType.type_id, CommentEventType.type_id], [Creator(), Receiver()]
         ),
         EventCreatorsFromWorkflow(),
+        EventsPrivilegedAccessFromWorkflow("create"),
     ]
 
     # any user can search for requests, but non-authenticated will not get a hit
     # this is necessary to not have errors on a secret link page (edit/preview form)
     # where the user is not authenticated and search for available requests is performed
     can_search = InvenioRequestsPermissionPolicy.can_search + [AnyUser()]
+
+    can_read = InvenioRequestsPermissionPolicy.can_read + [PrivilegedAccessFromWorkflow("read")]
+    can_update = InvenioRequestsPermissionPolicy.can_update + [PrivilegedAccessFromWorkflow("update")]
+    can_action_accept = InvenioRequestsPermissionPolicy.can_action_accept + [PrivilegedAccessFromWorkflow("accept")]
+    can_action_decline = InvenioRequestsPermissionPolicy.can_action_decline + [PrivilegedAccessFromWorkflow("accept")]
