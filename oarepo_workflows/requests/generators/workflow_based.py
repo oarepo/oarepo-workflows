@@ -171,7 +171,7 @@ class EventCreatorsFromWorkflow(RequestPolicyWorkflowCreators):
 
         return workflow_event.submitter_generator
 
-class PrivilegedAccessBase(RequestPolicyWorkflowCreators):
+class PrivilegedAccessFromWorkflowBase(RequestPolicyWorkflowCreators):
     """Generates creators from a workflow request to be used in the event 'create' permission."""
 
     @override
@@ -191,7 +191,7 @@ class PrivilegedAccessBase(RequestPolicyWorkflowCreators):
         # todo requires getting workflow from topic
         return []
 
-class PrivilegedAccess(PrivilegedAccessBase):
+class PrivilegedAccessFromWorkflow(PrivilegedAccessFromWorkflowBase):
 
     def _requester_generator(self, **kwargs: Any) -> Generator:
         request_type: RequestType = kwargs["request"].type
@@ -202,7 +202,7 @@ class PrivilegedAccess(PrivilegedAccessBase):
 
         return workflow_request.privileged_generator
 
-class EventsPrivilegedAccess(PrivilegedAccessBase):
+class EventsPrivilegedAccessFromWorkflow(PrivilegedAccessFromWorkflowBase):
     """Generates creators from a workflow request to be used in the event 'create' permission."""
 
     def _requester_generator(self, **kwargs: Any) -> Generator:

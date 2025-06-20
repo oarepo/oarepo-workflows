@@ -19,7 +19,7 @@ from invenio_requests.services.permissions import (
 from oarepo_workflows.requests.generators.conditionals import IfEventType
 from oarepo_workflows.requests.generators.workflow_based import (
     EventCreatorsFromWorkflow,
-    RequestCreatorsFromWorkflow, PrivilegedAccess, EventsPrivilegedAccess,
+    RequestCreatorsFromWorkflow, PrivilegedAccessFromWorkflow, EventsPrivilegedAccessFromWorkflow,
 )
 
 
@@ -42,7 +42,7 @@ class CreatorsFromWorkflowRequestsPermissionPolicy(InvenioRequestsPermissionPoli
             [LogEventType.type_id, CommentEventType.type_id], [Creator(), Receiver()]
         ),
         EventCreatorsFromWorkflow(),
-        EventsPrivilegedAccess("create"),
+        EventsPrivilegedAccessFromWorkflow("create"),
     ]
 
     # any user can search for requests, but non-authenticated will not get a hit
@@ -50,7 +50,7 @@ class CreatorsFromWorkflowRequestsPermissionPolicy(InvenioRequestsPermissionPoli
     # where the user is not authenticated and search for available requests is performed
     can_search = InvenioRequestsPermissionPolicy.can_search + [AnyUser()]
 
-    can_read = InvenioRequestsPermissionPolicy.can_read + [PrivilegedAccess("read")]
-    can_update = InvenioRequestsPermissionPolicy.can_update + [PrivilegedAccess("update")]
-    can_action_accept = InvenioRequestsPermissionPolicy.can_action_accept + [PrivilegedAccess("accept")]
-    can_action_decline = InvenioRequestsPermissionPolicy.can_action_decline + [PrivilegedAccess("accept")]
+    can_read = InvenioRequestsPermissionPolicy.can_read + [PrivilegedAccessFromWorkflow("read")]
+    can_update = InvenioRequestsPermissionPolicy.can_update + [PrivilegedAccessFromWorkflow("update")]
+    can_action_accept = InvenioRequestsPermissionPolicy.can_action_accept + [PrivilegedAccessFromWorkflow("accept")]
+    can_action_decline = InvenioRequestsPermissionPolicy.can_action_decline + [PrivilegedAccessFromWorkflow("accept")]

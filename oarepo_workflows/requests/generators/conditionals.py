@@ -80,11 +80,11 @@ class RequestPrivilegedRole(PrivilegedRoleBase):
 
     def __init__(
         self, roles:list[Generator] | tuple[Generator] | Generator,
-            read: bool=False, update: bool=False, accept: bool=False
+            update: bool=False, accept: bool=False
 
     ) -> None:
         """Initialize the generator."""
-        super().__init__(roles, read=read, update=update, accept=accept)
+        super().__init__(roles, update=update, accept=accept, read=True)
 
 
 class EventPrivilegedRole(PrivilegedRoleBase):
@@ -92,8 +92,8 @@ class EventPrivilegedRole(PrivilegedRoleBase):
 
     def __init__(
         self, roles:list[Generator] | tuple[Generator] | Generator,
-            read: bool=False, create: bool=False
+            create: bool=False
 
     ) -> None:
         """Initialize the generator."""
-        super().__init__(roles, read=read, create=create)
+        super().__init__(roles, create=create, read=True)
