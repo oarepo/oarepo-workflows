@@ -9,10 +9,10 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, override
-
+from typing import TYPE_CHECKING, Any, override, Optional
+from oarepo_workflows.requests.generators import MultipleEntitiesGenerator
 from opensearch_dsl.query import Query
-
+from invenio_records_permissions.generators import Generator
 from oarepo_workflows import FromRecordWorkflow, Workflow, WorkflowRequest
 from oarepo_workflows.errors import (
     EventTypeNotInWorkflow,
@@ -24,7 +24,6 @@ from oarepo_workflows.proxies import current_oarepo_workflows
 
 if TYPE_CHECKING:
     from flask_principal import Need
-    from invenio_records_permissions.generators import Generator
     from invenio_records_resources.records import Record
     from invenio_requests.customizations import EventType, RequestType
     from invenio_requests.records.api import Request
@@ -122,8 +121,7 @@ class RequestCreatorsFromWorkflow(RequestPolicyWorkflowCreators):
     """Generates creators from a workflow request to be used in the request 'create' permission."""
 
     def __init__(self) -> None:
-        """Initialize the generator."""
-        super().__init__(action="create")
+       super().__init__(action=None)
 
     @override
     def _requester_generator(self, **kwargs: Any) -> Generator:
@@ -139,7 +137,7 @@ class EventCreatorsFromWorkflow(RequestPolicyWorkflowCreators):
 
     def __init__(self) -> None:
         """Initialize the generator."""
-        super().__init__(action="create")
+        super().__init__(action=None)
 
     @override
     def _kwargs_parser(self, **kwargs: Any) -> dict[str, Any]:
@@ -170,4 +168,51 @@ class EventCreatorsFromWorkflow(RequestPolicyWorkflowCreators):
                 workflow_code=workflow_code,
                 event_type=event_type.type_id,
             ) from e
+
         return workflow_event.submitter_generator
+
+class PrivilegedAccessFromWorkflowBase(RequestPolicyWorkflowCreators):
+    """Generates creators from a workflow request to be used in the event 'create' permission."""
+
+    @override
+    def _kwargs_parser(self, **kwargs: Any) -> dict[str, Any]:
+        request: Request = kwargs["request"]
+        kwargs.setdefault("action", self._action)
+        kwargs.setdefault("request_type", request.type)
+        try:
+            kwargs["record"] = request.topic.resolve()
+        except Exception as e:  # noqa              TODO: better exception catching here
+            raise MissingTopicError(
+                "Topic not found in request event permissions generator arguments, can't get workflow."
+            ) from e
+        return kwargs
+
+    def query_filter(self, record: Optional[Record] = None, **context: Any):
+        # todo requires getting workflow from topic
+        return []
+
+class PrivilegedAccessFromWorkflow(PrivilegedAccessFromWorkflowBase):
+
+    def _requester_generator(self, **kwargs: Any) -> Generator:
+        request_type: RequestType = kwargs["request"].type
+        workflow, workflow_request = self._get_workflow_request(
+            request_type.type_id,
+            **kwargs,
+        )
+
+        return workflow_request.privileged_generator
+
+class EventsPrivilegedAccessFromWorkflow(PrivilegedAccessFromWorkflowBase):
+    """Generates creators from a workflow request to be used in the event 'create' permission."""
+
+    def _requester_generator(self, **kwargs: Any) -> Generator:
+        request_type: RequestType = kwargs["request_type"]
+        event_type: EventType = kwargs["event_type"]
+        workflow, workflow_request = self._get_workflow_request(
+            request_type.type_id,
+            **kwargs,
+        )
+        if event_type.type_id in workflow_request.events:
+            return workflow_request.events[event_type.type_id].privileged_generator
+        else:
+            return MultipleEntitiesGenerator([]) # hack to return generator

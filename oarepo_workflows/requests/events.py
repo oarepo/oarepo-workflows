@@ -13,6 +13,7 @@ import dataclasses
 from functools import cached_property
 from typing import TYPE_CHECKING
 
+from oarepo_workflows.requests.generators.conditionals import PrivilegedRoleBase
 from oarepo_workflows.requests.generators.multiple_entities import (
     MultipleEntitiesGenerator,
 )
@@ -26,6 +27,7 @@ class WorkflowEvent:
     """Class representing a workflow event."""
 
     submitters: list[Generator] | tuple[Generator]
+    privileged: list[PrivilegedRoleBase] | tuple[PrivilegedRoleBase] = dataclasses.field(default_factory=lambda: [])
     """List of submitters to be used for the event.
 
        The generators supply needs. The user must have at least one of the needs 
@@ -36,3 +38,8 @@ class WorkflowEvent:
     def submitter_generator(self) -> Generator:
         """Return the requesters as a single requester generator."""
         return MultipleEntitiesGenerator(self.submitters)
+
+    @cached_property
+    def privileged_generator(self) -> Generator:
+        """Return the privileged as a single privileged generator."""
+        return MultipleEntitiesGenerator(self.privileged)
