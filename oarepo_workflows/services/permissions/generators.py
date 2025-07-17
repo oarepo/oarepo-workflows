@@ -177,6 +177,8 @@ class IfInState(RecipientGeneratorMixin, ConditionalGenerator):
     def _condition(self, record: Record, **context: Any) -> bool:
         """Check if the record is in the state."""
         try:
+            if isinstance(record, dict):
+                return record.get('state') in self.state
             return record.state in self.state  # noqa as AttributeError is caught
         except AttributeError:
             return False
