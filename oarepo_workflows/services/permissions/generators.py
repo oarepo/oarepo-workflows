@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from invenio_records_permissions import RecordPermissionPolicy
     from invenio_records_resources.records import Record
 
-
+from oarepo_workflows.requests.generators import RecipientGeneratorMixin
 # invenio_records_permissions.generators.ConditionalGenerator._make_query
 def _make_query(generators: Iterable[Generator], **context: Any) -> dict | None:
     queries = [g.query_filter(**context) for g in generators]
@@ -142,7 +142,7 @@ class WorkflowPermission(FromRecordWorkflow):
         super().__init__(action)
 
 
-class IfInState(ConditionalGenerator):
+class IfInState(RecipientGeneratorMixin, ConditionalGenerator):
     """Generator that checks if the record is in a specific state.
 
     If it is in the state, the then_ generators are used, otherwise the else_ generators are used.
@@ -176,10 +176,22 @@ class IfInState(ConditionalGenerator):
 
     def _condition(self, record: Record, **context: Any) -> bool:
         """Check if the record is in the state."""
-        try:
-            return record.state in self.state  # noqa as AttributeError is caught
-        except AttributeError:
-            return False
+        return getattr(record, "state", record.get("state", None)) in self.state
+
+    def reference_receivers(
+            self,
+            record: Optional[Record] = None,
+            request_type: Optional[RequestType] = None,
+            **context: Any,
+    ) -> list[dict[str, str]]:
+        from oarepo_workflows.requests.generators.multiple_entities import MultipleEntitiesGenerator
+        if self._condition(record, **context):
+            recipients = self.then_
+        else:
+            recipients = self.else_
+        generator = MultipleEntitiesGenerator(recipients)
+        receivers = generator.reference_receivers(record= record, request_type=request_type, **context)
+        return receivers
 
     def query_filter(self, **context: Any) -> dsl.Q:
         """Apply then or else filter."""
