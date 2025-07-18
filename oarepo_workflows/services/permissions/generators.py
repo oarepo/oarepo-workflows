@@ -176,10 +176,7 @@ class IfInState(RecipientGeneratorMixin, ConditionalGenerator):
 
     def _condition(self, record: Record, **context: Any) -> bool:
         """Check if the record is in the state."""
-        try:
-            return getattr(record, "state", record["state"]) in self.state  # noqa as AttributeError is caught
-        except AttributeError:
-            return False
+        return getattr(record, "state", record.get("state", None)) in self.state
 
     def reference_receivers(
             self,
@@ -193,7 +190,7 @@ class IfInState(RecipientGeneratorMixin, ConditionalGenerator):
         else:
             recipients = self.else_
         generator = MultipleEntitiesGenerator(recipients)
-        receivers = generator.reference_receivers(**context)
+        receivers = generator.reference_receivers(record= record, request_type=request_type, **context)
         return receivers
 
     def query_filter(self, **context: Any) -> dsl.Q:
