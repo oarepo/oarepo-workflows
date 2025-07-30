@@ -12,7 +12,7 @@ from __future__ import annotations
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, Optional
 
-import importlib_metadata
+import importlib.metadata
 from invenio_drafts_resources.services.records.uow import ParentRecordCommitOp
 from invenio_records_resources.services.uow import unit_of_work
 from oarepo_runtime.datastreams.utils import get_record_service_for_record
@@ -106,7 +106,7 @@ class OARepoWorkflows:
         """
         group_name = "oarepo_workflows.state_changed_notifiers"
         return [
-            x.load() for x in importlib_metadata.entry_points().select(group=group_name)
+           ep.load() for ep in importlib.metadata.entry_points(group=group_name)
         ]
 
     @cached_property
@@ -118,7 +118,7 @@ class OARepoWorkflows:
         """
         group_name = "oarepo_workflows.workflow_changed_notifiers"
         return [
-            x.load() for x in importlib_metadata.entry_points().select(group=group_name)
+           ep.load() for ep in importlib.metadata.entry_points(group=group_name)
         ]
 
     @unit_of_work()

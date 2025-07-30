@@ -1,10 +1,66 @@
-#
-# Copyright (C) 2024 CESNET z.s.p.o.
-#
-# oarepo-workflows is free software; you can redistribute it and/or
-# modify it under the terms of the MIT License; see LICENSE file for more
-# details.
-#
+import pytest
+from oarepo_model.customizations import AddEntryPoint, AddModule
+from oarepo_model.presets.drafts import drafts_presets
+
+from oarepo_workflows.model.presets import workflows_presets
+
+
+@pytest.fixture(scope="module")
+def test_draft_service(app):
+    """Service instance."""
+    return app.extensions["draft_test"].records_service
+
+"""
+@pytest.fixture(scope="module")
+def draft_service_with_files(app):
+    return app.extensions["draft_with_files"].records_service
+
+@pytest.fixture(scope="module")
+def draft_file_service(app):
+    return app.extensions["draft_with_files"].draft_files_service
+
+
+
+@pytest.fixture(scope="module")
+def file_service(app):
+    return app.extensions["test"].files_service
+"""
+
+
+@pytest.fixture(scope="function")
+def input_data_with_files_disabled(input_data):
+    """Input data with files disabled."""
+    data = input_data.copy()
+    data["files"]["enabled"] = False
+    return data
+
+
+import copy
+import json
+import sys
+import time
+
+import pytest
+from flask_principal import Identity, Need, UserNeed
+from oarepo_model.presets.records_resources import records_resources_presets
+
+pytest_plugins = ("celery.contrib.pytest", "pytest_oarepo.users", "pytest_oarepo.fixtures")
+
+
+parent_json_schema = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "local://parent-v1.0.0.json",
+    "type": "object",
+    "properties": {"id": {"type": "string"}},
+}
+
+model_types = {
+    "Metadata": {
+        "properties": {
+            "title": {"type": "fulltext+keyword", "required": True},
+        }
+    }
+}
 import os
 
 import pytest
@@ -28,6 +84,18 @@ from oarepo_workflows.requests import (
 )
 from oarepo_workflows.services.permissions import DefaultWorkflowPermissions, IfInState
 
+"""
+pytest_plugins = [
+    "pytest_oarepo.communities.fixtures",
+    "pytest_oarepo.communities.records",
+    "pytest_oarepo.requests.fixtures",
+    "pytest_oarepo.records",
+    ,
+    ,
+    "pytest_oarepo.files",
+    "pytest_oarepo.vocabularies"
+]
+"""
 
 class RecordOwnersReadTestWorkflowPermissionPolicy(DefaultWorkflowPermissions):
     can_read = [RecordOwners()]
@@ -81,25 +149,6 @@ WORKFLOWS = {
 
 
 @pytest.fixture
-def mappings():
-    # update the mappings
-    from oarepo_runtime.services.custom_fields.mappings import prepare_cf_indices
-
-    from thesis.records.api import ThesisDraft, ThesisRecord
-
-    prepare_cf_indices()
-    ThesisDraft.index.refresh()
-    ThesisRecord.index.refresh()
-
-
-@pytest.fixture
-def record_service(mappings):
-    from thesis.proxies import current_service
-
-    return current_service
-
-
-@pytest.fixture
 def state_change_function():
     from oarepo_workflows.proxies import current_oarepo_workflows
 
@@ -112,6 +161,37 @@ def workflow_change_function():
 
     return current_oarepo_workflows.set_workflow
 
+@pytest.fixture
+def record_service(draft_model):
+    return draft_model.proxies.current_service
+
+"""
+@pytest.fixture(scope="function")
+def sample_metadata_list():
+    data_path = f"tests/thesis/data/sample_data.yaml"
+    docs = list(yaml.load_all(open(data_path), Loader=yaml.SafeLoader))
+    return docs
+
+
+
+@pytest.fixture()
+def input_data(sample_metadata_list):
+    return sample_metadata_list[0]
+"""
+
+@pytest.fixture(scope="function")
+def input_data():
+    """Input data (as coming from the view layer)."""
+    return {
+        "metadata": {"title": "Test"},
+        "files": {
+            "enabled": True,
+        },
+    }
+
+import pytest
+from importlib_metadata import EntryPoint
+from unittest.mock import patch
 
 @pytest.fixture(scope="module")
 def extra_entry_points():
@@ -124,110 +204,26 @@ def extra_entry_points():
         ],
     }
 
+"""
+@pytest.fixture
+def mappings():
+    # update the mappings
+    from oarepo_runtime.services.custom_fields.mappings import prepare_cf_indices
 
-@pytest.fixture(scope="module")
-def create_app(instance_path, entry_points):
-    """Application factory fixture."""
-    return create_api
+    from thesis.records.api import ThesisDraft, ThesisRecord
 
-
-@pytest.fixture(scope="function")
-def sample_metadata_list():
-    data_path = f"tests/thesis/data/sample_data.yaml"
-    docs = list(yaml.load_all(open(data_path), Loader=yaml.SafeLoader))
-    return docs
-
-
-@pytest.fixture()
-def input_data(sample_metadata_list):
-    return sample_metadata_list[0]
-
-
-@pytest.fixture()
-def users(app, db, UserFixture):
-    user1 = UserFixture(
-        email="user1@example.org",
-        password="password",
-        active=True,
-        confirmed=True,
-    )
-    user1.create(app, db)
-
-    user2 = UserFixture(
-        email="user2@example.org",
-        password="beetlesmasher",
-        active=True,
-        confirmed=True,
-    )
-    user2.create(app, db)
-    db.session.commit()
-    UserAggregate.index.refresh()
-    return [user1, user2]
-
-
-class LoggedClient:
-    def __init__(self, client, user_fixture):
-        self.client = client
-        self.user_fixture = user_fixture
-
-    def _login(self):
-        login_user(self.user_fixture.user, remember=True)
-        login_user_via_session(self.client, email=self.user_fixture.email)
-
-    def post(self, *args, **kwargs):
-        self._login()
-        return self.client.post(*args, **kwargs)
-
-    def get(self, *args, **kwargs):
-        self._login()
-        return self.client.get(*args, **kwargs)
-
-    def put(self, *args, **kwargs):
-        self._login()
-        return self.client.put(*args, **kwargs)
-
-    def delete(self, *args, **kwargs):
-        self._login()
-        return self.client.delete(*args, **kwargs)
-
-
-@pytest.fixture()
-def logged_client(client, mappings):
-    def _logged_client(user):
-        return LoggedClient(client, user)
-
-    return _logged_client
-
-
-@pytest.fixture(scope="module")
-def app_config(app_config):
-    """Mimic an instance's configuration."""
-    app_config["JSONSCHEMAS_HOST"] = "localhost"
-    app_config["RECORDS_REFRESOLVER_CLS"] = (
-        "invenio_records.resolver.InvenioRefResolver"
-    )
-    app_config["RECORDS_REFRESOLVER_STORE"] = (
-        "invenio_jsonschemas.proxies.current_refresolver_store"
-    )
-    app_config["RATELIMIT_AUTHENTICATED_USER"] = "200 per second"
-    app_config["SEARCH_HOSTS"] = [
-        {
-            "host": os.environ.get("OPENSEARCH_HOST", "localhost"),
-            "port": os.environ.get("OPENSEARCH_PORT", "9200"),
-        }
-    ]
-    # disable redis cache
-    app_config["CACHE_TYPE"] = "SimpleCache"  # Flask-Caching related configs
-    app_config["CACHE_DEFAULT_TIMEOUT"] = 300
-
-    app_config["WORKFLOWS"] = WORKFLOWS
-
-    return app_config
+    prepare_cf_indices()
+    ThesisDraft.index.refresh()
+    ThesisRecord.index.refresh()
+"""
 
 
 @pytest.fixture()
 def default_workflow_json():
-    return {"parent": {"workflow": "my_workflow"}}
+    return {"parent": {"workflow": "my_workflow"},
+            "files": {"enabled": False},
+            "metadata": {"title": "Test"},
+            }
 
 
 @pytest.fixture()
@@ -239,3 +235,102 @@ def extra_request_types():
     current_request_type_registry.register_type(create_rt("req1"), force=True)
     current_request_type_registry.register_type(create_rt("req2"), force=True)
     current_request_type_registry.register_type(create_rt("req3"), force=True)
+
+
+
+@pytest.fixture(scope="module")
+def draft_model():
+    from oarepo_model.api import model
+    from oarepo_model.customizations import AddFileToModule
+    from oarepo_model.presets.rdm import rdm_presets
+
+    t1 = time.time()
+
+    draft_model = model(
+        name="draft_test",
+        version="1.0.0",
+        presets=[records_resources_presets, drafts_presets, rdm_presets, workflows_presets],
+        types=[model_types],
+        metadata_type="Metadata",
+        customizations=[
+            # needs https://github.com/inveniosoftware/invenio-search/pull/238/files
+            # add parent JSON schema
+            AddFileToModule(
+                "parent-jsonschema",
+                "jsonschemas",
+                "parent-v1.0.0.json",
+                json.dumps(
+                    {
+                        "$schema": "http://json-schema.org/draft-07/schema#",
+                        "$id": "local://parent-v1.0.0.json",
+                        "type": "object",
+                        "properties": {"id": {"type": "string"}},
+                    }
+                ),
+            ),
+        ],
+    )
+    draft_model.register()
+
+    t2 = time.time()
+    print(f"Draft Model created in {t2 - t1:.2f} seconds", file=sys.stderr, flush=True)
+
+    return draft_model
+
+@pytest.fixture(scope="module")
+#def app_config(app_config, empty_model, draft_model, draft_model_with_files):
+def app_config(app_config, draft_model):
+    """Override pytest-invenio app_config fixture.
+
+    Needed to set the fields on the custom fields schema.
+    """
+    app_config["FILES_REST_STORAGE_CLASS_LIST"] = {
+        "L": "Local",
+    }
+
+    app_config["FILES_REST_DEFAULT_STORAGE_CLASS"] = "L"
+
+    app_config["RECORDS_REFRESOLVER_CLS"] = (
+        "invenio_records.resolver.InvenioRefResolver"
+    )
+    app_config["RECORDS_REFRESOLVER_STORE"] = (
+        "invenio_jsonschemas.proxies.current_refresolver_store"
+    )
+
+    app_config["THEME_FRONTPAGE"] = False
+
+    app_config["SQLALCHEMY_ENGINE_OPTIONS"] = (
+        {  # hack to avoid pool_timeout set in invenio_app_rdm
+            "pool_pre_ping": False,
+            "pool_recycle": 3600,
+        }
+    )
+
+    app_config["CELERY_ALWAYS_EAGER"] = True
+    app_config["CELERY_TASK_ALWAYS_EAGER"] = True
+
+    # app_config["SQLALCHEMY_ECHO"] = True
+
+    app_config["WORKFLOWS"] = WORKFLOWS
+    app_config["INVENIO_RDM_ENABLED"] = True
+    app_config["REST_CSRF_ENABLED"] = False
+
+    return app_config
+
+
+@pytest.fixture(scope="module")
+def identity_simple():
+    """Simple identity fixture."""
+    i = Identity(1)
+    i.provides.add(UserNeed(1))
+    i.provides.add(Need(method="system_role", value="any_user"))
+    i.provides.add(Need(method="system_role", value="authenticated_user"))
+    return i
+
+
+@pytest.fixture(scope="module")
+def create_app(instance_path, entry_points):
+    """Application factory fixture."""
+    from invenio_app.factory import create_api as _create_api
+
+    return _create_api

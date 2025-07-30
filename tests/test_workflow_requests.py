@@ -16,7 +16,6 @@ from opensearch_dsl.query import Terms
 from oarepo_workflows import WorkflowRequestPolicy, WorkflowTransitions
 from oarepo_workflows.requests import WorkflowRequest
 from oarepo_workflows.requests.generators import RecipientGeneratorMixin
-from thesis.records.api import ThesisRecord
 
 
 class TestRecipient(RecipientGeneratorMixin, Generator):
@@ -73,17 +72,17 @@ class R(WorkflowRequestPolicy):
     )
 
 
-def test_workflow_requests(users, logged_client, search_clear, record_service):
+def test_workflow_requests(db, users, draft_model, logged_client, search_clear, location):
     req = WorkflowRequest(
         requesters=[RecordOwners()],
         recipients=[NullRecipient(), TestRecipient()],
     )
-    rec = ThesisRecord.create({})
+    rec = draft_model.Draft.create({})
     assert req.recipient_entity_reference(record=rec) == {"user": "1"}
 
 
 def test_workflow_requests_multiple_recipients(
-    users, logged_client, search_clear, record_service
+    db, users, draft_model, logged_client, search_clear, location
 ):
     req = WorkflowRequest(
         requesters=[RecordOwners()],
@@ -92,20 +91,20 @@ def test_workflow_requests_multiple_recipients(
             TestRecipient2(),
         ],
     )
-    rec = ThesisRecord.create({})
+    rec = draft_model.Draft.create({})
     assert req.recipient_entity_reference(record=rec) == {
         "multiple": '[{"user": "1"}, {"user": "2"}]'
     }
 
 
 def test_workflow_requests_no_recipient(
-    users, logged_client, search_clear, record_service
+    draft_model, users, logged_client, search_clear, location, record_service
 ):
     req1 = WorkflowRequest(
         requesters=[RecordOwners()],
         recipients=[NullRecipient()],
     )
-    rec = ThesisRecord.create({})
+    rec = draft_model.Draft.create({})
     assert req1.recipient_entity_reference(record=rec) is None
 
     req2 = WorkflowRequest(

@@ -9,14 +9,12 @@ from types import SimpleNamespace
 
 from oarepo_workflows import FromRecordWorkflow
 from oarepo_workflows.errors import MissingWorkflowError
-from thesis.records.api import ThesisRecord
 import pytest
 
 from flask_principal import Identity, UserNeed
 
-
-def test_get_workflow_id(users, logged_client, search_clear, record_service):
-    thesis = ThesisRecord.create({})
+def test_get_workflow_id(users, draft_model, logged_client, record_service, location, search_clear):
+    thesis = draft_model.Draft.create({})
     wp = FromRecordWorkflow("read")
     with pytest.raises(MissingWorkflowError):
         wp._get_workflow_id(record=thesis)

@@ -48,7 +48,10 @@ class DefaultWorkflowPermissions(RecordPermissionPolicy):
 
     def __init__(self, action_name: str | None = None, **over: Any) -> None:
         """Initialize the workflow permissions."""
-        can = getattr(self, f"can_{action_name}")
+        try:
+            can = getattr(self, f"can_{action_name}")
+        except AttributeError:
+            print()
         if self.system_process not in can:
             can.append(self.system_process)
         over["policy"] = self
@@ -64,7 +67,7 @@ class DefaultWorkflowPermissions(RecordPermissionPolicy):
     #
     # TODO: we should provide somewhere RDM aware workflow permissions
     # so that repositories can use them out of the box
-    can_read_deleted = [SystemProcess()]
+    can_read_deleted = [SameAs("can_read")]
     can_update = [IfInState("draft", [RecordOwners()])]
     can_delete = [
         IfInState("draft", [RecordOwners()]),
@@ -145,3 +148,7 @@ class DefaultWorkflowPermissions(RecordPermissionPolicy):
 
     # stats
     can_query_stats = [Disable()]
+
+    # new ones?
+    can_edit = [Disable()]
+
