@@ -17,7 +17,5 @@ from werkzeug.local import LocalProxy
 if TYPE_CHECKING:
     from oarepo_workflows.ext import OARepoWorkflows
 
-current_oarepo_workflows: OARepoWorkflows = LocalProxy(  # type: ignore
-    lambda: current_app.extensions["oarepo-workflows"]
-)
+current_oarepo_workflows: OARepoWorkflows = LocalProxy(lambda: current_app.extensions["oarepo-workflows"])
 """Proxy to access the current OARepo workflows extension."""

@@ -27,15 +27,15 @@ from .requests import (
 )
 
 __all__ = (
+    "AutoApprove",
+    "AutoRequest",
+    "FromRecordWorkflow",
     "IfInState",
     "Workflow",
     "WorkflowPermission",
     "WorkflowRecordPermissionPolicy",
-    "WorkflowRequestPolicy",
     "WorkflowRequest",
     "WorkflowRequestEscalation",
+    "WorkflowRequestPolicy",
     "WorkflowTransitions",
-    "FromRecordWorkflow",
-    "AutoApprove",
-    "AutoRequest",
 )

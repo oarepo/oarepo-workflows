@@ -9,16 +9,18 @@
 
 from __future__ import annotations
 
-from functools import cached_property
-from typing import TYPE_CHECKING, Any, Optional
-
 import importlib.metadata
+from functools import cached_property
+from typing import TYPE_CHECKING, Any
+
 from invenio_drafts_resources.services.records.uow import ParentRecordCommitOp
 from invenio_records_resources.services.uow import unit_of_work
-from oarepo_runtime.datastreams.utils import get_record_service_for_record
+from oarepo_runtime.proxies import current_runtime
 
 from oarepo_workflows.errors import InvalidWorkflowError, MissingWorkflowError
 from oarepo_workflows.proxies import current_oarepo_workflows
+from oarepo_workflows.services.uow import StateChangeOperation
+"""
 from oarepo_workflows.services.auto_approve import (
     AutoApproveEntityService,
     AutoApproveEntityServiceConfig,
@@ -27,7 +29,8 @@ from oarepo_workflows.services.multiple_entities import (
     MultipleEntitiesEntityService,
     MultipleEntitiesEntityServiceConfig,
 )
-from oarepo_workflows.services.uow import StateChangeOperation
+"""
+
 
 if TYPE_CHECKING:
     from flask import Flask
@@ -46,7 +49,7 @@ if TYPE_CHECKING:
 class OARepoWorkflows:
     """OARepo workflows extension."""
 
-    def __init__(self, app: Optional[Flask] = None) -> None:
+    def __init__(self, app: Flask | None = None) -> None:
         """Initialize the extension.
 
         :param app: Flask application to initialize with.
@@ -70,9 +73,7 @@ class OARepoWorkflows:
 
         for k in ext_config.OAREPO_PERMISSIONS_PRESETS:
             if k not in app.config["OAREPO_PERMISSIONS_PRESETS"]:
-                app.config["OAREPO_PERMISSIONS_PRESETS"][k] = (
-                    ext_config.OAREPO_PERMISSIONS_PRESETS[k]
-                )
+                app.config["OAREPO_PERMISSIONS_PRESETS"][k] = ext_config.OAREPO_PERMISSIONS_PRESETS[k]
 
         app.config.setdefault("WORKFLOWS", ext_config.WORKFLOWS)
 
@@ -81,19 +82,13 @@ class OARepoWorkflows:
             ext_config.OAREPO_WORKFLOWS_SET_REQUEST_PERMISSIONS,
         )
 
-        app.config.setdefault("REQUESTS_ALLOWED_RECEIVERS", []).extend(
-            ext_config.WORKFLOWS_ALLOWED_REQUEST_RECEIVERS
-        )
+        app.config.setdefault("REQUESTS_ALLOWED_RECEIVERS", []).extend(ext_config.WORKFLOWS_ALLOWED_REQUEST_RECEIVERS)
 
     def init_services(self) -> None:
         """Initialize workflow services."""
         # noinspection PyAttributeOutsideInit
-        self.auto_approve_service = AutoApproveEntityService(
-            config=AutoApproveEntityServiceConfig()
-        )
-        self.multiple_recipients_service = MultipleEntitiesEntityService(
-            config=MultipleEntitiesEntityServiceConfig()
-        )
+        # self.auto_approve_service = AutoApproveEntityService(config=AutoApproveEntityServiceConfig())
+        # self.multiple_recipients_service = MultipleEntitiesEntityService(config=MultipleEntitiesEntityServiceConfig())
 
     @cached_property
     def state_changed_notifiers(self) -> list[StateChangedNotifier]:
@@ -105,9 +100,7 @@ class OARepoWorkflows:
         They are registered as entry points in the group `oarepo_workflows.state_changed_notifiers`.
         """
         group_name = "oarepo_workflows.state_changed_notifiers"
-        return [
-           ep.load() for ep in importlib.metadata.entry_points(group=group_name)
-        ]
+        return [ep.load() for ep in importlib.metadata.entry_points(group=group_name)]
 
     @cached_property
     def workflow_changed_notifiers(self) -> list[WorkflowChangeNotifier]:
@@ -117,9 +110,7 @@ class OARepoWorkflows:
         They are registered as entry points in the group `oarepo_workflows.workflow_changed_notifiers`.
         """
         group_name = "oarepo_workflows.workflow_changed_notifiers"
-        return [
-           ep.load() for ep in importlib.metadata.entry_points(group=group_name)
-        ]
+        return [ep.load() for ep in importlib.metadata.entry_points(group=group_name)]
 
     @unit_of_work()
     def set_state(
@@ -181,16 +172,12 @@ class OARepoWorkflows:
                 f"Workflow {new_workflow_id} does not exist in the configuration.",
                 record=record,
             )
-        parent = (
-            record.parent
-        )  # noqa for typing: we do not have a better type for record with parent
+        parent = record.parent
         previous_value = parent.workflow
         parent.workflow = new_workflow_id
         if commit:
-            service = get_record_service_for_record(record)
-            uow.register(
-                ParentRecordCommitOp(parent, indexer_context=dict(service=service))
-            )
+            service = current_runtime.get_record_service_for_record(record)
+            uow.register(ParentRecordCommitOp(parent, indexer_context={"service": service}))
         for workflow_changed_notifier in self.workflow_changed_notifiers:
             workflow_changed_notifier(
                 identity,
@@ -212,8 +199,7 @@ class OARepoWorkflows:
 
         if hasattr(parent, "workflow") and parent.workflow:
             return parent.workflow
-        else:
-            return None
+        return None
 
     @property
     def record_workflows(self) -> dict[str, Workflow]:
@@ -238,9 +224,7 @@ class OARepoWorkflows:
         """
         if hasattr(record, "parent"):
             try:
-                record_parent: WithWorkflow = (
-                    record.parent
-                )  # noqa for typing: we do not have a better type for record with parent
+                record_parent: WithWorkflow = record.parent
             except AttributeError as e:
                 raise MissingWorkflowError(
                     "Record does not have a parent attribute, is it a draft-enabled record?",
@@ -249,22 +233,16 @@ class OARepoWorkflows:
             try:
                 workflow_id = record_parent.workflow
             except AttributeError as e:
-                raise MissingWorkflowError(
-                    "Parent record does not have a workflow attribute.", record=record
-                ) from e
+                raise MissingWorkflowError("Parent record does not have a workflow attribute.", record=record) from e
         else:
             try:
                 dict_parent: dict[str, Any] = record["parent"]
             except KeyError as e:
-                raise MissingWorkflowError(
-                    "Record does not have a parent attribute.", record=record
-                ) from e
+                raise MissingWorkflowError("Record does not have a parent attribute.", record=record) from e
             try:
                 workflow_id = dict_parent["workflow"]
             except KeyError as e:
-                raise MissingWorkflowError(
-                    "Parent record does not have a workflow attribute.", record=record
-                ) from e
+                raise MissingWorkflowError("Parent record does not have a workflow attribute.", record=record) from e
 
         try:
             return self.record_workflows[workflow_id]
@@ -293,15 +271,15 @@ def finalize_app(app: Flask) -> None:
 
     ext: OARepoWorkflows = app.extensions["oarepo-workflows"]
 
-    records_resources.registry.register(
-        ext.auto_approve_service,
-        service_id=ext.auto_approve_service.config.service_id,
-    )
+    # records_resources.registry.register(
+    #    ext.auto_approve_service,
+    #    service_id=ext.auto_approve_service.config.service_id,
+    # )
 
-    records_resources.registry.register(
-        ext.multiple_recipients_service,
-        service_id=ext.multiple_recipients_service.config.service_id,
-    )
+    # records_resources.registry.register(
+    #    ext.multiple_recipients_service,
+    #    service_id=ext.multiple_recipients_service.config.service_id,
+    # )
 
     if app.config["OAREPO_WORKFLOWS_SET_REQUEST_PERMISSIONS"]:
         patch_request_permissions(app)
@@ -314,9 +292,8 @@ def patch_request_permissions(app: Flask) -> None:
     replace those with workflow-based ones. If user set their own
     permissions, keep those intact.
     """
-    # patch invenio requests
-    from invenio_requests.services.permissions import (
-        PermissionPolicy as OriginalPermissionPolicy,
+    from invenio_rdm_records.services.permissions import (
+        RDMRequestsPermissionPolicy as OriginalPermissionPolicy,
     )
 
     with app.app_context():
@@ -328,10 +305,9 @@ def patch_request_permissions(app: Flask) -> None:
 
         current_permission_policy = app.config.get("REQUESTS_PERMISSION_POLICY")
         if current_permission_policy is OriginalPermissionPolicy:
-            app.config["REQUESTS_PERMISSION_POLICY"] = (
-                CreatorsFromWorkflowRequestsPermissionPolicy
-            )
-            assert (
+            app.config["REQUESTS_PERMISSION_POLICY"] = CreatorsFromWorkflowRequestsPermissionPolicy
+            if (
                 current_requests_service.config.permission_policy_cls
-                is CreatorsFromWorkflowRequestsPermissionPolicy
-            )
+                is not CreatorsFromWorkflowRequestsPermissionPolicy
+            ):
+                raise TypeError("Permission policy setting failed.")

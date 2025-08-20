@@ -9,7 +9,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, override
 
 from invenio_access import SystemRoleNeed
 from invenio_records_permissions.generators import Generator
@@ -32,6 +32,7 @@ class AutoRequest(Generator):
     when a record is moved to a specific state.
     """
 
+    @override
     def needs(self, **context: Any) -> list[Need]:
         """Get needs that signal workflow to automatically create the request."""
         return [auto_request_need]
@@ -46,8 +47,8 @@ class AutoApprove(RecipientGeneratorMixin, Generator):
 
     def reference_receivers(
         self,
-        record: Optional[Record] = None,
-        request_type: Optional[RequestType] = None,
+        record: Record | None = None,
+        request_type: RequestType | None = None,
         **kwargs: Any,
     ) -> list[dict[str, str]]:
         """Return the reference receiver(s) of the auto-approve request.

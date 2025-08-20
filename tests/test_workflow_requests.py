@@ -9,13 +9,14 @@ from types import SimpleNamespace
 
 import pytest
 from flask_principal import Identity, RoleNeed, UserNeed
+from invenio_rdm_records.services.generators import RecordOwners
 from invenio_records_permissions.generators import Generator
-from oarepo_runtime.services.permissions import RecordOwners, UserWithRole
 from opensearch_dsl.query import Terms
 
 from oarepo_workflows import WorkflowRequestPolicy, WorkflowTransitions
 from oarepo_workflows.requests import WorkflowRequest
 from oarepo_workflows.requests.generators import RecipientGeneratorMixin
+from tests.test_multiple_recipients import UserWithRole
 
 
 class TestRecipient(RecipientGeneratorMixin, Generator):
@@ -72,18 +73,16 @@ class R(WorkflowRequestPolicy):
     )
 
 
-def test_workflow_requests(db, users, draft_model, logged_client, search_clear, location):
+def test_workflow_requests(db, users, workflow_model, logged_client, search_clear, location):
     req = WorkflowRequest(
         requesters=[RecordOwners()],
         recipients=[NullRecipient(), TestRecipient()],
     )
-    rec = draft_model.Draft.create({})
+    rec = workflow_model.Draft.create({})
     assert req.recipient_entity_reference(record=rec) == {"user": "1"}
 
 
-def test_workflow_requests_multiple_recipients(
-    db, users, draft_model, logged_client, search_clear, location
-):
+def test_workflow_requests_multiple_recipients(db, users, workflow_model, logged_client, search_clear, location):
     req = WorkflowRequest(
         requesters=[RecordOwners()],
         recipients=[
@@ -91,20 +90,16 @@ def test_workflow_requests_multiple_recipients(
             TestRecipient2(),
         ],
     )
-    rec = draft_model.Draft.create({})
-    assert req.recipient_entity_reference(record=rec) == {
-        "multiple": '[{"user": "1"}, {"user": "2"}]'
-    }
+    rec = workflow_model.Draft.create({})
+    assert req.recipient_entity_reference(record=rec) == {"multiple": '[{"user": "1"}, {"user": "2"}]'}
 
 
-def test_workflow_requests_no_recipient(
-    draft_model, users, logged_client, search_clear, location, record_service
-):
+def test_workflow_requests_no_recipient(workflow_model, users, logged_client, search_clear, location, record_service):
     req1 = WorkflowRequest(
         requesters=[RecordOwners()],
         recipients=[NullRecipient()],
     )
-    rec = draft_model.Draft.create({})
+    rec = workflow_model.Draft.create({})
     assert req1.recipient_entity_reference(record=rec) is None
 
     req2 = WorkflowRequest(
@@ -120,9 +115,7 @@ def test_request_policy_access(app, search_clear):
     assert not getattr(request_policy, "non_existing_request", None)
 
 
-def test_is_applicable(
-    users, logged_client, search_clear, record_service, extra_request_types
-):
+def test_is_applicable(users, logged_client, search_clear, record_service, extra_request_types):
     req = WorkflowRequest(
         requesters=[RecordOwners()],
         recipients=[NullRecipient(), TestRecipient()],
@@ -137,16 +130,16 @@ def test_is_applicable(
 
     record = SimpleNamespace(
         parent=SimpleNamespace(
-            owners=[SimpleNamespace(id=1)], workflow="is_applicable_workflow"
+            access=(SimpleNamespace(owner=SimpleNamespace(owner_id=1))),
+            workflow="is_applicable_workflow",
         )
     )
+
     assert req.is_applicable(id2, record=record) is False
     assert req.is_applicable(id1, record=record) is True
 
 
-def test_list_applicable_requests(
-    users, logged_client, search_clear, record_service, extra_request_types
-):
+def test_list_applicable_requests(users, logged_client, search_clear, record_service, extra_request_types):
     requests = R()
 
     id1 = Identity(id=1)
@@ -158,61 +151,50 @@ def test_list_applicable_requests(
 
     record = SimpleNamespace(
         parent=SimpleNamespace(
-            owners=[SimpleNamespace(id=1)], workflow="is_applicable_workflow"
+            access=(SimpleNamespace(owner=SimpleNamespace(owner_id=1))),
+            workflow="is_applicable_workflow",
         )
     )
 
-    assert set(
-        x[0] for x in requests.applicable_workflow_requests(id1, record=record)
-    ) == {"req"}
+    assert set(x[0] for x in requests.applicable_workflow_requests(id1, record=record)) == {"req"}
 
-    assert (
-        set(x[0] for x in requests.applicable_workflow_requests(id2, record=record))
-        == set()
-    )
+    assert set(x[0] for x in requests.applicable_workflow_requests(id2, record=record)) == set()
 
 
-def test_get_workflow_request_via_index(
-    users, logged_client, search_clear, record_service, extra_request_types
-):
+def test_get_workflow_request_via_index(users, logged_client, search_clear, record_service, extra_request_types):
     requests = R()
     assert requests["req"] == requests.req
     assert requests["req1"] == requests.req1
     with pytest.raises(KeyError):
-        requests["non_existing_request"]  # noqa
+        requests["non_existing_request"]
 
 
-def test_get_request_type(
-    users, logged_client, search_clear, record_service, extra_request_types
-):
+def test_get_request_type(users, logged_client, search_clear, record_service, extra_request_types):
     requests = R()
     for rt_code, wr in requests.items():
         assert wr.request_type.type_id == rt_code
 
 
-def test_transition_getter(
-    users, logged_client, search_clear, record_service, extra_request_types
-):
+def test_transition_getter(users, logged_client, search_clear, record_service, extra_request_types):
     requests = R()
     assert requests.req.transitions["submitted"] == "pending"
     assert requests.req.transitions["accepted"] == "accepted"
     assert requests.req.transitions["declined"] == "declined"
     with pytest.raises(KeyError):
-        requests.req.transitions["non_existing_transition"]  # noqa
+        requests.req.transitions["non_existing_transition"]
 
 
-def test_requestor_filter(
-    users, logged_client, search_clear, record_service, extra_request_types
-):
+def test_requestor_filter(users, logged_client, search_clear, record_service, extra_request_types):
     requests = R()
     sample_record = SimpleNamespace(
-        parent=SimpleNamespace(owners=[SimpleNamespace(id=1)])
+        parent=SimpleNamespace(
+            access=(SimpleNamespace(owner=SimpleNamespace(owner_id=1))),
+            workflow="is_applicable_workflow",
+        )
     )
 
     id1 = Identity(id=1)
     id1.provides.add(UserNeed(1))
 
     generator = requests.req.requester_generator
-    assert generator.query_filter(identity=id1, record=sample_record) == [
-        Terms(parent__owners__user=[1])
-    ]
+    assert generator.query_filter(identity=id1, record=sample_record) == [Terms(parent__access__owned_by__user=[1])]

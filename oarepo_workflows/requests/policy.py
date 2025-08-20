@@ -55,9 +55,7 @@ class WorkflowRequestPolicy:
         try:
             return getattr(self, request_type_id)
         except AttributeError:
-            raise KeyError(
-                f"Request type {request_type_id} not defined in {self.__class__.__name__}"
-            ) from None
+            raise KeyError(f"Request type {request_type_id} not defined in {self.__class__.__name__}") from None
 
     def items(self) -> list[tuple[str, WorkflowRequest]]:
         """Return the list of request types and their instances.

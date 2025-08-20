@@ -14,9 +14,9 @@ from .record_permission_policy import WorkflowRecordPermissionPolicy
 from .workflow_permissions import DefaultWorkflowPermissions
 
 __all__ = (
+    "DefaultWorkflowPermissions",
+    "FromRecordWorkflow",
     "IfInState",
     "WorkflowPermission",
     "WorkflowRecordPermissionPolicy",
-    "DefaultWorkflowPermissions",
-    "FromRecordWorkflow",
 )

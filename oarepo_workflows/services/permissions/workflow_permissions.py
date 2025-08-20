@@ -11,15 +11,47 @@ from __future__ import annotations
 
 from typing import Any
 
+from invenio_rdm_records.services.generators import RecordOwners
 from invenio_records_permissions import RecordPermissionPolicy
 from invenio_records_permissions.generators import (
     AuthenticatedUser,
     Disable,
     SystemProcess,
 )
-from oarepo_runtime.services.permissions import RecordOwners
 
 from .generators import IfInState, SameAs
+
+"""
+class RecordOwners(Generator): #TODO: temp
+
+
+    def needs(self, record=None, **kwargs):
+
+        if record is None:
+            # 'record' is required, so if not passed we default to empty array,
+            # i.e. superuser-access.
+            return []
+        if current_app.config.get("INVENIO_RDM_ENABLED", False):
+            owners = getattr(record.parent.access, "owned_by", None)
+            if owners is not None:
+                owners_list = owners if isinstance(owners, list) else [owners]
+                return [UserNeed(owner.owner_id) for owner in owners_list]
+        else:
+            owners = getattr(record.parent, "owners", None)
+            if owners is not None:
+                return [UserNeed(owner.id) for owner in owners]
+        return []
+
+    def query_filter(self, identity=None, **kwargs):
+
+        users = [n.value for n in identity.provides if n.method == "id"]
+        if users:
+            if current_app.config.get("INVENIO_RDM_ENABLED", False):
+                return dsl.Q("terms", **{"parent.access.owned_by.user": users})
+            else:
+                return dsl.Q("terms", **{"parent.owners.user": users})
+        return dsl.Q("match_none")
+"""
 
 
 class DefaultWorkflowPermissions(RecordPermissionPolicy):
@@ -37,21 +69,21 @@ class DefaultWorkflowPermissions(RecordPermissionPolicy):
 
     """
 
-    # TODO: new version - update; edit current version - disable -> idk if there's other way than something like IfNoEditDraft/IfNoNewVersionDraft generators-
+    # TODO: new version - update; edit current version - disable -> idk if
+    #  there's other way than something like IfNoEditDraft/IfNoNewVersionDraft generators-
 
+    """
     files_edit = [
         IfInState("draft", [RecordOwners()]),
         IfInState("published", [Disable()]),
     ]
+    """
 
     system_process = SystemProcess()
 
     def __init__(self, action_name: str | None = None, **over: Any) -> None:
         """Initialize the workflow permissions."""
-        try:
-            can = getattr(self, f"can_{action_name}")
-        except AttributeError:
-            print()
+        can = getattr(self, f"can_{action_name}")
         if self.system_process not in can:
             can.append(self.system_process)
         over["policy"] = self
@@ -151,4 +183,3 @@ class DefaultWorkflowPermissions(RecordPermissionPolicy):
 
     # new ones?
     can_edit = [Disable()]
-

@@ -68,10 +68,7 @@ class MultipleEntitiesResolver(EntityResolver):
 
     def _reference_entity(self, entity: MultipleEntitiesEntity) -> dict[str, str]:
         """Return a reference dictionary for the entity."""
-        print("!!!! multiple_entities/__init__.py _reference_entity", entity.entities)
-        return {
-            self.type_id: json.dumps([part.reference_dict for part in entity.entities])
-        }
+        return {self.type_id: json.dumps([part.reference_dict for part in entity.entities])}
 
     def matches_entity(self, entity: Any) -> bool:
         """Check if the entity can be serialized to a reference by this resolver."""

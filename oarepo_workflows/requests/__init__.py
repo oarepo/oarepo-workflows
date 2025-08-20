@@ -21,12 +21,12 @@ from .requests import (
 )
 
 __all__ = (
-    "WorkflowRequestPolicy",
-    "RecipientEntityReference",
-    "WorkflowRequest",
-    "WorkflowRequestEscalation",
-    "WorkflowTransitions",
     "AutoApprove",
     "AutoRequest",
+    "RecipientEntityReference",
     "RecipientGeneratorMixin",
+    "WorkflowRequest",
+    "WorkflowRequestEscalation",
+    "WorkflowRequestPolicy",
+    "WorkflowTransitions",
 )

@@ -28,7 +28,7 @@ class WorkflowEvent:
     submitters: list[Generator] | tuple[Generator]
     """List of submitters to be used for the event.
 
-       The generators supply needs. The user must have at least one of the needs 
+       The generators supply needs. The user must have at least one of the needs
        to be able to create a workflow event.
     """
 

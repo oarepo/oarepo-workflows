@@ -9,7 +9,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from invenio_records_resources.services.records.components.base import ServiceComponent
 
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 
 class WorkflowSetupComponent(ServiceComponent):
-    pass
+    """Workflow component base."""
 
 
 class WorkflowComponent(ServiceComponent):
@@ -32,7 +32,7 @@ class WorkflowComponent(ServiceComponent):
     when record is created. If it is not present, it raises an error.
     """
 
-    depends_on = [WorkflowSetupComponent]
+    depends_on = (WorkflowSetupComponent,)
     affects = "*"
     # put it before metadata component to make sure that the workflow
     # is set at the beginning of the record creation process. This makes sure
@@ -41,8 +41,8 @@ class WorkflowComponent(ServiceComponent):
     def create(
         self,
         identity: Identity,
-        data: Optional[dict[str, Any]] = None,
-        record: Optional[Record] = None,
+        data: dict[str, Any] | None = None,
+        record: Record | None = None,
         **kwargs: Any,
     ) -> None:
         """Implement record creation checks and set the workflow on the created record."""
@@ -63,6 +63,4 @@ class WorkflowComponent(ServiceComponent):
                 record=data,
             ) from e
 
-        current_oarepo_workflows.set_workflow(
-            identity, record, workflow_id, uow=self.uow, **kwargs
-        )
+        current_oarepo_workflows.set_workflow(identity, record, workflow_id, uow=self.uow, **kwargs)

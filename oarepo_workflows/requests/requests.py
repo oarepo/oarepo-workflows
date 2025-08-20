@@ -12,7 +12,7 @@ from __future__ import annotations
 import dataclasses
 from functools import cached_property
 from logging import getLogger
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from invenio_requests.proxies import (
     current_request_type_registry,
@@ -53,15 +53,13 @@ class WorkflowRequest:
     recipients: list[Generator] | tuple[Generator]
     """Generators that define who can approve the request."""
 
-    events: dict[str, WorkflowEvent] = dataclasses.field(default_factory=lambda: {})
+    events: dict[str, WorkflowEvent] = dataclasses.field(default_factory=dict)
     """Events that can be submitted with the request."""
 
-    transitions: Optional[WorkflowTransitions] = dataclasses.field(
-        default_factory=lambda: WorkflowTransitions()
-    )
+    transitions: WorkflowTransitions | None = dataclasses.field(default_factory=lambda: WorkflowTransitions())
     """Transitions applied to the state of the topic of the request."""
 
-    escalations: Optional[list[WorkflowRequestEscalation]] = None
+    escalations: list[WorkflowRequestEscalation] | None = None
     """Escalations applied to the request if not approved/declined in time."""
 
     _request_type: RequestType | None = dataclasses.field(default=None, init=False)
@@ -81,9 +79,7 @@ class WorkflowRequest:
         """
         return RecipientEntityReference(self, **context)
 
-    def is_applicable(
-        self, identity: Identity, *, record: Record, **context: Any
-    ) -> bool:
+    def is_applicable(self, identity: Identity, *, record: Record, **context: Any) -> bool:
         """Check if the request is applicable for the identity and context (which might include record, community, ...).
 
         :param identity: Identity of the requester.
@@ -92,21 +88,18 @@ class WorkflowRequest:
         try:
             if hasattr(self.request_type, "is_applicable_to"):
                 # the is_applicable_to must contain a permission check, so do not need to do any check here ...
-                return self.request_type.is_applicable_to(
-                    identity, topic=record, **context
-                )
-            else:
-                return current_requests_service.check_permission(
-                    identity,
-                    "create",
-                    record=record,
-                    request_type=self.request_type,
-                    **context,
-                )
+                return self.request_type.is_applicable_to(identity, topic=record, **context)
+            return current_requests_service.check_permission(
+                identity,
+                "create",
+                record=record,
+                request_type=self.request_type,
+                **context,
+            )
         except InvalidConfigurationError:
             raise
-        except Exception as e:
-            log.exception("Error checking request applicability: %s", e)
+        except:
+            log.exception("Error checking request applicability")
             return False
 
     @cached_property
@@ -141,17 +134,15 @@ class WorkflowTransitions:
     If the request is rejected, the record will be moved to state defined in rejected.
     """
 
-    submitted: Optional[str] = None
-    accepted: Optional[str] = None
-    declined: Optional[str] = None
-    cancelled: Optional[str] = None
+    submitted: str | None = None
+    accepted: str | None = None
+    declined: str | None = None
+    cancelled: str | None = None
 
     def __getitem__(self, transition_name: str):
         """Get the transition by name."""
         if transition_name not in ["submitted", "accepted", "declined", "cancelled"]:
-            raise KeyError(
-                f"Transition {transition_name} not defined in {self.__class__.__name__}"
-            )
+            raise KeyError(f"Transition {transition_name} not defined in {self.__class__.__name__}")
         return getattr(self, transition_name)
 
 
@@ -168,21 +159,23 @@ class WorkflowRequestEscalation:
     recipients: list[Generator] | tuple[Generator]
 
     @property
-    def escalation_id(self):
+    def escalation_id(self) -> str:
         """Return the escalation ID."""
         return str(self.after.total_seconds())
 
     def __repr__(self):
-        """Representation of the WorkflowRequestEscalation."""
+        """Return representation of the WorkflowRequestEscalation."""
         return str(self)
 
     def __str__(self):
-        """String representation of WorkflowRequestEscalation containing after time and recipients."""
-        return f'{self.after=},{self.recipients=}'
+        """Return String representation of WorkflowRequestEscalation containing after time and recipients."""
+        return f"{self.after=},{self.recipients=}"
+
 
 # noinspection PyPep8Naming
-def RecipientEntityReference(request_or_escalation: WorkflowRequest | WorkflowRequestEscalation,
-                             **context: Any) -> dict | None:
+def RecipientEntityReference(
+    request_or_escalation: WorkflowRequest | WorkflowRequestEscalation, **context: Any
+) -> dict | None:
     """Return the reference receiver of the workflow request or workflow request escalation with the given context.
 
     Note: invenio supports only one receiver, so the first one is returned at the moment.

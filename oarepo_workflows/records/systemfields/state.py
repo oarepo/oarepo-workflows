@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Any, Optional, Protocol, Self, cast, overload
+from typing import Any, Protocol, Self, cast, overload, override
 
 from invenio_records.systemfields.base import SystemField
 from oarepo_runtime.records.systemfields import MappingSystemFieldMixin
@@ -43,9 +43,8 @@ class RecordStateField(MappingSystemFieldMixin, SystemField):
         """Set the initial state when record is created."""
         self.set_dictkey(record, self._initial)
 
-    def post_init(
-        self, record: WithState, data: dict, model: Optional[Any] = None, **kwargs: Any
-    ) -> None:
+    @override
+    def post_init(self, record: WithState, data: dict, model: Any | None = None, **kwargs: Any) -> None:
         """Set the initial state when record is created."""
         if not record.state:
             self.set_dictkey(record, self._initial)
@@ -56,9 +55,7 @@ class RecordStateField(MappingSystemFieldMixin, SystemField):
     @overload
     def __get__(self, record: WithState, owner: type | None = None) -> str: ...
 
-    def __get__(
-        self, record: WithState | None, owner: type | None = None
-    ) -> str | Self:
+    def __get__(self, record: WithState | None, owner: type | None = None) -> str | Self:
         """Get the persistent identifier."""
         if record is None:
             return self
@@ -68,7 +65,7 @@ class RecordStateField(MappingSystemFieldMixin, SystemField):
         """Directly set the state of the record."""
         if self.get_dictkey(record) != value:
             self.set_dictkey(record, value)
-            cast(dict, record)["state_timestamp"] = datetime.now(tz=UTC).isoformat()
+            cast("dict", record)["state_timestamp"] = datetime.now(tz=UTC).isoformat()
 
     @property
     def mapping(self) -> dict[str, dict[str, str]]:
@@ -89,9 +86,8 @@ class RecordStateTimestampField(MappingSystemFieldMixin, SystemField):
         """Set the initial state when record is created."""
         self.set_dictkey(record, datetime.now(tz=UTC).isoformat())
 
-    def post_init(
-        self, record: WithState, data: dict, model: Optional[Any] = None, **kwargs: Any
-    ) -> None:
+    @override
+    def post_init(self, record: WithState, data: dict, model: Any | None = None, **kwargs: Any) -> None:
         """Set the initial state when record is created."""
         if not record.state_timestamp:
             self.set_dictkey(record, datetime.now(tz=UTC).isoformat())
@@ -102,9 +98,7 @@ class RecordStateTimestampField(MappingSystemFieldMixin, SystemField):
     @overload
     def __get__(self, record: WithState, owner: type | None = None) -> str: ...
 
-    def __get__(
-        self, record: WithState | None, owner: type | None = None
-    ) -> str | Self:
+    def __get__(self, record: WithState | None, owner: type | None = None) -> str | Self:
         """Get the persistent identifier."""
         if record is None:
             return self

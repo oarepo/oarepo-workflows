@@ -1,6 +1,24 @@
+#
+# Copyright (c) 2025 CESNET z.s.p.o.
+#
+# This file is a part of oarepo-workflows (see http://github.com/oarepo/oarepo-workflows).
+#
+# oarepo-workflows is free software; you can redistribute it and/or modify it
+# under the terms of the MIT License; see LICENSE file for more details.
+#
+from __future__ import annotations
+
+import json
+import sys
+import time
+
 import pytest
-from oarepo_model.customizations import AddEntryPoint, AddModule
-from oarepo_model.presets.drafts import drafts_presets
+from flask_principal import Identity, Need, UserNeed
+from invenio_rdm_records.services.generators import RecordOwners
+from invenio_rdm_records.services.permissions import RDMRequestsPermissionPolicy
+from oarepo_model.customizations import AddFileToModule
+from oarepo_model.presets.rdm import rdm_presets
+from oarepo_model.presets.records_resources import records_resources_presets
 
 from oarepo_workflows.model.presets import workflows_presets
 
@@ -9,6 +27,7 @@ from oarepo_workflows.model.presets import workflows_presets
 def test_draft_service(app):
     """Service instance."""
     return app.extensions["draft_test"].records_service
+
 
 """
 @pytest.fixture(scope="module")
@@ -35,16 +54,11 @@ def input_data_with_files_disabled(input_data):
     return data
 
 
-import copy
-import json
-import sys
-import time
-
-import pytest
-from flask_principal import Identity, Need, UserNeed
-from oarepo_model.presets.records_resources import records_resources_presets
-
-pytest_plugins = ("celery.contrib.pytest", "pytest_oarepo.users", "pytest_oarepo.fixtures")
+pytest_plugins = (
+    "celery.contrib.pytest",
+    "pytest_oarepo.users",
+    "pytest_oarepo.fixtures",
+)
 
 
 parent_json_schema = {
@@ -61,20 +75,14 @@ model_types = {
         }
     }
 }
-import os
 
 import pytest
-import yaml
 from flask_principal import ActionNeed
-from flask_security import login_user
-from invenio_accounts.testutils import login_user_via_session
-from invenio_app.factory import create_api
 from invenio_i18n import lazy_gettext as _
-from invenio_records_permissions.generators import Generator
-from invenio_users_resources.records import UserAggregate
+from invenio_records_permissions.generators import AuthenticatedUser, Generator
 from invenio_requests.customizations.request_types import RequestType
 from invenio_requests.proxies import current_request_type_registry
-from oarepo_runtime.services.permissions import RecordOwners
+from invenio_search.engine import dsl
 
 from oarepo_workflows.base import Workflow
 from oarepo_workflows.requests import (
@@ -97,7 +105,42 @@ pytest_plugins = [
 ]
 """
 
-class RecordOwnersReadTestWorkflowPermissionPolicy(DefaultWorkflowPermissions):
+"""
+class RecordOwners(Generator):
+
+    def needs(self, record=None, **kwargs):
+        if record is None:
+            # 'record' is required, so if not passed we default to empty array,
+            # i.e. superuser-access.
+            return []
+        if current_app.config.get("INVENIO_RDM_ENABLED", False):
+            owners = getattr(record.parent.access, "owned_by", None)
+            if owners is not None:
+                owners_list = owners if isinstance(owners, list) else [owners]
+                return [UserNeed(owner.owner_id) for owner in owners_list]
+        else:
+            owners = getattr(record.parent, "owners", None)
+            if owners is not None:
+                return [UserNeed(owner.id) for owner in owners]
+        return []
+
+    def query_filter(self, identity=None, **kwargs):
+
+        users = [n.value for n in identity.provides if n.method == "id"]
+        if users:
+            if current_app.config.get("INVENIO_RDM_ENABLED", False):
+                return dsl.Q("terms", **{"parent.access.owned_by.user": users})
+            else:
+                return dsl.Q("terms", **{"parent.owners.user": users})
+        return dsl.Q("match_none")
+"""
+
+
+class TestPermissionPolicy(DefaultWorkflowPermissions):
+    can_manage_files = [AuthenticatedUser()]
+
+
+class RecordOwnersReadTestWorkflowPermissionPolicy(TestPermissionPolicy):
     can_read = [RecordOwners()]
 
 
@@ -108,8 +151,6 @@ class Administration(Generator):
 
     def query_filter(self, **kwargs):
         """Search filters."""
-        from invenio_search.engine import dsl
-
         return dsl.Q("match_all")
 
 
@@ -132,7 +173,7 @@ class IsApplicableTestRequestPolicy(WorkflowRequestPolicy):
 WORKFLOWS = {
     "my_workflow": Workflow(
         label=_("Default workflow"),
-        permission_policy_cls=DefaultWorkflowPermissions,
+        permission_policy_cls=TestPermissionPolicy,
         request_policy_cls=MyWorkflowRequests,
     ),
     "record_owners_can_read": Workflow(
@@ -142,7 +183,7 @@ WORKFLOWS = {
     ),
     "is_applicable_workflow": Workflow(
         label=_("For testing is_applicable"),
-        permission_policy_cls=DefaultWorkflowPermissions,
+        permission_policy_cls=TestPermissionPolicy,
         request_policy_cls=IsApplicableTestRequestPolicy,
     ),
 }
@@ -161,9 +202,11 @@ def workflow_change_function():
 
     return current_oarepo_workflows.set_workflow
 
+
 @pytest.fixture
-def record_service(draft_model):
-    return draft_model.proxies.current_service
+def record_service(workflow_model):
+    return workflow_model.proxies.current_service
+
 
 """
 @pytest.fixture(scope="function")
@@ -179,6 +222,7 @@ def input_data(sample_metadata_list):
     return sample_metadata_list[0]
 """
 
+
 @pytest.fixture(scope="function")
 def input_data():
     """Input data (as coming from the view layer)."""
@@ -189,9 +233,9 @@ def input_data():
         },
     }
 
+
 import pytest
-from importlib_metadata import EntryPoint
-from unittest.mock import patch
+
 
 @pytest.fixture(scope="module")
 def extra_entry_points():
@@ -203,6 +247,7 @@ def extra_entry_points():
             "test_getter = tests.utils:test_workflow_change_notifier",
         ],
     }
+
 
 """
 @pytest.fixture
@@ -218,15 +263,16 @@ def mappings():
 """
 
 
-@pytest.fixture()
+@pytest.fixture
 def default_workflow_json():
-    return {"parent": {"workflow": "my_workflow"},
-            "files": {"enabled": False},
-            "metadata": {"title": "Test"},
-            }
+    return {
+        "parent": {"workflow": "my_workflow"},
+        "files": {"enabled": False},
+        "metadata": {"title": "Test"},
+    }
 
 
-@pytest.fixture()
+@pytest.fixture
 def extra_request_types():
     def create_rt(type_id):
         return type("Req", (RequestType,), {"type_id": type_id})
@@ -237,24 +283,38 @@ def extra_request_types():
     current_request_type_registry.register_type(create_rt("req3"), force=True)
 
 
+@pytest.fixture(scope="session")
+def model_types():
+    """Model types fixture."""
+    # Define the model types used in the tests
+    return {
+        "Metadata": {
+            "properties": {
+                "title": {"type": "fulltext+keyword", "required": True},
+            }
+        }
+    }
 
-@pytest.fixture(scope="module")
-def draft_model():
+
+@pytest.fixture(scope="session")
+def workflow_model(model_types):
     from oarepo_model.api import model
-    from oarepo_model.customizations import AddFileToModule
-    from oarepo_model.presets.rdm import rdm_presets
+    from oarepo_model.presets.drafts import drafts_presets
 
     t1 = time.time()
 
-    draft_model = model(
-        name="draft_test",
+    workflow_model = model(
+        name="rdm_test",
         version="1.0.0",
-        presets=[records_resources_presets, drafts_presets, rdm_presets, workflows_presets],
+        presets=[
+            records_resources_presets,
+            drafts_presets,
+            rdm_presets,
+            workflows_presets,
+        ],
         types=[model_types],
         metadata_type="Metadata",
         customizations=[
-            # needs https://github.com/inveniosoftware/invenio-search/pull/238/files
-            # add parent JSON schema
             AddFileToModule(
                 "parent-jsonschema",
                 "jsonschemas",
@@ -270,16 +330,22 @@ def draft_model():
             ),
         ],
     )
-    draft_model.register()
+    workflow_model.register()
 
     t2 = time.time()
-    print(f"Draft Model created in {t2 - t1:.2f} seconds", file=sys.stderr, flush=True)
+    print(f"Model created in {t2 - t1:.2f} seconds", file=sys.stderr, flush=True)
 
-    return draft_model
+    try:
+        yield workflow_model
+    finally:
+        workflow_model.unregister()
+
+    return workflow_model
+
 
 @pytest.fixture(scope="module")
-#def app_config(app_config, empty_model, draft_model, draft_model_with_files):
-def app_config(app_config, draft_model):
+# def app_config(app_config, empty_model, draft_model, draft_model_with_files):
+def app_config(app_config, workflow_model):
     """Override pytest-invenio app_config fixture.
 
     Needed to set the fields on the custom fields schema.
@@ -290,21 +356,15 @@ def app_config(app_config, draft_model):
 
     app_config["FILES_REST_DEFAULT_STORAGE_CLASS"] = "L"
 
-    app_config["RECORDS_REFRESOLVER_CLS"] = (
-        "invenio_records.resolver.InvenioRefResolver"
-    )
-    app_config["RECORDS_REFRESOLVER_STORE"] = (
-        "invenio_jsonschemas.proxies.current_refresolver_store"
-    )
+    app_config["RECORDS_REFRESOLVER_CLS"] = "invenio_records.resolver.InvenioRefResolver"
+    app_config["RECORDS_REFRESOLVER_STORE"] = "invenio_jsonschemas.proxies.current_refresolver_store"
 
     app_config["THEME_FRONTPAGE"] = False
 
-    app_config["SQLALCHEMY_ENGINE_OPTIONS"] = (
-        {  # hack to avoid pool_timeout set in invenio_app_rdm
-            "pool_pre_ping": False,
-            "pool_recycle": 3600,
-        }
-    )
+    app_config["SQLALCHEMY_ENGINE_OPTIONS"] = {  # hack to avoid pool_timeout set in invenio_app_rdm
+        "pool_pre_ping": False,
+        "pool_recycle": 3600,
+    }
 
     app_config["CELERY_ALWAYS_EAGER"] = True
     app_config["CELERY_TASK_ALWAYS_EAGER"] = True
@@ -312,8 +372,16 @@ def app_config(app_config, draft_model):
     # app_config["SQLALCHEMY_ECHO"] = True
 
     app_config["WORKFLOWS"] = WORKFLOWS
-    app_config["INVENIO_RDM_ENABLED"] = True
     app_config["REST_CSRF_ENABLED"] = False
+
+    app_config["RDM_PERSISTENT_IDENTIFIERS"] = {}
+
+    app_config["RDM_OPTIONAL_DOI_VALIDATOR"] = lambda _draft, _previous_published, **_kwargs: True
+    app_config["REQUESTS_PERMISSION_POLICY"] = (
+        RDMRequestsPermissionPolicy  # TODO: rdm expected as default, though the app_rdm (?) config is not used for now?
+    )
+    # app_config["DATACITE_TEST_MODE"] = True
+    # app_config["RDM_RECORDS_ALLOW_RESTRICTION_AFTER_GRACE_PERIOD"] = True
 
     return app_config
 

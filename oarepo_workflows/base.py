@@ -52,11 +52,19 @@ class Workflow:
 
         This is just a sanity check to raise an error as soon as possible.
         """
-        assert not issubclass(
-            self.permission_policy_cls, WorkflowRecordPermissionPolicy
-        )
-        assert issubclass(self.permission_policy_cls, DefaultWorkflowPermissions)
-        assert issubclass(self.request_policy_cls, WorkflowRequestPolicy)
+        if issubclass(self.permission_policy_cls, WorkflowRecordPermissionPolicy):
+            raise TypeError(
+                f"Workflow permission policy {self.permission_policy_cls} is not a "
+                f"subclass of WorkflowRecordPermissionPolicy."
+            )
+        if not issubclass(self.permission_policy_cls, DefaultWorkflowPermissions):
+            raise TypeError(
+                f"Workflow permission policy {self.permission_policy_cls} is a subclass of DefaultWorkflowPermissions."
+            )
+        if not issubclass(self.request_policy_cls, WorkflowRequestPolicy):
+            raise TypeError(
+                f"Workflow request permission policy {self.request_policy_cls} is a subclass of WorkflowRequestPolicy."
+            )
 
 
 class StateChangedNotifier(Protocol):

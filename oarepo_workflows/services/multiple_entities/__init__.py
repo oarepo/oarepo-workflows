@@ -13,8 +13,9 @@ import json
 from typing import TYPE_CHECKING, Any, override
 
 import marshmallow as ma
-from oarepo_runtime.services.entity.config import EntityServiceConfig
-from oarepo_runtime.services.entity.service import EntityService
+
+# from oarepo_runtime.services.entity.config import EntityServiceConfig
+# from oarepo_runtime.services.entity.service import EntityService
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -29,20 +30,20 @@ if TYPE_CHECKING:
 class MultipleEntitiesEntitySchema(ma.Schema):
     """Schema for multiple recipients entities."""
 
-    entities = ma.fields.List(
-        ma.fields.Dict(keys=ma.fields.String(), values=ma.fields.String())
-    )
+    entities = ma.fields.List(ma.fields.Dict(keys=ma.fields.String(), values=ma.fields.String()))
 
+
+"""
 
 class MultipleEntitiesEntityServiceConfig(EntityServiceConfig):
-    """Configuration for auto-approve entity service."""
+
 
     service_id = "multiple"
     schema = MultipleEntitiesEntitySchema
 
 
 class MultipleEntitiesEntityService(EntityService):
-    """Service for reading auto-approve entities."""
+
 
     @override
     def read(self, identity: Identity, id_: str, **kwargs: Any) -> RecordItem:
@@ -70,3 +71,4 @@ class MultipleEntitiesEntityService(EntityService):
             results=results,
             links_item_tpl=self.links_item_tpl,
         )
+"""

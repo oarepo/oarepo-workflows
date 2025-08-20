@@ -11,9 +11,10 @@ from typing import TYPE_CHECKING, Any
 
 from flask_principal import Identity, RoleNeed
 from invenio_requests.resolvers.registry import ResolverRegistry
-from oarepo_runtime.services.permissions.generators import (
-    UserWithRole as OriginalUserWithRole,
-)
+
+# from oarepo_runtime.services.permissions.generators import (
+#    UserWithRole as OriginalUserWithRole,
+# )
 from opensearch_dsl.query import MatchAll, MatchNone
 
 from oarepo_workflows.requests.generators.multiple_entities import (
@@ -28,6 +29,26 @@ if TYPE_CHECKING:
     from flask import Flask
     from invenio_records_resources.records.api import Record
     from invenio_requests.customizations.request_types import RequestType
+
+# TODO: temp
+from invenio_records_permissions.generators import Generator
+from invenio_search.engine import dsl
+
+
+class OriginalUserWithRole(Generator):
+    def __init__(self, *roles):
+        self.roles = roles
+
+    def needs(self, **kwargs):
+        return [RoleNeed(role) for role in self.roles]
+
+    def query_filter(self, identity=None, **kwargs):
+        if not identity:
+            return dsl.Q("match_none")
+        for provide in identity.provides:
+            if provide.method == "role" and provide.value in self.roles:
+                return dsl.Q("match_all")
+        return dsl.Q("match_none")
 
 
 class UserWithRole(RecipientGeneratorMixin, OriginalUserWithRole):
@@ -64,16 +85,12 @@ def test_multiple_recipients_generator(app, search_clear) -> None:
 
     assert a.query_filter(identity=test_identity) == [MatchAll(), MatchNone()]
 
-    assert a.reference_receivers() == [
-        {"multiple": '[{"role": "admin"}, {"role": "blah"}]'}
-    ]
+    assert a.reference_receivers() == [{"multiple": '[{"role": "admin"}, {"role": "blah"}]'}]
 
 
 def test_multiple_recipients_resolver(app: Flask, search_clear) -> None:
     """Test multiple recipients resolver."""
-    resolved = ResolverRegistry.resolve_entity(
-        {"multiple": '[{"group":"admin"},{"group":"blah"}]'}
-    )
+    resolved = ResolverRegistry.resolve_entity({"multiple": '[{"group":"admin"},{"group":"blah"}]'})
     assert isinstance(resolved, MultipleEntitiesEntity)
     assert {x.get_needs()[0] for x in resolved.entities} == {
         RoleNeed("admin"),

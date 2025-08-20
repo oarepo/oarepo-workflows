@@ -12,7 +12,7 @@ from __future__ import annotations
 import dataclasses
 import json
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any, Optional, override
+from typing import TYPE_CHECKING, Any, override
 
 from invenio_records_permissions.generators import Generator
 
@@ -38,9 +38,7 @@ class MultipleEntitiesGenerator(RecipientGeneratorMixin, Generator):
         :param context: Context.
         :return: Set of needs.
         """
-        return {
-            need for generator in self.generators for need in generator.needs(**context)
-        }
+        return {need for generator in self.generators for need in generator.needs(**context)}
 
     @override
     def excludes(self, **context: Any) -> set[Need]:
@@ -49,11 +47,7 @@ class MultipleEntitiesGenerator(RecipientGeneratorMixin, Generator):
         :param context: Context.
         :return: Set of needs.
         """
-        return {
-            exclude
-            for generator in self.generators
-            for exclude in generator.excludes(**context)
-        }
+        return {exclude for generator in self.generators for exclude in generator.excludes(**context)}
 
     @override
     def query_filter(self, **context: Any) -> list[dict]:
@@ -77,8 +71,8 @@ class MultipleEntitiesGenerator(RecipientGeneratorMixin, Generator):
     @override
     def reference_receivers(
         self,
-        record: Optional[Record] = None,
-        request_type: Optional[RequestType] = None,
+        record: Record | None = None,
+        request_type: RequestType | None = None,
         **context: Any,
     ) -> list[dict[str, str]]:  # pragma: no cover
         """Return the reference receiver(s) of the request.
@@ -94,14 +88,12 @@ class MultipleEntitiesGenerator(RecipientGeneratorMixin, Generator):
 
         for generator in self.generators:
             if not isinstance(generator, RecipientGeneratorMixin):
-                raise ValueError(
+                raise TypeError(
                     f"Generator {generator} is not a recipient generator and can not be used in "
                     f"MultipleGeneratorsGenerator."
                 )
 
-            reference = generator.reference_receivers(
-                record=record, request_type=request_type, **context
-            )
+            reference = generator.reference_receivers(record=record, request_type=request_type, **context)
             if reference:
                 references.extend(reference)
         if not references:

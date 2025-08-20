@@ -21,12 +21,10 @@ if TYPE_CHECKING:
 class IfRequestTypeBase(abc.ABC, ConditionalGenerator):
     """Base class for conditional generators that generate needs based on request type."""
 
-    def __init__(
-        self, request_types: list[str] | tuple[str] | str, then_: list[Generator]
-    ) -> None:
+    def __init__(self, request_types: list[str] | tuple[str] | str, then_: list[Generator]) -> None:
         """Initialize the generator."""
         super().__init__(then_, else_=[])
-        if not isinstance(request_types, (list, tuple)):
+        if not isinstance(request_types, list | tuple):
             request_types = [request_types]
         self.request_types = request_types
 
@@ -50,7 +48,7 @@ class IfEventType(ConditionalGenerator):
         """Initialize the generator."""
         else_ = [] if else_ is None else else_
         super().__init__(then_, else_=else_)
-        if not isinstance(event_types, (list, tuple)):
+        if not isinstance(event_types, list | tuple):
             event_types = [event_types]
         self.event_types = event_types
 

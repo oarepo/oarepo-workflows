@@ -9,7 +9,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from marshmallow import ValidationError
 
@@ -62,7 +62,7 @@ class InvalidWorkflowError(ValidationError):
         self,
         message: str,
         record: Record | dict | None = None,
-        community_id: Optional[str] = None,
+        community_id: str | None = None,
     ) -> None:
         """Initialize the exception."""
         self.record = record
@@ -78,7 +78,7 @@ class InvalidConfigurationError(Exception):
     """Exception raised when a configuration is invalid."""
 
 
-class EventTypeNotInWorkflow(Exception):
+class EventTypeNotInWorkflowError(Exception):
     """Exception raised when user tries to create a request with a request type that is not defined in the workflow."""
 
     def __init__(self, request_type: str, event_type: str, workflow_code: str) -> None:
@@ -93,7 +93,7 @@ class EventTypeNotInWorkflow(Exception):
         return f"Event type {self.event_type} is not on request type {self.request_type} in workflow {self.workflow}."
 
 
-class RequestTypeNotInWorkflow(Exception):
+class RequestTypeNotInWorkflowError(Exception):
     """Exception raised when user tries to create a request with a request type that is not defined in the workflow."""
 
     def __init__(self, request_type: str, workflow_code: str) -> None:

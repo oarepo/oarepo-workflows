@@ -16,12 +16,12 @@ from .recipient_generator import RecipientGeneratorMixin
 
 __all__ = (
     "AutoApprove",
-    "auto_approve_need",
     "AutoRequest",
-    "auto_request_need",
     "IfEventType",
     "IfRequestType",
     "IfRequestTypeBase",
     "MultipleEntitiesGenerator",
     "RecipientGeneratorMixin",
+    "auto_approve_need",
+    "auto_request_need",
 )
