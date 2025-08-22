@@ -45,6 +45,7 @@ class AutoApprove(RecipientGeneratorMixin, Generator):
     the request will be automatically approved when the request is submitted.
     """
 
+    @override
     def reference_receivers(
         self,
         record: Record | None = None,
@@ -57,6 +58,7 @@ class AutoApprove(RecipientGeneratorMixin, Generator):
         """
         return [{"auto_approve": "true"}]
 
+    @override
     def needs(self, **context: Any) -> list[Need]:
         """Get needs that signal workflow to automatically approve the request."""
         raise ValueError(
@@ -64,6 +66,7 @@ class AutoApprove(RecipientGeneratorMixin, Generator):
             "should be used only in `recipient` section of WorkflowRequest."
         )
 
+    @override
     def excludes(self, **context: Any) -> list[Need]:
         """Get needs that signal workflow to automatically approve the request."""
         raise ValueError(
@@ -71,6 +74,7 @@ class AutoApprove(RecipientGeneratorMixin, Generator):
             "should be used only in `recipient` section of WorkflowRequest."
         )
 
+    @override
     def query_filter(self, **context: Any) -> list[dict]:
         """Get needs that signal workflow to automatically approve the request."""
         raise ValueError(

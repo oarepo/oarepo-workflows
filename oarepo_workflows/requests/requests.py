@@ -98,7 +98,7 @@ class WorkflowRequest:
             )
         except InvalidConfigurationError:
             raise
-        except:
+        except Exception:
             log.exception("Error checking request applicability")
             return False
 
@@ -172,8 +172,7 @@ class WorkflowRequestEscalation:
         return f"{self.after=},{self.recipients=}"
 
 
-# noinspection PyPep8Naming
-def RecipientEntityReference(
+def RecipientEntityReference(  # noqa N802
     request_or_escalation: WorkflowRequest | WorkflowRequestEscalation, **context: Any
 ) -> dict | None:
     """Return the reference receiver of the workflow request or workflow request escalation with the given context.

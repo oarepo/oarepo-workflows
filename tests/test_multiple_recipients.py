@@ -7,14 +7,13 @@
 #
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, override
 
 from flask_principal import Identity, RoleNeed
 from invenio_requests.resolvers.registry import ResolverRegistry
 
-# from oarepo_runtime.services.permissions.generators import (
-#    UserWithRole as OriginalUserWithRole,
-# )
+# from oarepo_runtime.services.permissions.generators import UserWithRole noqa ERA001
+# as OriginalUserWithRole TODO: scrapped in runtime
 from opensearch_dsl.query import MatchAll, MatchNone
 
 from oarepo_workflows.requests.generators.multiple_entities import (
@@ -36,13 +35,18 @@ from invenio_search.engine import dsl
 
 
 class OriginalUserWithRole(Generator):
-    def __init__(self, *roles):
+    """Tempo moved from runtime."""
+
+    def __init__(self, *roles: str):
+        """Construct the generator."""
         self.roles = roles
 
-    def needs(self, **kwargs):
+    @override
+    def needs(self, **kwargs: Any):
         return [RoleNeed(role) for role in self.roles]
 
-    def query_filter(self, identity=None, **kwargs):
+    @override
+    def query_filter(self, identity=None, **kwargs: Any):
         if not identity:
             return dsl.Q("match_none")
         for provide in identity.provides:
@@ -54,6 +58,7 @@ class OriginalUserWithRole(Generator):
 class UserWithRole(RecipientGeneratorMixin, OriginalUserWithRole):
     """User with role generator."""
 
+    @override
     def reference_receivers(
         self,
         record: Record | None = None,

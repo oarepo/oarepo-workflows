@@ -31,18 +31,18 @@ class CreatorsFromWorkflowRequestsPermissionPolicy(InvenioRequestsPermissionPoli
     creators defined on the WorkflowRequest.
     """
 
-    can_create = [
+    can_create = (
         SystemProcess(),
         RequestCreatorsFromWorkflow(),
-    ]
+    )
 
-    can_create_comment = [
+    can_create_comment = (
         SystemProcess(),
         IfEventType([LogEventType.type_id, CommentEventType.type_id], [Creator(), Receiver()]),
         EventCreatorsFromWorkflow(),
-    ]
+    )
 
     # any user can search for requests, but non-authenticated will not get a hit
     # this is necessary to not have errors on a secret link page (edit/preview form)
     # where the user is not authenticated and search for available requests is performed
-    can_search = [*InvenioRequestsPermissionPolicy.can_search, AnyUser()]
+    can_search = (*InvenioRequestsPermissionPolicy.can_search, AnyUser())

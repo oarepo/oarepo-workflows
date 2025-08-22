@@ -5,7 +5,7 @@ Provides operation class for changing the workflow state.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, cast, override
 
 from invenio_records_resources.services.uow import Operation, RecordCommitOp, UnitOfWork
 from oarepo_runtime.proxies import current_runtime
@@ -41,6 +41,7 @@ class StateChangeOperation(Operation):
         self.extra_kwargs = extra_kwargs
         super().__init__()
 
+    @override
     def on_register(self, uow: UnitOfWork) -> None:
         """Change the state of the record and commit the changes."""
         self.record.state = self.new_state  # type: ignore[assignment]
@@ -53,6 +54,7 @@ class StateChangeOperation(Operation):
         if not self.notify_later:
             self.run_notifications(uow)
 
+    @override
     def on_post_commit(self, uow: UnitOfWork) -> None:
         """Run notifications after the commit."""
         if self.notify_later:

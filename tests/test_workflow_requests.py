@@ -6,6 +6,7 @@
 # details.
 #
 from types import SimpleNamespace
+from typing import Any, override
 
 import pytest
 from flask_principal import Identity, RoleNeed, UserNeed
@@ -20,34 +21,50 @@ from tests.test_multiple_recipients import UserWithRole
 
 
 class TestRecipient(RecipientGeneratorMixin, Generator):
-    def reference_receivers(self, record=None, request_type=None, **kwargs):
+    """User recipient for testing purposes."""
+
+    @override
+    def reference_receivers(self, record=None, request_type=None, **context: Any):
         assert record is not None
         return [{"user": "1"}]
 
 
 class TestRecipient2(RecipientGeneratorMixin, Generator):
-    def reference_receivers(self, record=None, request_type=None, **kwargs):
+    """User recipient for testing purposes."""
+
+    @override
+    def reference_receivers(self, record=None, request_type=None, **context: Any):
         assert record is not None
         return [{"user": "2"}]
 
 
 class NullRecipient(RecipientGeneratorMixin, Generator):
-    def reference_receivers(self, record=None, request_type=None, **kwargs):
+    """Null recipient for testing purposes."""
+
+    @override
+    def reference_receivers(self, record=None, request_type=None, **context: Any):
         return None
 
 
 class FailingGenerator(Generator):
-    def needs(self, **context):
+    """Failing generator for testing purposes."""
+
+    @override
+    def needs(self, **context: Any):
         raise ValueError("Failing generator")
 
-    def excludes(self, **context):
+    @override
+    def excludes(self, **context: Any):
         raise ValueError("Failing generator")
 
-    def query_filter(self, **context):
+    @override
+    def query_filter(self, **context: Any):
         raise ValueError("Failing generator")
 
 
 class R(WorkflowRequestPolicy):
+    """Requests for testing purposes."""
+
     req = WorkflowRequest(
         requesters=[RecordOwners()],
         recipients=[NullRecipient(), TestRecipient()],
@@ -120,7 +137,7 @@ def test_is_applicable(users, logged_client, search_clear, record_service, extra
         requesters=[RecordOwners()],
         recipients=[NullRecipient(), TestRecipient()],
     )
-    req._request_type = "req"
+    req._request_type = "req"  # noqa SLF001
 
     id1 = Identity(id=1)
     id1.provides.add(UserNeed(1))
@@ -156,9 +173,9 @@ def test_list_applicable_requests(users, logged_client, search_clear, record_ser
         )
     )
 
-    assert set(x[0] for x in requests.applicable_workflow_requests(id1, record=record)) == {"req"}
+    assert {x[0] for x in requests.applicable_workflow_requests(id1, record=record)} == {"req"}
 
-    assert set(x[0] for x in requests.applicable_workflow_requests(id2, record=record)) == set()
+    assert {x[0] for x in requests.applicable_workflow_requests(id2, record=record)} == set()
 
 
 def test_get_workflow_request_via_index(users, logged_client, search_clear, record_service, extra_request_types):

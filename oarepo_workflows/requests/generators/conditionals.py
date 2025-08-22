@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, override
 
 from invenio_records_permissions.generators import ConditionalGenerator, Generator
 
@@ -32,6 +32,7 @@ class IfRequestTypeBase(abc.ABC, ConditionalGenerator):
 class IfRequestType(IfRequestTypeBase):
     """Conditional generator that generates needs when a current request is of a given type."""
 
+    @override
     def _condition(self, request_type: RequestType, **kwargs: Any) -> bool:
         return request_type.type_id in self.request_types
 
@@ -52,5 +53,6 @@ class IfEventType(ConditionalGenerator):
             event_types = [event_types]
         self.event_types = event_types
 
+    @override
     def _condition(self, event_type: EventType, **kwargs: Any) -> bool:
         return event_type.type_id in self.event_types

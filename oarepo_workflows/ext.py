@@ -19,7 +19,9 @@ from oarepo_runtime.proxies import current_runtime
 
 from oarepo_workflows.errors import InvalidWorkflowError, MissingWorkflowError
 from oarepo_workflows.proxies import current_oarepo_workflows
+from oarepo_workflows.services.auto_approve import NamedEntityService, AutoApproveEntityServiceConfig
 from oarepo_workflows.services.uow import StateChangeOperation
+
 """
 from oarepo_workflows.services.auto_approve import (
     AutoApproveEntityService,
@@ -87,8 +89,7 @@ class OARepoWorkflows:
     def init_services(self) -> None:
         """Initialize workflow services."""
         # noinspection PyAttributeOutsideInit
-        # self.auto_approve_service = AutoApproveEntityService(config=AutoApproveEntityServiceConfig())
-        # self.multiple_recipients_service = MultipleEntitiesEntityService(config=MultipleEntitiesEntityServiceConfig())
+        self.auto_approve_service = NamedEntityService(config=AutoApproveEntityServiceConfig())
 
     @cached_property
     def state_changed_notifiers(self) -> list[StateChangedNotifier]:
@@ -113,7 +114,7 @@ class OARepoWorkflows:
         return [ep.load() for ep in importlib.metadata.entry_points(group=group_name)]
 
     @unit_of_work()
-    def set_state(
+    def set_state(  # noqa: PLR0913
         self,
         identity: Identity,
         record: Record,
@@ -143,6 +144,7 @@ class OARepoWorkflows:
                 *args,
                 commit_record=commit,
                 notify_later=notify_later,
+                extra_kwargs=kwargs,
             )
         )
 
@@ -271,15 +273,10 @@ def finalize_app(app: Flask) -> None:
 
     ext: OARepoWorkflows = app.extensions["oarepo-workflows"]
 
-    # records_resources.registry.register(
-    #    ext.auto_approve_service,
-    #    service_id=ext.auto_approve_service.config.service_id,
-    # )
-
-    # records_resources.registry.register(
-    #    ext.multiple_recipients_service,
-    #    service_id=ext.multiple_recipients_service.config.service_id,
-    # )
+    records_resources.registry.register(
+        ext.auto_approve_service,
+        service_id=ext.auto_approve_service.config.service_id,
+    )
 
     if app.config["OAREPO_WORKFLOWS_SET_REQUEST_PERMISSIONS"]:
         patch_request_permissions(app)

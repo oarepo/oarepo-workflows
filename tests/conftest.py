@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import sys
 import time
+from typing import Any, override
 
 import pytest
 from flask_principal import Identity, Need, UserNeed
@@ -19,7 +20,7 @@ from invenio_rdm_records.services.permissions import RDMRequestsPermissionPolicy
 from oarepo_model.customizations import AddFileToModule
 from oarepo_model.presets.rdm import rdm_presets
 from oarepo_model.presets.records_resources import records_resources_presets
-
+from oarepo_workflows.proxies import current_oarepo_workflows
 from oarepo_workflows.model.presets import workflows_presets
 
 
@@ -27,6 +28,11 @@ from oarepo_workflows.model.presets import workflows_presets
 def test_draft_service(app):
     """Service instance."""
     return app.extensions["draft_test"].records_service
+
+@pytest.fixture(scope="module")
+def auto_approve_service(app):
+    """Service instance."""
+    return current_oarepo_workflows.auto_approve_service
 
 
 """
@@ -46,7 +52,7 @@ def file_service(app):
 """
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def input_data_with_files_disabled(input_data):
     """Input data with files disabled."""
     data = input_data.copy()
@@ -105,56 +111,34 @@ pytest_plugins = [
 ]
 """
 
-"""
-class RecordOwners(Generator):
-
-    def needs(self, record=None, **kwargs):
-        if record is None:
-            # 'record' is required, so if not passed we default to empty array,
-            # i.e. superuser-access.
-            return []
-        if current_app.config.get("INVENIO_RDM_ENABLED", False):
-            owners = getattr(record.parent.access, "owned_by", None)
-            if owners is not None:
-                owners_list = owners if isinstance(owners, list) else [owners]
-                return [UserNeed(owner.owner_id) for owner in owners_list]
-        else:
-            owners = getattr(record.parent, "owners", None)
-            if owners is not None:
-                return [UserNeed(owner.id) for owner in owners]
-        return []
-
-    def query_filter(self, identity=None, **kwargs):
-
-        users = [n.value for n in identity.provides if n.method == "id"]
-        if users:
-            if current_app.config.get("INVENIO_RDM_ENABLED", False):
-                return dsl.Q("terms", **{"parent.access.owned_by.user": users})
-            else:
-                return dsl.Q("terms", **{"parent.owners.user": users})
-        return dsl.Q("match_none")
-"""
-
 
 class TestPermissionPolicy(DefaultWorkflowPermissions):
-    can_manage_files = [AuthenticatedUser()]
+    """Test permission policy."""
+
+    can_manage_files = (AuthenticatedUser(),)
 
 
 class RecordOwnersReadTestWorkflowPermissionPolicy(TestPermissionPolicy):
-    can_read = [RecordOwners()]
+    """Test permission policy."""
+
+    can_read = (RecordOwners(),)
 
 
 class Administration(Generator):
-    def needs(self, **kwargs):
-        """Enabling Needs."""
+    """Administration permission generator."""
+
+    @override
+    def needs(self, **kwargs: Any):
         return [ActionNeed("administration")]
 
-    def query_filter(self, **kwargs):
-        """Search filters."""
+    @override
+    def query_filter(self, **kwargs: Any):
         return dsl.Q("match_all")
 
 
 class MyWorkflowRequests(WorkflowRequestPolicy):
+    """Requests for testing."""
+
     delete_request = WorkflowRequest(
         requesters=[IfInState("published", RecordOwners())],
         recipients=[Administration()],
@@ -167,6 +151,8 @@ class MyWorkflowRequests(WorkflowRequestPolicy):
 
 
 class IsApplicableTestRequestPolicy(WorkflowRequestPolicy):
+    """Requests for testing is_applicable."""
+
     req = WorkflowRequest(requesters=[RecordOwners()], recipients=[])
 
 
@@ -223,7 +209,7 @@ def input_data(sample_metadata_list):
 """
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def input_data():
     """Input data (as coming from the view layer)."""
     return {
@@ -241,26 +227,22 @@ import pytest
 def extra_entry_points():
     return {
         "oarepo_workflows.state_changed_notifiers": [
-            "test_getter = tests.utils:test_state_change_notifier",
+            "test_getter = tests.conftest:test_state_change_notifier",
         ],
         "oarepo_workflows.workflow_changed_notifiers": [
-            "test_getter = tests.utils:test_workflow_change_notifier",
+            "test_getter = tests.conftest:test_workflow_change_notifier",
         ],
     }
 
 
-"""
-@pytest.fixture
-def mappings():
-    # update the mappings
-    from oarepo_runtime.services.custom_fields.mappings import prepare_cf_indices
+def test_state_change_notifier(*args: Any, **_kwargs: Any):
+    record = args[1]
+    record["state-change-notifier-called"] = True
 
-    from thesis.records.api import ThesisDraft, ThesisRecord
 
-    prepare_cf_indices()
-    ThesisDraft.index.refresh()
-    ThesisRecord.index.refresh()
-"""
+def test_workflow_change_notifier(*args: Any, **_kwargs: Any):
+    record = args[1]
+    record.parent["workflow-change-notifier-called"] = True
 
 
 @pytest.fixture
@@ -274,7 +256,7 @@ def default_workflow_json():
 
 @pytest.fixture
 def extra_request_types():
-    def create_rt(type_id):
+    def create_rt(type_id) -> type:
         return type("Req", (RequestType,), {"type_id": type_id})
 
     current_request_type_registry.register_type(create_rt("req"), force=True)
@@ -284,20 +266,7 @@ def extra_request_types():
 
 
 @pytest.fixture(scope="session")
-def model_types():
-    """Model types fixture."""
-    # Define the model types used in the tests
-    return {
-        "Metadata": {
-            "properties": {
-                "title": {"type": "fulltext+keyword", "required": True},
-            }
-        }
-    }
-
-
-@pytest.fixture(scope="session")
-def workflow_model(model_types):
+def workflow_model():
     from oarepo_model.api import model
     from oarepo_model.presets.drafts import drafts_presets
 
@@ -333,7 +302,7 @@ def workflow_model(model_types):
     workflow_model.register()
 
     t2 = time.time()
-    print(f"Model created in {t2 - t1:.2f} seconds", file=sys.stderr, flush=True)
+    print(f"Model created in {t2 - t1:.2f} seconds", file=sys.stderr, flush=True)  # noqa T201
 
     try:
         yield workflow_model
@@ -361,15 +330,13 @@ def app_config(app_config, workflow_model):
 
     app_config["THEME_FRONTPAGE"] = False
 
-    app_config["SQLALCHEMY_ENGINE_OPTIONS"] = {  # hack to avoid pool_timeout set in invenio_app_rdm
+    app_config["SQLALCHEMY_ENGINE_OPTIONS"] = {  # hackk to avoid pool_timeout set in invenio_app_rdm
         "pool_pre_ping": False,
         "pool_recycle": 3600,
     }
 
     app_config["CELERY_ALWAYS_EAGER"] = True
     app_config["CELERY_TASK_ALWAYS_EAGER"] = True
-
-    # app_config["SQLALCHEMY_ECHO"] = True
 
     app_config["WORKFLOWS"] = WORKFLOWS
     app_config["REST_CSRF_ENABLED"] = False
@@ -380,15 +347,13 @@ def app_config(app_config, workflow_model):
     app_config["REQUESTS_PERMISSION_POLICY"] = (
         RDMRequestsPermissionPolicy  # TODO: rdm expected as default, though the app_rdm (?) config is not used for now?
     )
-    # app_config["DATACITE_TEST_MODE"] = True
-    # app_config["RDM_RECORDS_ALLOW_RESTRICTION_AFTER_GRACE_PERIOD"] = True
 
     return app_config
 
 
 @pytest.fixture(scope="module")
 def identity_simple():
-    """Simple identity fixture."""
+    """Provide simple identity fixture."""
     i = Identity(1)
     i.provides.add(UserNeed(1))
     i.provides.add(Need(method="system_role", value="any_user"))

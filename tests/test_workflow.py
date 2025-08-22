@@ -28,7 +28,6 @@ def test_workflow_read(workflow_model, users, logged_client, default_workflow_js
     resource_config = workflow_model.RecordResourceConfig
     user_client1 = logged_client(users[0])
     user_client2 = logged_client(users[1])
-    i = users[0].identity
 
     create_response = user_client1.post(resource_config.url_prefix, json=default_workflow_json)
     draft_json = create_response.json
@@ -130,7 +129,8 @@ def test_invalid_workflow_input(workflow_model, users, logged_client, default_wo
     )
     assert invalid_wf_response.status_code == 400
     assert invalid_wf_response.json["errors"][0]["messages"] == [
-        "Workflow fregrthythj does not exist in the configuration. Used on record dict[{'files': {'enabled': False}, 'metadata': {'title': 'Test'}, 'parent': "
+        "Workflow fregrthythj does not exist in the configuration. Used on record dict[{'files': "
+        "{'enabled': False}, 'metadata': {'title': 'Test'}, 'parent': "
         "{'workflow': 'fregrthythj'}}]"
     ]
     missing_wf_response = user_client1.post(resource_config.url_prefix, json={})
@@ -146,7 +146,7 @@ def test_state_change(
     location,
     search_clear,
 ):
-    record = record_service.create(identity=users[0].identity, data=default_workflow_json)._record
+    record = record_service.create(identity=users[0].identity, data=default_workflow_json)._record  # noqa SLF001
     state_change_function(users[0].identity, record, "approving", commit=False)
     assert record["state"] == "approving"
 
@@ -160,7 +160,7 @@ def test_set_workflow(
     location,
     search_clear,
 ):
-    record = record_service.create(users[0].identity, default_workflow_json)._record
+    record = record_service.create(users[0].identity, default_workflow_json)._record  # noqa SLF001
     with pytest.raises(InvalidWorkflowError):
         workflow_change_function(users[0].identity, record, "invalid_workflow", commit=False)
     workflow_change_function(users[0].identity, record, "record_owners_can_read", commit=False)
@@ -175,7 +175,7 @@ def test_state_change_entrypoint_hookup(
     location,
     search_clear,
 ):
-    record = record_service.create(users[0].identity, default_workflow_json)._record
+    record = record_service.create(users[0].identity, default_workflow_json)._record  # noqa SLF001
     state_change_function(users[0].identity, record, "approving", commit=False)
     assert record["state-change-notifier-called"]
 
@@ -189,7 +189,7 @@ def test_set_workflow_entrypoint_hookup(
     location,
     search_clear,
 ):
-    record = record_service.create(users[0].identity, default_workflow_json)._record
+    record = record_service.create(users[0].identity, default_workflow_json)._record  # noqa SLF001
     with pytest.raises(InvalidWorkflowError):
         workflow_change_function(users[0].identity, record, "invalid_workflow", commit=False)
     workflow_change_function(users[0].identity, record, "record_owners_can_read", commit=False)

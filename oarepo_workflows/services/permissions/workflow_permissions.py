@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+from platform import system
 from typing import Any
 
 from invenio_rdm_records.services.generators import RecordOwners
@@ -20,38 +21,6 @@ from invenio_records_permissions.generators import (
 )
 
 from .generators import IfInState, SameAs
-
-"""
-class RecordOwners(Generator): #TODO: temp
-
-
-    def needs(self, record=None, **kwargs):
-
-        if record is None:
-            # 'record' is required, so if not passed we default to empty array,
-            # i.e. superuser-access.
-            return []
-        if current_app.config.get("INVENIO_RDM_ENABLED", False):
-            owners = getattr(record.parent.access, "owned_by", None)
-            if owners is not None:
-                owners_list = owners if isinstance(owners, list) else [owners]
-                return [UserNeed(owner.owner_id) for owner in owners_list]
-        else:
-            owners = getattr(record.parent, "owners", None)
-            if owners is not None:
-                return [UserNeed(owner.id) for owner in owners]
-        return []
-
-    def query_filter(self, identity=None, **kwargs):
-
-        users = [n.value for n in identity.provides if n.method == "id"]
-        if users:
-            if current_app.config.get("INVENIO_RDM_ENABLED", False):
-                return dsl.Q("terms", **{"parent.access.owned_by.user": users})
-            else:
-                return dsl.Q("terms", **{"parent.owners.user": users})
-        return dsl.Q("match_none")
-"""
 
 
 class DefaultWorkflowPermissions(RecordPermissionPolicy):
@@ -85,101 +54,100 @@ class DefaultWorkflowPermissions(RecordPermissionPolicy):
         """Initialize the workflow permissions."""
         can = getattr(self, f"can_{action_name}")
         if self.system_process not in can:
-            can.append(self.system_process)
+            can = (*can, self.system_process)
+            setattr(self.__class__, f"can_{action_name}", can)
         over["policy"] = self
         super().__init__(action_name, **over)
 
-    can_read = [
+    can_read = (
         IfInState("draft", [RecordOwners()]),
         IfInState("published", [AuthenticatedUser()]),
-    ]
+    )
     # can_read_deleted is used by RDM. As long as workflows are
     # not intended for rdm records only, we need to keep this permission
     # simple and the implementation must use RDM-based implementation
     #
     # TODO: we should provide somewhere RDM aware workflow permissions
     # so that repositories can use them out of the box
-    can_read_deleted = [SameAs("can_read")]
-    can_update = [IfInState("draft", [RecordOwners()])]
-    can_delete = [
-        IfInState("draft", [RecordOwners()]),
-    ]
-    can_create = [AuthenticatedUser()]
-    can_publish = [AuthenticatedUser()]
-    can_new_version = [AuthenticatedUser()]
+    can_read_deleted = (SameAs("can_read"),)
+    can_update = (IfInState("draft", [RecordOwners()]),)
+    can_delete = (IfInState("draft", [RecordOwners()]),)
+    can_create = (AuthenticatedUser(),)
+    can_publish = (AuthenticatedUser(),)
+    can_new_version = (AuthenticatedUser(),)
 
-    can_create_files = [SameAs("files_edit")]
-    can_set_content_files = [SameAs("files_edit")]
-    can_commit_files = [SameAs("files_edit")]
-    can_update_files = [SameAs("files_edit")]
-    can_delete_files = [SameAs("files_edit")]
-    can_read_files = [SameAs("can_read")]
-    can_get_content_files = [SameAs("can_read")]
-    can_list_files = [SameAs("can_read")]
-    can_manage_files = [Disable()]
+    can_create_files = (SameAs("files_edit"),)
+    can_set_content_files = (SameAs("files_edit"),)
+    can_commit_files = (SameAs("files_edit"),)
+    can_update_files = (SameAs("files_edit"),)
+    can_delete_files = (SameAs("files_edit"),)
+    can_read_files = (SameAs("can_read"),)
+    can_get_content_files = (SameAs("can_read"),)
+    can_list_files = (SameAs("can_read"),)
+    can_manage_files = (Disable(),)
 
-    can_read_draft = [SameAs("can_read")]
-    can_update_draft = [SameAs("can_update")]
-    can_delete_draft = [SameAs("can_delete")]
+    can_read_draft = (SameAs("can_read"),)
+    can_update_draft = (SameAs("can_update"),)
+    can_delete_draft = (SameAs("can_delete"),)
 
     # RDM records permissions
-    can_bulk_add = [Disable()]
+    can_bulk_add = (Disable(),)
 
     # draft files
-    can_draft_commit_files = [SameAs("can_update_draft")]
-    can_draft_delete_files = [SameAs("can_update_draft")]
-    can_draft_get_content_files = [SameAs("can_read_draft")]
-    can_draft_read_files = [SameAs("can_read_draft")]
-    can_draft_set_content_files = [SameAs("can_update_draft")]
-    can_draft_update_files = [SameAs("can_update_draft")]
-    can_draft_create_files = [SameAs("files_edit")]
+    can_draft_commit_files = (SameAs("can_update_draft"),)
+    can_draft_delete_files = (SameAs("can_update_draft"),)
+    can_draft_get_content_files = (SameAs("can_read_draft"),)
+    can_draft_read_files = (SameAs("can_read_draft"),)
+    can_draft_set_content_files = (SameAs("can_update_draft"),)
+    can_draft_update_files = (SameAs("can_update_draft"),)
+    can_draft_create_files = (SameAs("files_edit"),)
 
     # draft media files
-    can_draft_media_commit_files = [SameAs("can_update_draft")]
-    can_draft_media_create_files = [SameAs("can_update_draft")]
-    can_draft_media_delete_files = [SameAs("can_update_draft")]
-    can_draft_media_get_content_files = [SameAs("can_read_draft")]
-    can_draft_media_read_files = [SameAs("can_read_draft")]
-    can_draft_media_set_content_files = [SameAs("can_update_draft")]
-    can_draft_media_update_files = [SameAs("can_update_draft")]
+    can_draft_media_commit_files = (SameAs("can_update_draft"),)
+    can_draft_media_create_files = (SameAs("can_update_draft"),)
+    can_draft_media_delete_files = (SameAs("can_update_draft"),)
+    can_draft_media_get_content_files = (SameAs("can_read_draft"),)
+    can_draft_media_read_files = (SameAs("can_read_draft"),)
+    can_draft_media_set_content_files = (SameAs("can_update_draft"),)
+    can_draft_media_update_files = (SameAs("can_update_draft"),)
 
     # published media files
-    can_media_commit_files = [Disable()]
-    can_media_create_files = [Disable()]
-    can_media_delete_files = [Disable()]
-    can_media_get_content_files = [SameAs("can_read_files")]
-    can_media_read_deleted_files = [Disable()]
-    can_media_read_files = [SameAs("can_read_files")]
-    can_media_set_content_files = [Disable()]
-    can_media_update_files = [Disable()]
+    can_media_commit_files = (Disable(),)
+    can_media_create_files = (Disable(),)
+    can_media_delete_files = (Disable(),)
+    can_media_get_content_files = (SameAs("can_read_files"),)
+    can_media_read_deleted_files = (Disable(),)
+    can_media_read_files = (SameAs("can_read_files"),)
+    can_media_set_content_files = (Disable(),)
+    can_media_update_files = (Disable(),)
 
     # record
-    can_lift_embargo = [SameAs("can_manage")]
+    can_lift_embargo = (SameAs("can_manage"),)
 
     # record management
-    can_manage = [RecordOwners()]
+    can_manage = (RecordOwners(),)
 
-    can_manage_internal = [SystemProcess()]
+    can_manage_internal = (SystemProcess(),)
 
-    can_manage_quota = [SystemProcess()]
-    can_manage_record_access = [SystemProcess()]
+    can_manage_quota = (SystemProcess(),)
+    can_manage_record_access = (SystemProcess(),)
 
-    can_moderate = [Disable()]
+    can_moderate = (Disable(),)
 
-    can_preview = [SameAs("can_read")]
-    can_review = [Disable()]
-    can_view = [SameAs("can_read")]
-    can_purge = [SystemProcess()]
+    can_preview = (SameAs("can_read"),)
+    can_review = (Disable(),)
+    can_view = (SameAs("can_read"),)
+    can_purge = (SystemProcess(),)
 
-    can_pid_create = [SameAs("can_update")]
-    can_pid_delete = [SameAs("can_update")]
-    can_pid_discard = [SameAs("can_update")]
-    can_pid_manage = [SameAs("can_update")]
-    can_pid_register = [SameAs("can_update")]
-    can_pid_update = [SameAs("can_update")]
+    can_pid_create = (SameAs("can_update"),)
+    can_pid_delete = (SameAs("can_update"),)
+    can_pid_discard = (SameAs("can_update"),)
+    can_pid_manage = (SameAs("can_update"),)
+    can_pid_register = (SameAs("can_update"),)
+    can_pid_update = (SameAs("can_update"),)
 
     # stats
-    can_query_stats = [Disable()]
+    can_query_stats = (Disable(),)
 
     # new ones?
-    can_edit = [Disable()]
+    can_edit = (Disable(),)

@@ -43,8 +43,8 @@ class WorkflowsRecordSchemaPreset(Preset):
         class StateSchemaMixin:
             state = ma.fields.String(dump_only=True)
 
-            # TODO: validate isn't in runtime for now
-            # state_timestamp = ma.fields.String(dump_only=True, validate=[validate_datetime])
+            # state_timestamp = ma.fields.String(dump_only=True,
+            # validate=[validate_datetime]) TODO: validate isn't in runtime for now
             state_timestamp = ma.fields.String(dump_only=True)
 
         yield AddMixins("RecordSchema", StateSchemaMixin)

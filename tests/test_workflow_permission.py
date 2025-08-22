@@ -18,11 +18,11 @@ def test_get_workflow_id(users, workflow_model, logged_client, record_service, l
     thesis = workflow_model.Draft.create({})
     wp = FromRecordWorkflow("read")
     with pytest.raises(MissingWorkflowError):
-        wp._get_workflow_id(record=thesis)
+        wp._get_workflow_id(record=thesis)  # noqa SLF001
 
     fake_thesis = SimpleNamespace(parent=SimpleNamespace(workflow=""))
     with pytest.raises(MissingWorkflowError):
-        assert wp._get_workflow_id(record=fake_thesis)  # noqa
+        assert wp._get_workflow_id(record=fake_thesis)  # noqa SLF001
 
 
 def test_query_filter(users, logged_client, search_clear, record_service):

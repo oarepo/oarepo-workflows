@@ -22,7 +22,7 @@ def create_api_blueprint(app: Flask) -> Blueprint:
     blueprint = Blueprint("oarepo-workflows", __name__)
 
     # noinspection PyUnusedLocal
-    def register_auto_approve_entity_resolver(state: BlueprintSetupState) -> None:
+    def register_auto_approve_entity_resolver(state: BlueprintSetupState) -> None:  # noqa ARG001
         from oarepo_workflows.resolvers.auto_approve import AutoApproveResolver
 
         requests = app.extensions["invenio-requests"]
