@@ -5,6 +5,8 @@
 # modify it under the terms of the MIT License; see LICENSE file for more
 # details.
 #
+from __future__ import annotations
+
 from oarepo_workflows.requests import AutoRequest
 from oarepo_workflows.requests.generators.auto import auto_request_need
 

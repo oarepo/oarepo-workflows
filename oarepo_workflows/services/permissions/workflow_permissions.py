@@ -9,7 +9,6 @@
 
 from __future__ import annotations
 
-from platform import system
 from typing import Any
 
 from invenio_rdm_records.services.generators import RecordOwners

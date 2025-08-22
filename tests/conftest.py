@@ -20,14 +20,16 @@ from invenio_rdm_records.services.permissions import RDMRequestsPermissionPolicy
 from oarepo_model.customizations import AddFileToModule
 from oarepo_model.presets.rdm import rdm_presets
 from oarepo_model.presets.records_resources import records_resources_presets
-from oarepo_workflows.proxies import current_oarepo_workflows
+
 from oarepo_workflows.model.presets import workflows_presets
+from oarepo_workflows.proxies import current_oarepo_workflows
 
 
 @pytest.fixture(scope="module")
 def test_draft_service(app):
     """Service instance."""
     return app.extensions["draft_test"].records_service
+
 
 @pytest.fixture(scope="module")
 def auto_approve_service(app):

@@ -14,51 +14,63 @@ so there is no need to store it to database/fetch it from the database.
 from __future__ import annotations
 
 import abc
-from collections.abc import Iterable
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, ClassVar, override
 
 from invenio_records_resources.services.base.config import ServiceConfig
 from invenio_records_resources.services.base.links import LinksTemplate
 from invenio_records_resources.services.base.service import Service
 from invenio_records_resources.services.records.schema import ServiceSchemaWrapper
-from marshmallow import Schema, fields
+from marshmallow import Schema, fields, post_load
 from oarepo_runtime.services.results import RecordItem, RecordList
-from marshmallow import post_load
+
 from oarepo_workflows.resolvers.auto_approve import AutoApproveEntity
 
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable
+
+    from flask_principal import Identity
+    from invenio_records_resources.services.base.results import ServiceItemResult, ServiceListResult
+
+
 class ArrayRecordItem(RecordItem):
-    """Single record result."""
+    """Single record result for array-based records.
+
+    Extends the base RecordItem to provide ID handling for array records.
+    """
 
     @property
-    def id(self):
+    def id(self) -> Any:  # TODO: what are possible options apart from str?
         """Get the record id."""
         return self._record["id"]
 
 
 class ArrayRecordList(RecordList):
-    # move to runtime
+    """Result list for array-based records.
+
+    Extends the base RecordItem to provide ID handling for array records.
+    """
 
     @property
-    def total(self):
+    @override
+    def total(self) -> int:
         """Get total number of hits."""
         return len(self._results)
 
     @property
-    def aggregations(self):
+    @override
+    def aggregations(self) -> None:
         """Get the search result aggregations."""
         return None
 
     @property
-    def hits(self):
+    @override
+    def hits(self) -> Any:
         """Iterator over the hits."""
         for hit in self._results:
             # Project the record
             projection = self._schema.dump(
                 hit,
-                context=dict(
-                    identity=self._identity,
-                    record=hit,
-                ),
+                context={"identity": self._identity, "record": hit},
             )
             if self._links_item_tpl:
                 projection["links"] = self._links_item_tpl.expand(self._identity, hit)
@@ -75,8 +87,14 @@ class ArrayRecordList(RecordList):
                 )
             yield projection
 
-class classproperty[T]: #TODO: move to runtime
-    """move to runtime"""
+
+class classproperty[T]:  # noqa N801
+    # TODO: move to runtime
+    """Class property decorator implementation.
+
+    Allows defining properties at class level rather than instance level.
+    Will be moved to runtime in future versions.
+    """
 
     def __init__(self, func: Callable):
         """Initialize the class property."""
@@ -86,46 +104,70 @@ class classproperty[T]: #TODO: move to runtime
         """Get the value of the class property."""
         return self.fget(owner)
 
-def entity_schema_factory(keyword: str, entity: type)->type[Schema]:
+
+def entity_schema_factory(keyword: str, entity: type) -> type:
+    """Create a schema class for a given named entity."""
+
     @post_load
-    def _make(self, **kwargs):
+    def _make(self, **kwargs: Any) -> type:  # noqa ARG001, ANN001
         return entity(**kwargs)
 
-    flds = {"keyword": fields.String(dump_only=True, dump_default=keyword),
-            "id": fields.String(dump_only=True, dump_default="true"),
-            "_make": _make}
-    MySchema = type(f"{keyword.capitalize()}Schema", (Schema,), flds)
-    return MySchema
+    flds = {
+        "keyword": fields.String(dump_only=True, dump_default=keyword),
+        "id": fields.String(dump_only=True, dump_default="true"),
+        "_make": _make,
+    }
+    return type(f"{keyword.capitalize()}Schema", (Schema,), flds)
+
 
 class EntityService(Service):
+    """Base abstract service class for entity operations.
+
+    Provides core functionality for entity services including link templates
+    and schema handling. Requires implementation of read operations.
+    """
+
     @property
-    def links_item_tpl(self):
+    def links_item_tpl(self) -> LinksTemplate:
         """Item links template."""
         return LinksTemplate(
             self.config.links_item,
         )
 
     @property
-    def schema(self):
-        """Returns the data schema instance."""
+    def schema(self) -> ServiceSchemaWrapper:
+        """Return the data schema instance."""
         return ServiceSchemaWrapper(self, schema=self.config.schema)
 
     @abc.abstractmethod
-    def read(self, identity, id_, **kwargs):
+    def read(self, identity: Identity, id_: str, **kwargs: Any) -> ServiceItemResult:
+        """Return one instance."""
         raise NotImplementedError
 
     @abc.abstractmethod
-    def read_many(self, identity, ids: Iterable[str], fields=None, **kwargs):
+    def read_many(
+        self, identity: Identity, ids: Iterable[str], fields: Iterable[str] | None = None, **kwargs: Any
+    ) -> ServiceListResult:
+        """Return multiple instances."""
         raise NotImplementedError
 
 
 class NamedEntityService(EntityService):
+    """Service implementation for named entities.
 
-    def read(self, identity, id_, **kwargs):
+    Provides concrete implementation of read operations for named entities
+    that don't require database storage.
+    """
+
+    @override
+    def read(self, identity: Identity, id_: str, **kwargs: Any) -> ServiceItemResult:
         result = self.config.entity_cls()
         return self.result_item(self, identity, record=result, links_tpl=self.links_item_tpl)
 
-    def read_many(self, identity, ids: Iterable[str], fields=None, **kwargs):
+    @override
+    def read_many(
+        self, identity: Identity, ids: Iterable[str], fields: Iterable[str] | None = None, **kwargs: Any
+    ) -> ServiceListResult:
         if not ids:
             return []
         results = [self.config.entity_cls() for _ in ids]
@@ -136,20 +178,31 @@ class NamedEntityService(EntityService):
             links_item_tpl=self.links_item_tpl,
         )
 
+
 class NamedEntityServiceConfig(ServiceConfig):
-    links_item = {}
+    """Base configuration for named entity services.
+
+    Defines common configuration including result classes and schema generation
+    capabilities for named entities.
+    """
+
+    links_item: ClassVar = {}
     result_item_cls = ArrayRecordItem
     result_list_cls = ArrayRecordList
 
     @classproperty
-    def schema(cls):
+    def schema(cls) -> type[Schema]:  # noqa N805
+        """Create the schema for the entity."""
         return entity_schema_factory(keyword=cls.keyword, entity=cls.entity_cls)
 
 
 class AutoApproveEntityServiceConfig(NamedEntityServiceConfig):
-    """Configuration for auto-approve entity service."""
+    """Configuration for auto-approve entity service.
+
+    Specific configuration for auto-approve workflow entities,
+    defining service ID, keyword and entity class to use.
+    """
 
     service_id = "auto_approve"
     keyword = "auto_approve"
     entity_cls = AutoApproveEntity
-

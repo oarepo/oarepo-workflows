@@ -9,7 +9,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, override
 
 from invenio_records_resources.references.entity_resolvers import EntityProxy
 from invenio_records_resources.references.entity_resolvers.base import EntityResolver
@@ -29,10 +29,12 @@ class AutoApproveProxy(EntityProxy):
         """Resolve the entity reference into entity."""
         return AutoApproveEntity()
 
+    @override
     def get_needs(self, ctx: dict | None = None) -> list[Need]:
         """Get needs that the entity generate."""
         return []  # grant_tokens calls this
 
+    @override
     def pick_resolved_fields(self, identity: Identity, resolved_dict: dict) -> dict:
         """Pick resolved fields for serialization of the entity to json."""
         return {"auto_approve": resolved_dict["id"]}
@@ -47,18 +49,22 @@ class AutoApproveResolver(EntityResolver):
         """Initialize the resolver."""
         super().__init__("auto_approve")
 
+    @override
     def matches_reference_dict(self, ref_dict: dict) -> bool:
         """Check if the reference dictionary can be resolved by this resolver."""
         return self._parse_ref_dict_type(ref_dict) == self.type_id
 
+    @override
     def _reference_entity(self, entity: Any) -> dict[str, str]:
         """Return a reference dictionary for the entity."""
         return {self.type_id: "true"}
 
+    @override
     def matches_entity(self, entity: Any) -> bool:
         """Check if the entity can be serialized to a reference by this resolver."""
         return isinstance(entity, AutoApproveEntity)
 
+    @override
     def _get_entity_proxy(self, ref_dict: dict) -> AutoApproveProxy:
         """Get the entity proxy for the reference dictionary.
 

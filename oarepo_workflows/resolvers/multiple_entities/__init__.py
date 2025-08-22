@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, override
 
 from invenio_records_resources.references.entity_resolvers import EntityProxy
 from invenio_records_resources.references.entity_resolvers.base import EntityResolver
@@ -35,12 +35,10 @@ class MultipleEntitiesProxy(EntityProxy):
         """Resolve the entity reference into entity."""
         values = json.loads(self._parse_ref_dict_id())
         return MultipleEntitiesEntity(
-            entities=[
-                ResolverRegistry.resolve_entity_proxy(ref, raise_=True)  # type: ignore
-                for ref in values
-            ]
+            entities=[ResolverRegistry.resolve_entity_proxy(ref, raise_=True) for ref in values]
         )
 
+    @override
     def get_needs(self, ctx: dict | None = None) -> list[Need]:
         """Get needs that the entity generate."""
         ret = []
@@ -48,6 +46,7 @@ class MultipleEntitiesProxy(EntityProxy):
             ret.extend(entity.get_needs(ctx) or [])
         return ret
 
+    @override
     def pick_resolved_fields(self, identity: Identity, resolved_dict: dict) -> dict:
         """Pick resolved fields for serialization of the entity to json."""
         return {"multiple": resolved_dict["id"]}
@@ -62,18 +61,22 @@ class MultipleEntitiesResolver(EntityResolver):
         """Initialize the resolver."""
         super().__init__("multiple")
 
+    @override
     def matches_reference_dict(self, ref_dict: dict) -> bool:
         """Check if the reference dictionary can be resolved by this resolver."""
         return self._parse_ref_dict_type(ref_dict) == self.type_id
 
+    @override
     def _reference_entity(self, entity: MultipleEntitiesEntity) -> dict[str, str]:
         """Return a reference dictionary for the entity."""
         return {self.type_id: json.dumps([part.reference_dict for part in entity.entities])}
 
+    @override
     def matches_entity(self, entity: Any) -> bool:
         """Check if the entity can be serialized to a reference by this resolver."""
         return isinstance(entity, MultipleEntitiesEntity)
 
+    @override
     def _get_entity_proxy(self, ref_dict: dict) -> MultipleEntitiesProxy:
         """Get the entity proxy for the reference dictionary.
 
