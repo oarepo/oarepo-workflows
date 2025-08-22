@@ -6,3 +6,5 @@
 # details.
 #
 """Service layer for workflow-enabled records."""
+
+from __future__ import annotations

@@ -6,3 +6,5 @@
 # details.
 #
 """Service components for supporting workflows on Invenio records."""
+
+from __future__ import annotations

@@ -6,3 +6,5 @@
 # details.
 #
 """Entity resolvers."""
+
+from __future__ import annotations

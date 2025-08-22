@@ -6,3 +6,5 @@
 # details.
 #
 """Registered blueprints for API/UI."""
+
+from __future__ import annotations
