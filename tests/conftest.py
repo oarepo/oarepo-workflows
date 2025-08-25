@@ -14,15 +14,27 @@ import time
 from typing import Any, override
 
 import pytest
-from flask_principal import Identity, Need, UserNeed
+from flask_principal import ActionNeed, Identity, Need, UserNeed
+from invenio_i18n import lazy_gettext as _
 from invenio_rdm_records.services.generators import RecordOwners
 from invenio_rdm_records.services.permissions import RDMRequestsPermissionPolicy
+from invenio_records_permissions.generators import AuthenticatedUser, Generator
+from invenio_requests.customizations.request_types import RequestType
+from invenio_requests.proxies import current_request_type_registry
+from invenio_search.engine import dsl
 from oarepo_model.customizations import AddFileToModule
 from oarepo_model.presets.rdm import rdm_presets
 from oarepo_model.presets.records_resources import records_resources_presets
 
+from oarepo_workflows.base import Workflow
 from oarepo_workflows.model.presets import workflows_presets
 from oarepo_workflows.proxies import current_oarepo_workflows
+from oarepo_workflows.requests import (
+    WorkflowRequest,
+    WorkflowRequestPolicy,
+    WorkflowTransitions,
+)
+from oarepo_workflows.services.permissions import DefaultWorkflowPermissions, IfInState
 
 
 @pytest.fixture(scope="module")
@@ -83,22 +95,6 @@ model_types = {
         }
     }
 }
-
-import pytest
-from flask_principal import ActionNeed
-from invenio_i18n import lazy_gettext as _
-from invenio_records_permissions.generators import AuthenticatedUser, Generator
-from invenio_requests.customizations.request_types import RequestType
-from invenio_requests.proxies import current_request_type_registry
-from invenio_search.engine import dsl
-
-from oarepo_workflows.base import Workflow
-from oarepo_workflows.requests import (
-    WorkflowRequest,
-    WorkflowRequestPolicy,
-    WorkflowTransitions,
-)
-from oarepo_workflows.services.permissions import DefaultWorkflowPermissions, IfInState
 
 """
 pytest_plugins = [
@@ -220,9 +216,6 @@ def input_data():
             "enabled": True,
         },
     }
-
-
-import pytest
 
 
 @pytest.fixture(scope="module")

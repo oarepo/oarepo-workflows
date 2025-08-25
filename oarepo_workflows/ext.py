@@ -19,7 +19,10 @@ from oarepo_runtime.proxies import current_runtime
 
 from oarepo_workflows.errors import InvalidWorkflowError, MissingWorkflowError
 from oarepo_workflows.proxies import current_oarepo_workflows
-from oarepo_workflows.services.auto_approve import AutoApproveEntityServiceConfig, NamedEntityService
+from oarepo_workflows.services.auto_approve import (
+    AutoApproveEntityServiceConfig,
+    NamedEntityService,
+)
 from oarepo_workflows.services.uow import StateChangeOperation
 
 """

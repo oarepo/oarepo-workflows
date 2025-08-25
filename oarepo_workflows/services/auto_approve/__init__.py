@@ -29,7 +29,10 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
     from flask_principal import Identity
-    from invenio_records_resources.services.base.results import ServiceItemResult, ServiceListResult
+    from invenio_records_resources.services.base.results import (
+        ServiceItemResult,
+        ServiceListResult,
+    )
 
 
 class ArrayRecordItem(RecordItem):
@@ -123,8 +126,7 @@ def entity_schema_factory(keyword: str, entity: type) -> type:
 class EntityService(Service):
     """Base abstract service class for entity operations.
 
-    Provides core functionality for entity services including link templates
-    and schema handling. Requires implementation of read operations.
+    Provides core functionality for entity services. Requires implementation of read operations.
     """
 
     @property
@@ -146,7 +148,11 @@ class EntityService(Service):
 
     @abc.abstractmethod
     def read_many(
-        self, identity: Identity, ids: Iterable[str], fields: Iterable[str] | None = None, **kwargs: Any
+        self,
+        identity: Identity,
+        ids: Iterable[str],
+        fields: Iterable[str] | None = None,
+        **kwargs: Any,
     ) -> ServiceListResult:
         """Return multiple instances."""
         raise NotImplementedError
@@ -166,7 +172,11 @@ class NamedEntityService(EntityService):
 
     @override
     def read_many(
-        self, identity: Identity, ids: Iterable[str], fields: Iterable[str] | None = None, **kwargs: Any
+        self,
+        identity: Identity,
+        ids: Iterable[str],
+        fields: Iterable[str] | None = None,
+        **kwargs: Any,
     ) -> ServiceListResult:
         if not ids:
             return []

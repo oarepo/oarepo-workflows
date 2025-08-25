@@ -148,7 +148,9 @@ def test_state_change(
     location,
     search_clear,
 ):
-    record = record_service.create(identity=users[0].identity, data=default_workflow_json)._record  # noqa SLF001
+    record = record_service.create(  # noqa SLF001
+        identity=users[0].identity, data=default_workflow_json
+    )._record
     state_change_function(users[0].identity, record, "approving", commit=False)
     assert record["state"] == "approving"
 

@@ -12,7 +12,11 @@ from invenio_access.permissions import system_identity
 from invenio_requests.resolvers.registry import ResolverRegistry
 
 from oarepo_workflows.requests import AutoApprove
-from oarepo_workflows.resolvers.auto_approve import AutoApproveEntity, AutoApproveProxy, AutoApproveResolver
+from oarepo_workflows.resolvers.auto_approve import (
+    AutoApproveEntity,
+    AutoApproveProxy,
+    AutoApproveResolver,
+)
 
 
 def test_auto_approve_generator(app, search_clear):
