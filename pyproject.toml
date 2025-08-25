@@ -12,6 +12,7 @@ dependencies = [
     "oarepo-runtime>=2.0.0dev5,<3.0.0",
     "graphlib",
     "oarepo[rdm,tests]>=13.0.0,<14.0.0",
+    "oarepo-model<=0.1.0.dev3"
 ]
 
 [build-system]
@@ -26,6 +27,7 @@ dev = [
 
 tests = [
     "pytest-invenio",
+    "pytest-oarepo",
 ]
 
 [project.entry-points."invenio_base.apps"]

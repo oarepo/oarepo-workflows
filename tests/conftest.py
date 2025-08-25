@@ -172,21 +172,6 @@ WORKFLOWS = {
     ),
 }
 
-
-@pytest.fixture
-def state_change_function():
-    from oarepo_workflows.proxies import current_oarepo_workflows
-
-    return current_oarepo_workflows.set_state
-
-
-@pytest.fixture
-def workflow_change_function():
-    from oarepo_workflows.proxies import current_oarepo_workflows
-
-    return current_oarepo_workflows.set_workflow
-
-
 @pytest.fixture
 def record_service(workflow_model):
     return workflow_model.proxies.current_service
@@ -222,23 +207,12 @@ def input_data():
 def extra_entry_points():
     return {
         "oarepo_workflows.state_changed_notifiers": [
-            "test_getter = tests.conftest:test_state_change_notifier",
+            "test_getter = tests.entrypoints:state_change_notifier_called_marker",
         ],
         "oarepo_workflows.workflow_changed_notifiers": [
-            "test_getter = tests.conftest:test_workflow_change_notifier",
+            "test_getter = tests.entrypoints:workflow_change_notifier_called_marker",
         ],
     }
-
-
-def test_state_change_notifier(*args: Any, **_kwargs: Any):
-    record = args[1]
-    record["state-change-notifier-called"] = True
-
-
-def test_workflow_change_notifier(*args: Any, **_kwargs: Any):
-    record = args[1]
-    record.parent["workflow-change-notifier-called"] = True
-
 
 @pytest.fixture
 def default_workflow_json():

@@ -53,7 +53,6 @@ class WorkflowsMappingPreset(Preset):
                     "parent": {
                         "properties": {
                             "workflow": {"type": "keyword", "ignore_above": 1024},
-                            "workflow-change-notifier-called": {"type": "boolean"},
                         }
                     },
                 }

@@ -12,6 +12,7 @@ import copy
 import pytest
 
 from oarepo_workflows.errors import InvalidWorkflowError
+from oarepo_workflows.proxies import current_oarepo_workflows
 
 
 def test_create_without_workflow(workflow_model, users, logged_client, default_workflow_json, search_clear):
@@ -143,7 +144,6 @@ def test_invalid_workflow_input(workflow_model, users, logged_client, default_wo
 def test_state_change(
     users,
     record_service,
-    state_change_function,
     default_workflow_json,
     location,
     search_clear,
@@ -151,7 +151,7 @@ def test_state_change(
     record = record_service.create(  # noqa SLF001
         identity=users[0].identity, data=default_workflow_json
     )._record
-    state_change_function(users[0].identity, record, "approving", commit=False)
+    current_oarepo_workflows.set_state(users[0].identity, record, "approving", commit=False)
     assert record["state"] == "approving"
 
 
@@ -160,28 +160,30 @@ def test_set_workflow(
     logged_client,
     default_workflow_json,
     record_service,
-    workflow_change_function,
     location,
     search_clear,
 ):
     record = record_service.create(users[0].identity, default_workflow_json)._record  # noqa SLF001
     with pytest.raises(InvalidWorkflowError):
-        workflow_change_function(users[0].identity, record, "invalid_workflow", commit=False)
-    workflow_change_function(users[0].identity, record, "record_owners_can_read", commit=False)
+        current_oarepo_workflows.set_workflow(users[0].identity, record, "invalid_workflow", commit=False)
+    current_oarepo_workflows.set_workflow(users[0].identity, record, "record_owners_can_read", commit=False)
     assert record.parent.workflow == "record_owners_can_read"
 
 
 def test_state_change_entrypoint_hookup(
     users,
     record_service,
-    state_change_function,
     default_workflow_json,
     location,
     search_clear,
 ):
+    #with patch('tests.conftest.state_change_notifier_called_marker') as mock_notifier:
+    from tests import entrypoints
+    entrypoints._state_change_notifier_called = False
     record = record_service.create(users[0].identity, default_workflow_json)._record  # noqa SLF001
-    state_change_function(users[0].identity, record, "approving", commit=False)
-    assert record["state-change-notifier-called"]
+    current_oarepo_workflows.set_state(users[0].identity, record, "approving", commit=False)
+    assert entrypoints._state_change_notifier_called
+        #mock_notifier.assert_called_once()
 
 
 def test_set_workflow_entrypoint_hookup(
@@ -189,12 +191,15 @@ def test_set_workflow_entrypoint_hookup(
     logged_client,
     default_workflow_json,
     record_service,
-    workflow_change_function,
     location,
     search_clear,
 ):
+    #with patch('tests.conftest.workflow_change_notifier_called_marker') as mock_notifier:
+    from tests import entrypoints
+    entrypoints._workflow_change_notifier_called = False
     record = record_service.create(users[0].identity, default_workflow_json)._record  # noqa SLF001
     with pytest.raises(InvalidWorkflowError):
-        workflow_change_function(users[0].identity, record, "invalid_workflow", commit=False)
-    workflow_change_function(users[0].identity, record, "record_owners_can_read", commit=False)
-    assert record.parent["workflow-change-notifier-called"]
+         current_oarepo_workflows.set_workflow(users[0].identity, record, "invalid_workflow", commit=False)
+    current_oarepo_workflows.set_workflow(users[0].identity, record, "record_owners_can_read", commit=False)
+    assert entrypoints._workflow_change_notifier_called
+        #mock_notifier.assert_called_once()
