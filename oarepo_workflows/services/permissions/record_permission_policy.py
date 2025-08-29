@@ -122,7 +122,7 @@ class WorkflowRecordPermissionPolicy(RecordPermissionPolicy):
             "read_deleted",
             "read_all_records",
         ):
-            return super().query_filters
+            return super().query_filters  # type: ignore[no-any-return]
         workflows = current_oarepo_workflows.record_workflows
         queries = []
         for workflow_id, workflow in workflows.items():

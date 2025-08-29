@@ -38,4 +38,4 @@ class WorkflowField(MappingSystemFieldMixin, ModelField):
     @property
     def mapping(self) -> dict[str, dict[str, str]]:
         """Elasticsearch mapping."""
-        return {self.attr_name: {"type": "keyword"}}
+        return {self.attr_name: {"type": "keyword"}}  # type: ignore[reportReturnType]

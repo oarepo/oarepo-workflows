@@ -12,7 +12,7 @@ from __future__ import annotations
 import dataclasses
 from functools import cached_property
 from logging import getLogger
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from invenio_requests.proxies import (
     current_request_type_registry,
@@ -62,7 +62,7 @@ class WorkflowRequest:
     escalations: list[WorkflowRequestEscalation] | None = None
     """Escalations applied to the request if not approved/declined in time."""
 
-    _request_type: RequestType | None = dataclasses.field(default=None, init=False)
+    _request_type: str | None = dataclasses.field(default=None, init=False)
 
     @cached_property
     def requester_generator(self) -> Generator:
@@ -88,13 +88,17 @@ class WorkflowRequest:
         try:
             if hasattr(self.request_type, "is_applicable_to"):
                 # the is_applicable_to must contain a permission check, so do not need to do any check here ...
-                return self.request_type.is_applicable_to(identity, topic=record, **context)
-            return current_requests_service.check_permission(
-                identity,
-                "create",
-                record=record,
-                request_type=self.request_type,
-                **context,
+                # TODO: invenio doesn't have is_applicable_to check
+                return self.request_type.is_applicable_to(identity, topic=record, **context)  # type: ignore[no-any-return]
+            return cast(
+                "bool",
+                current_requests_service.check_permission(
+                    identity,
+                    "create",
+                    record=record,
+                    request_type=self.request_type,
+                    **context,
+                ),
             )
         except InvalidConfigurationError:
             raise

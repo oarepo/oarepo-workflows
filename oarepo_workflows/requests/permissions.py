@@ -33,13 +33,13 @@ class CreatorsFromWorkflowRequestsPermissionPolicy(InvenioRequestsPermissionPoli
 
     can_create = (
         SystemProcess(),
-        RequestCreatorsFromWorkflow(),
+        RequestCreatorsFromWorkflow("create"),
     )
 
     can_create_comment = (
         SystemProcess(),
         IfEventType([LogEventType.type_id, CommentEventType.type_id], [Creator(), Receiver()]),
-        EventCreatorsFromWorkflow(),
+        EventCreatorsFromWorkflow("create_comment"),
     )
 
     # any user can search for requests, but non-authenticated will not get a hit

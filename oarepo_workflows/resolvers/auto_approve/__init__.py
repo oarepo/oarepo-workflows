@@ -9,7 +9,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, override
+from typing import TYPE_CHECKING, Any, ClassVar, cast, override
 
 from invenio_records_resources.references.entity_resolvers import EntityProxy
 from invenio_records_resources.references.entity_resolvers.base import EntityResolver
@@ -18,16 +18,19 @@ if TYPE_CHECKING:
     from flask_principal import Identity, Need
 
 
-class AutoApproveEntity:
+class AutoApprove:
     """Entity representing auto approve."""
+
+    serialization: ClassVar[dict[str, str]] = {"id": "true", "keyword": "auto_approve", "type": "keyword"}
+    ref_dict: ClassVar[dict[str, str]] = {"auto_approve": "true"}
 
 
 class AutoApproveProxy(EntityProxy):
     """Proxy for auto approve entity."""
 
-    def _resolve(self) -> AutoApproveEntity:
+    def _resolve(self) -> AutoApprove:
         """Resolve the entity reference into entity."""
-        return AutoApproveEntity()
+        return AutoApprove()
 
     @override
     def get_needs(self, ctx: dict | None = None) -> list[Need]:
@@ -37,7 +40,7 @@ class AutoApproveProxy(EntityProxy):
     @override
     def pick_resolved_fields(self, identity: Identity, resolved_dict: dict) -> dict:
         """Pick resolved fields for serialization of the entity to json."""
-        return {"auto_approve": resolved_dict["id"]}
+        return cast("dict", AutoApprove.ref_dict)
 
 
 class AutoApproveResolver(EntityResolver):
@@ -52,17 +55,17 @@ class AutoApproveResolver(EntityResolver):
     @override
     def matches_reference_dict(self, ref_dict: dict) -> bool:
         """Check if the reference dictionary can be resolved by this resolver."""
-        return self._parse_ref_dict_type(ref_dict) == self.type_id
+        return ref_dict == AutoApprove.ref_dict
 
     @override
     def _reference_entity(self, entity: Any) -> dict[str, str]:
         """Return a reference dictionary for the entity."""
-        return {self.type_id: "true"}
+        return AutoApprove.ref_dict
 
     @override
     def matches_entity(self, entity: Any) -> bool:
         """Check if the entity can be serialized to a reference by this resolver."""
-        return isinstance(entity, AutoApproveEntity)
+        return isinstance(entity, AutoApprove)
 
     @override
     def _get_entity_proxy(self, ref_dict: dict) -> AutoApproveProxy:

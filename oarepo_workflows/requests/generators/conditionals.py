@@ -32,8 +32,11 @@ class IfRequestTypeBase(abc.ABC, ConditionalGenerator):
 class IfRequestType(IfRequestTypeBase):
     """Conditional generator that generates needs when a current request is of a given type."""
 
+    # kwargs shouldn't be a problem?
     @override
-    def _condition(self, request_type: RequestType, **kwargs: Any) -> bool:
+    def _condition(  # type: ignore[reportIncompatibleMethodOverride]
+        self, request_type: RequestType, **kwargs: Any
+    ) -> bool:
         return request_type.type_id in self.request_types
 
 
@@ -54,5 +57,5 @@ class IfEventType(ConditionalGenerator):
         self.event_types = event_types
 
     @override
-    def _condition(self, event_type: EventType, **kwargs: Any) -> bool:
+    def _condition(self, event_type: EventType, **kwargs: Any) -> bool:  # type: ignore[reportIncompatibleMethodOverride]
         return event_type.type_id in self.event_types

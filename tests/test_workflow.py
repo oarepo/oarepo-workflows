@@ -177,13 +177,12 @@ def test_state_change_entrypoint_hookup(
     location,
     search_clear,
 ):
-    #with patch('tests.conftest.state_change_notifier_called_marker') as mock_notifier:
     from tests import entrypoints
-    entrypoints._state_change_notifier_called = False
+
+    entrypoints.state_change_notifier_called = False
     record = record_service.create(users[0].identity, default_workflow_json)._record  # noqa SLF001
     current_oarepo_workflows.set_state(users[0].identity, record, "approving", commit=False)
-    assert entrypoints._state_change_notifier_called
-        #mock_notifier.assert_called_once()
+    assert entrypoints.state_change_notifier_called
 
 
 def test_set_workflow_entrypoint_hookup(
@@ -194,12 +193,11 @@ def test_set_workflow_entrypoint_hookup(
     location,
     search_clear,
 ):
-    #with patch('tests.conftest.workflow_change_notifier_called_marker') as mock_notifier:
     from tests import entrypoints
-    entrypoints._workflow_change_notifier_called = False
+
+    entrypoints.workflow_change_notifier_called = False
     record = record_service.create(users[0].identity, default_workflow_json)._record  # noqa SLF001
     with pytest.raises(InvalidWorkflowError):
-         current_oarepo_workflows.set_workflow(users[0].identity, record, "invalid_workflow", commit=False)
+        current_oarepo_workflows.set_workflow(users[0].identity, record, "invalid_workflow", commit=False)
     current_oarepo_workflows.set_workflow(users[0].identity, record, "record_owners_can_read", commit=False)
-    assert entrypoints._workflow_change_notifier_called
-        #mock_notifier.assert_called_once()
+    assert entrypoints.workflow_change_notifier_called

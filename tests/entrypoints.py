@@ -13,13 +13,15 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Any
 
-_state_change_notifier_called = False
-_workflow_change_notifier_called = False
+state_change_notifier_called = False
+workflow_change_notifier_called = False
+
 
 def state_change_notifier_called_marker(*args: Any, **_kwargs: Any):
-    global _state_change_notifier_called
-    _state_change_notifier_called = True
+    global state_change_notifier_called  # noqa PLW0603
+    state_change_notifier_called = True
+
 
 def workflow_change_notifier_called_marker(*args: Any, **_kwargs: Any):
-    global _workflow_change_notifier_called
-    _workflow_change_notifier_called = True
+    global workflow_change_notifier_called  # noqa PLW0603
+    workflow_change_notifier_called = True

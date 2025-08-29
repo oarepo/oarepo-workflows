@@ -13,9 +13,7 @@ import dataclasses
 from functools import cached_property
 from typing import TYPE_CHECKING
 
-from oarepo_workflows.requests.generators.multiple_entities import (
-    MultipleEntitiesGenerator,
-)
+from oarepo_workflows.requests.generators.multiple_entities import MultipleEntitiesGenerator
 
 if TYPE_CHECKING:
     from invenio_records_permissions.generators import Generator

@@ -41,7 +41,7 @@ class WorkflowComponent(ServiceComponent):
     def create(
         self,
         identity: Identity,
-        data: dict[str, Any] | None = None,
+        data: dict[str, Any] | None = None,  # can we have None here?
         record: Record | None = None,
         **kwargs: Any,
     ) -> None:
@@ -62,5 +62,5 @@ class WorkflowComponent(ServiceComponent):
                 "make sure you are using workflow-enabled policy.",
                 record=data,
             ) from e
-
-        current_oarepo_workflows.set_workflow(identity, record, workflow_id, uow=self.uow, **kwargs)
+        # complains about record being but it can't be here and it's signature mismatch ServiceComponent
+        current_oarepo_workflows.set_workflow(identity, record, workflow_id, uow=self.uow, **kwargs)  # type: ignore[reportArgumentType]

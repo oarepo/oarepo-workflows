@@ -40,12 +40,10 @@ class DefaultWorkflowPermissions(RecordPermissionPolicy):
     # TODO: new version - update; edit current version - disable -> idk if
     #  there's other way than something like IfNoEditDraft/IfNoNewVersionDraft generators-
 
-
-    files_edit = [
+    files_edit = (
         IfInState("draft", [RecordOwners()]),
         IfInState("published", [Disable()]),
-    ]
-
+    )
 
     system_process = SystemProcess()
 
@@ -149,4 +147,4 @@ class DefaultWorkflowPermissions(RecordPermissionPolicy):
     can_query_stats = (Disable(),)
 
     # new ones?
-    can_edit = (Disable(),)
+    can_edit = (Disable(),)  # TODO: check why i put this here

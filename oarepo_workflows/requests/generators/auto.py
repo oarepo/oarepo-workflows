@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any, override
 from invenio_access import SystemRoleNeed
 from invenio_records_permissions.generators import Generator
 
+from ...resolvers.auto_approve import AutoApprove as AutoApproveEntity
 from .recipient_generator import RecipientGeneratorMixin
 
 if TYPE_CHECKING:
@@ -56,7 +57,7 @@ class AutoApprove(RecipientGeneratorMixin, Generator):
 
         Returning "auto_approve" is a signal to the workflow that the request should be auto-approved.
         """
-        return [{"auto_approve": "true"}]
+        return [AutoApproveEntity.ref_dict]
 
     @override
     def needs(self, **context: Any) -> list[Need]:

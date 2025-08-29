@@ -44,7 +44,9 @@ class RecordStateField(MappingSystemFieldMixin, SystemField):
         self.set_dictkey(record, self._initial)
 
     @override
-    def post_init(self, record: WithState, data: dict, model: Any | None = None, **kwargs: Any) -> None:
+    def post_init(  # type: ignore[override]
+        self, record: WithState, data: dict, model: Any | None = None, **kwargs: Any
+    ) -> None:
         """Set the initial state when record is created."""
         if not record.state:
             self.set_dictkey(record, self._initial)
@@ -58,10 +60,11 @@ class RecordStateField(MappingSystemFieldMixin, SystemField):
     def __get__(self, record: WithState | None, owner: type | None = None) -> str | Self:
         """Get the persistent identifier."""
         if record is None:
-            return self
-        return self.get_dictkey(record)
+            return self  # type: ignore[no-any-return]
+        return self.get_dictkey(record)  # type: ignore[no-any-return]
 
-    def __set__(self, record: WithState, value: str) -> None:
+    # NoReturn is whem method always raises an exception
+    def __set__(self, record: WithState, value: str) -> None:  # type: ignore[reportIncompatibleMethodOverride]
         """Directly set the state of the record."""
         if self.get_dictkey(record) != value:
             self.set_dictkey(record, value)
@@ -71,7 +74,7 @@ class RecordStateField(MappingSystemFieldMixin, SystemField):
     def mapping(self) -> dict[str, dict[str, str]]:
         """Return the opensearch mapping for the state field."""
         return {
-            self.attr_name: {"type": "keyword"},
+            self.attr_name: {"type": "keyword"},  # type: ignore[reportReturnType]
         }
 
 
@@ -87,7 +90,9 @@ class RecordStateTimestampField(MappingSystemFieldMixin, SystemField):
         self.set_dictkey(record, datetime.now(tz=UTC).isoformat())
 
     @override
-    def post_init(self, record: WithState, data: dict, model: Any | None = None, **kwargs: Any) -> None:
+    def post_init(  # type: ignore[reportIncompatibleMethodOverride]
+        self, record: WithState, data: dict, model: Any | None = None, **kwargs: Any
+    ) -> None:
         """Set the initial state when record is created."""
         if not record.state_timestamp:
             self.set_dictkey(record, datetime.now(tz=UTC).isoformat())
@@ -101,15 +106,16 @@ class RecordStateTimestampField(MappingSystemFieldMixin, SystemField):
     def __get__(self, record: WithState | None, owner: type | None = None) -> str | Self:
         """Get the persistent identifier."""
         if record is None:
-            return self
-        return self.get_dictkey(record)
+            return self  # type: ignore[no-any-return]
+        return self.get_dictkey(record)  # type: ignore[no-any-return]
 
     @property
     def mapping(self) -> dict[str, dict[str, str]]:
         """Return the opensearch mapping for the state field."""
         # not needed as oarepo-model-builder-workflows already generated this field into the mapping
+        # attr_name isn't typed in invenio but should always be a string
         return {
-            self.attr_name: {
+            self.attr_name: {  # type: ignore[reportReturnType]
                 "type": "date",
                 "format": "strict_date_time||strict_date_time_no_millis||"
                 "basic_date_time||basic_date_time_no_millis||"

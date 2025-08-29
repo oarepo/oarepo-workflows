@@ -8,13 +8,17 @@
 #
 from __future__ import annotations
 
+import base64
 import json
+import os
 import sys
 import time
-from typing import Any, override
+from typing import TYPE_CHECKING, Any, override
 
 import pytest
 from flask_principal import ActionNeed, Identity, Need, UserNeed
+from flask_security import login_user
+from invenio_accounts.testutils import login_user_via_session
 from invenio_i18n import lazy_gettext as _
 from invenio_rdm_records.services.generators import RecordOwners
 from invenio_rdm_records.services.permissions import RDMRequestsPermissionPolicy
@@ -25,6 +29,7 @@ from invenio_search.engine import dsl
 from oarepo_model.customizations import AddFileToModule
 from oarepo_model.presets.rdm import rdm_presets
 from oarepo_model.presets.records_resources import records_resources_presets
+from sqlalchemy.exc import IntegrityError
 
 from oarepo_workflows.base import Workflow
 from oarepo_workflows.model.presets import workflows_presets
@@ -35,6 +40,11 @@ from oarepo_workflows.requests import (
     WorkflowTransitions,
 )
 from oarepo_workflows.services.permissions import DefaultWorkflowPermissions, IfInState
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from invenio_accounts.models import User
 
 
 @pytest.fixture(scope="module")
@@ -172,6 +182,7 @@ WORKFLOWS = {
     ),
 }
 
+
 @pytest.fixture
 def record_service(workflow_model):
     return workflow_model.proxies.current_service
@@ -213,6 +224,7 @@ def extra_entry_points():
             "test_getter = tests.entrypoints:workflow_change_notifier_called_marker",
         ],
     }
+
 
 @pytest.fixture
 def default_workflow_json():
@@ -336,3 +348,142 @@ def create_app(instance_path, entry_points):
     from invenio_app.factory import create_api as _create_api
 
     return _create_api
+
+
+#
+#
+#
+#
+#
+# TODO: use pytest-oarepo instead of this
+@pytest.fixture
+def password():
+    """Password fixture."""
+    return base64.b64encode(os.urandom(16)).decode("utf-8")
+
+
+def _create_user(user_fixture, app, db) -> None:
+    """Create users, reusing it if it already exists."""
+    try:
+        user_fixture.create(app, db)
+    except IntegrityError:
+        datastore = app.extensions["security"].datastore
+        user_fixture._user = datastore.get_user_by_email(  # noqa: SLF001
+            user_fixture.email
+        )
+        user_fixture._app = app  # noqa: SLF001
+        app.logger.info("skipping creation of %s, already existing", user_fixture.email)
+
+
+@pytest.fixture
+def users(app, db, UserFixture, password):  # noqa: N803 # as it is a fixture name
+    """Predefined user fixtures."""
+    user1 = UserFixture(
+        email="user1@example.org",
+        password=password,
+        active=True,
+        confirmed=True,
+        user_profile={
+            "affiliations": "CERN",
+        },
+    )
+    _create_user(user1, app, db)
+
+    user2 = UserFixture(
+        email="user2@example.org",
+        password=password,
+        username="beetlesmasher",
+        active=True,
+        confirmed=True,
+        user_profile={
+            "affiliations": "CERN",
+        },
+    )
+    _create_user(user2, app, db)
+
+    user3 = UserFixture(
+        email="user3@example.org",
+        password=password,
+        username="beetlesmasherXXL",
+        user_profile={
+            "full_name": "Maxipes Fik",
+            "affiliations": "CERN",
+        },
+        active=True,
+        confirmed=True,
+    )
+    _create_user(user3, app, db)
+
+    user4 = UserFixture(
+        email="user4@example.org",
+        password=password,
+        username="african",
+        preferences={
+            "timezone": "Africa/Dakar",  # something without daylight saving time; +0.0
+        },
+        user_profile={
+            "affiliations": "CERN",
+        },
+        active=True,
+        confirmed=True,
+    )
+    _create_user(user4, app, db)
+
+    user5 = UserFixture(
+        email="user5@example.org",
+        password=password,
+        username="mexican",
+        preferences={
+            "timezone": "America/Mexico_City",  # something without daylight saving time
+        },
+        user_profile={
+            "affiliations": "CERN",
+        },
+        active=True,
+        confirmed=True,
+    )
+    _create_user(user5, app, db)
+
+    return [user1, user2, user3, user4, user5]
+
+
+class LoggedClient:
+    """Logged client for testing."""
+
+    def __init__(self, client, user_fixture):
+        """Initialize the logged client."""
+        self.client = client
+        self.user_fixture = user_fixture
+
+    def _login(self) -> None:
+        """Perform login."""
+        login_user(self.user_fixture.user, remember=True)
+        login_user_via_session(self.client, email=self.user_fixture.email)
+
+    def post(self, *args: Any, **kwargs: Any) -> Any:
+        """Send a POST request with authentication."""
+        self._login()
+        return self.client.post(*args, **kwargs)
+
+    def get(self, *args: Any, **kwargs: Any) -> Any:
+        """Send a GET request with authentication."""
+        self._login()
+        return self.client.get(*args, **kwargs)
+
+    def put(self, *args: Any, **kwargs: Any) -> Any:
+        """Send a PUT request with authentication."""
+        self._login()
+        return self.client.put(*args, **kwargs)
+
+    def delete(self, *args: Any, **kwargs: Any) -> Any:
+        """Send a DELETE request with authentication."""
+        self._login()
+        return self.client.delete(*args, **kwargs)
+
+
+@pytest.fixture
+def logged_client(client) -> Callable[[User], LoggedClient]:
+    def _logged_client(user) -> LoggedClient:
+        return LoggedClient(client, user)
+
+    return _logged_client

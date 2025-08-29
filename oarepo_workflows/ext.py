@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import importlib.metadata
 from functools import cached_property
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from invenio_drafts_resources.services.records.uow import ParentRecordCommitOp
 from invenio_records_resources.services.uow import unit_of_work
@@ -19,10 +19,7 @@ from oarepo_runtime.proxies import current_runtime
 
 from oarepo_workflows.errors import InvalidWorkflowError, MissingWorkflowError
 from oarepo_workflows.proxies import current_oarepo_workflows
-from oarepo_workflows.services.auto_approve import (
-    AutoApproveEntityServiceConfig,
-    NamedEntityService,
-)
+from oarepo_workflows.services.auto_approve import AutoApproveService
 from oarepo_workflows.services.uow import StateChangeOperation
 
 """
@@ -40,7 +37,7 @@ from oarepo_workflows.services.multiple_entities import (
 if TYPE_CHECKING:
     from flask import Flask
     from flask_principal import Identity
-    from invenio_drafts_resources.records import ParentRecord, Record
+    from invenio_drafts_resources.records import Record
     from invenio_records_resources.services.uow import UnitOfWork
 
     from oarepo_workflows.base import (
@@ -49,6 +46,7 @@ if TYPE_CHECKING:
         WorkflowChangeNotifier,
     )
     from oarepo_workflows.records.systemfields.workflow import WithWorkflow
+    from oarepo_workflows.requests.events import WorkflowEvent
 
 
 class OARepoWorkflows:
@@ -92,7 +90,7 @@ class OARepoWorkflows:
     def init_services(self) -> None:
         """Initialize workflow services."""
         # noinspection PyAttributeOutsideInit
-        self.auto_approve_service = NamedEntityService(config=AutoApproveEntityServiceConfig())
+        self.auto_approve_service = AutoApproveService()
 
     @cached_property
     def state_changed_notifiers(self) -> list[StateChangedNotifier]:
@@ -178,8 +176,8 @@ class OARepoWorkflows:
                 record=record,
             )
         parent = record.parent
-        previous_value = parent.workflow
-        parent.workflow = new_workflow_id
+        previous_value = parent.workflow  # type: ignore[attr-defined]
+        parent.workflow = new_workflow_id  # type: ignore[attr-defined]
         if commit:
             service = current_runtime.get_record_service_for_record(record)
             uow.register(ParentRecordCommitOp(parent, indexer_context={"service": service}))
@@ -194,33 +192,21 @@ class OARepoWorkflows:
                 **kwargs,
             )
 
-    # noinspection PyMethodMayBeStatic
-    def get_workflow_from_record(self, record: Record | ParentRecord) -> str | None:
-        """Get the workflow from a record.
-
-        :param record:  record to get the workflow from. Can pass either a record or its parent.
-        """
-        parent: ParentRecord = record.parent if hasattr(record, "parent") else record
-
-        if hasattr(parent, "workflow") and parent.workflow:
-            return parent.workflow
-        return None
-
     @property
     def record_workflows(self) -> dict[str, Workflow]:
         """Return a dictionary of available record workflows."""
-        return self.app.config["WORKFLOWS"]
+        return self.app.config["WORKFLOWS"]  # type: ignore[no-any-return]
 
     @property
-    def default_workflow_events(self) -> dict:
+    def default_workflow_events(self) -> dict[str, WorkflowEvent]:
         """Return a dictionary of default workflow events.
 
         Default workflow events are those that can be added to any request.
         The dictionary is taken from the configuration key `DEFAULT_WORKFLOW_EVENTS`.
         """
-        return self.app.config.get("DEFAULT_WORKFLOW_EVENTS", {})
+        return cast("dict[str, WorkflowEvent]", self.app.config.get("DEFAULT_WORKFLOW_EVENTS", {}))
 
-    def get_workflow(self, record: Record | dict[str, Any]) -> Workflow:
+    def get_workflow_id(self, record: Record | dict[str, Any]) -> str:
         """Get the workflow for a record.
 
         :param record:  record to get the workflow for
@@ -229,14 +215,14 @@ class OARepoWorkflows:
         """
         if hasattr(record, "parent"):
             try:
-                record_parent: WithWorkflow = record.parent
+                record_parent: WithWorkflow = record.parent  # type: ignore[reportAttributeAccessIssue]
             except AttributeError as e:
                 raise MissingWorkflowError(
                     "Record does not have a parent attribute, is it a draft-enabled record?",
                     record=record,
                 ) from e
             try:
-                workflow_id = record_parent.workflow
+                return record_parent.workflow
             except AttributeError as e:
                 raise MissingWorkflowError("Parent record does not have a workflow attribute.", record=record) from e
         else:
@@ -245,10 +231,18 @@ class OARepoWorkflows:
             except KeyError as e:
                 raise MissingWorkflowError("Record does not have a parent attribute.", record=record) from e
             try:
-                workflow_id = dict_parent["workflow"]
+                return cast("str", dict_parent["workflow"])
             except KeyError as e:
                 raise MissingWorkflowError("Parent record does not have a workflow attribute.", record=record) from e
 
+    def get_workflow(self, record: Record | dict[str, Any]) -> Workflow:
+        """Get the workflow for a record.
+
+        :param record:  record to get the workflow for
+        :raises MissingWorkflowError: if the workflow is not found
+        :raises InvalidWorkflowError: if the workflow is invalid
+        """
+        workflow_id = self.get_workflow_id(record)
         try:
             return self.record_workflows[workflow_id]
         except KeyError as e:
@@ -292,6 +286,7 @@ def patch_request_permissions(app: Flask) -> None:
     replace those with workflow-based ones. If user set their own
     permissions, keep those intact.
     """
+    # TODO: this is ugly and redundant, we already have OAREPO_WORKFLOWS_SET_REQUEST_PERMISSIONS config?
     from invenio_rdm_records.services.permissions import (
         RDMRequestsPermissionPolicy as OriginalPermissionPolicy,
     )

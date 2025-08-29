@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
-from typing import TYPE_CHECKING, Any, override
+from typing import TYPE_CHECKING, Any, cast, override
 
 from invenio_records_resources.references.entity_resolvers import EntityProxy
 from invenio_records_resources.references.entity_resolvers.base import EntityResolver
@@ -35,13 +35,13 @@ class MultipleEntitiesProxy(EntityProxy):
         """Resolve the entity reference into entity."""
         values = json.loads(self._parse_ref_dict_id())
         return MultipleEntitiesEntity(
-            entities=[ResolverRegistry.resolve_entity_proxy(ref, raise_=True) for ref in values]
+            entities=[cast("EntityProxy", ResolverRegistry.resolve_entity_proxy(ref, raise_=True)) for ref in values]
         )
 
     @override
     def get_needs(self, ctx: dict | None = None) -> list[Need]:
         """Get needs that the entity generate."""
-        ret = []
+        ret: list[Need] = []
         for entity in self._resolve().entities:
             ret.extend(entity.get_needs(ctx) or [])
         return ret
@@ -64,7 +64,7 @@ class MultipleEntitiesResolver(EntityResolver):
     @override
     def matches_reference_dict(self, ref_dict: dict) -> bool:
         """Check if the reference dictionary can be resolved by this resolver."""
-        return self._parse_ref_dict_type(ref_dict) == self.type_id
+        return cast("bool", self._parse_ref_dict_type(ref_dict) == self.type_id)
 
     @override
     def _reference_entity(self, entity: MultipleEntitiesEntity) -> dict[str, str]:

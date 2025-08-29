@@ -13,22 +13,19 @@ so there is no need to store it to database/fetch it from the database.
 
 from __future__ import annotations
 
-import abc
-from typing import TYPE_CHECKING, Any, ClassVar, override
+from types import SimpleNamespace
+from typing import TYPE_CHECKING, Any, Never, cast, override
 
-from invenio_records_resources.services.base.config import ServiceConfig
-from invenio_records_resources.services.base.links import LinksTemplate
 from invenio_records_resources.services.base.service import Service
-from invenio_records_resources.services.records.schema import ServiceSchemaWrapper
-from marshmallow import Schema, fields, post_load
 from oarepo_runtime.services.results import RecordItem, RecordList
 
-from oarepo_workflows.resolvers.auto_approve import AutoApproveEntity
+from oarepo_workflows.resolvers.auto_approve import AutoApprove
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable
+    from collections.abc import Iterable
 
     from flask_principal import Identity
+    from invenio_records_resources.services.base.config import ServiceConfig
     from invenio_records_resources.services.base.results import (
         ServiceItemResult,
         ServiceListResult,
@@ -36,22 +33,44 @@ if TYPE_CHECKING:
 
 
 class ArrayRecordItem(RecordItem):
-    """Single record result for array-based records.
+    """Single record result for AutoApprove."""
 
-    Extends the base RecordItem to provide ID handling for array records.
-    """
+    def __init__(
+        self,
+    ):
+        """Override constructor to discard unnecesary arguments."""
+        self._record = AutoApprove()
 
     @property
-    def id(self) -> Any:  # TODO: what are possible options apart from str?
+    def links(self) -> Never:
+        """Not used here."""
+        raise NotImplementedError
+
+    @property
+    def data(self) -> dict[str, str]:
+        """Get the record data.
+
+        Returns:
+            dict: The serialized record data.
+
+        """
+        return AutoApprove.serialization
+
+    @property
+    def id(self) -> Any:
         """Get the record id."""
-        return self._record["id"]
+        return self.data["id"]
 
 
 class ArrayRecordList(RecordList):
-    """Result list for array-based records.
+    """List autopprove result."""
 
-    Extends the base RecordItem to provide ID handling for array records.
-    """
+    def __init__(
+        self,
+        results: list[AutoApprove],
+    ) -> None:
+        """Override constructor to discard unnecesary arguments."""
+        self._results = results
 
     @property
     @override
@@ -65,18 +84,25 @@ class ArrayRecordList(RecordList):
         """Get the search result aggregations."""
         return None
 
+    # we would have to define self._service.record_cls.loads(hit.to_dict())
     @property
     @override
     def hits(self) -> Any:
-        """Iterator over the hits."""
+        """Get iterator over search result hits.
+
+        Yields:
+            dict: The serialized record data for each hit.
+
+        """
+        for _ in self._results:
+            yield AutoApprove.serialization
+        """
         for hit in self._results:
             # Project the record
             projection = self._schema.dump(
                 hit,
                 context={"identity": self._identity, "record": hit},
             )
-            if self._links_item_tpl:
-                projection["links"] = self._links_item_tpl.expand(self._identity, hit)
             if self._nested_links_item:
                 for link in self._nested_links_item:
                     link.expand(self._identity, hit, projection)
@@ -89,30 +115,76 @@ class ArrayRecordList(RecordList):
                     expand=self._expand,
                 )
             yield projection
+        """
 
+    """
+    @property
+    def hits(self):
+        for hit in self._results:
+            # Load dump
+            hit_dict = hit.to_dict()
 
-class classproperty[T]:  # noqa N801
-    # TODO: move to runtime
-    """Class property decorator implementation.
+            try:
+                # Project the record
+                if hit_dict.get("record_status") == "draft":
+                    record = self._service.draft_cls.loads(hit_dict)
+                else:
+                    record = self._service.record_cls.loads(hit_dict)
 
-    Allows defining properties at class level rather than instance level.
-    Will be moved to runtime in future versions.
+                projection = self._schema.dump(
+                    record,
+                    context=dict(
+                        identity=self._identity,
+                        record=record,
+                    ),
+                )
+                if hasattr(self._service.config, "links_search_item"):
+                    links_tpl = self._service.config.search_item_links_template(
+                        self._service.config.links_search_item
+                    )
+                    projection["links"] = links_tpl.expand(self._identity, record)
+                elif self._links_item_tpl:
+                    projection["links"] = self._links_item_tpl.expand(
+                        self._identity, record
+                    )
+                # todo optimization viz FieldsResolver
+                for c in self.components:
+                    c.update_data(
+                        identity=self._identity,
+                        record=record,
+                        projection=projection,
+                        expand=self._expand,
+                    )
+                yield projection
+            except Exception:
+                # ignore record with error, put it to log so that it gets to glitchtip
+                # but don't break the whole search
+                log.exception("Error while dumping record %s", hit_dict)
     """
 
+
+"""
+class classproperty[T]:  # noqa N801
+    # TODO: move to runtime
+    #Class property decorator implementation.
+
+    #Allows defining properties at class level rather than instance level.
+    #Will be moved to runtime in future versions.
+
+
     def __init__(self, func: Callable):
-        """Initialize the class property."""
+        #Initialize the class property
         self.fget = func
 
     def __get__(self, instance: Any, owner: Any) -> T:
-        """Get the value of the class property."""
+        # Get the value of the class property
         return self.fget(owner)
 
 
 def entity_schema_factory(keyword: str, entity: type) -> type:
-    """Create a schema class for a given named entity."""
 
     @post_load
-    def _make(self, **kwargs: Any) -> type:  # noqa ARG001, ANN001
+    def _make(self, **kwargs: Any) -> Any:  # noqa ARG001, ANN001
         return entity(**kwargs)
 
     flds = {
@@ -121,98 +193,64 @@ def entity_schema_factory(keyword: str, entity: type) -> type:
         "_make": _make,
     }
     return type(f"{keyword.capitalize()}Schema", (Schema,), flds)
+"""
 
 
-class EntityService(Service):
-    """Base abstract service class for entity operations.
-
-    Provides core functionality for entity services. Requires implementation of read operations.
-    """
-
-    @property
-    def links_item_tpl(self) -> LinksTemplate:
-        """Item links template."""
-        return LinksTemplate(
-            self.config.links_item,
-        )
-
-    @property
-    def schema(self) -> ServiceSchemaWrapper:
-        """Return the data schema instance."""
-        return ServiceSchemaWrapper(self, schema=self.config.schema)
-
-    @abc.abstractmethod
-    def read(self, identity: Identity, id_: str, **kwargs: Any) -> ServiceItemResult:
-        """Return one instance."""
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def read_many(
-        self,
-        identity: Identity,
-        ids: Iterable[str],
-        fields: Iterable[str] | None = None,
-        **kwargs: Any,
-    ) -> ServiceListResult:
-        """Return multiple instances."""
-        raise NotImplementedError
-
-
-class NamedEntityService(EntityService):
+class AutoApproveService(Service):
     """Service implementation for named entities.
 
     Provides concrete implementation of read operations for named entities
     that don't require database storage.
     """
 
-    @override
-    def read(self, identity: Identity, id_: str, **kwargs: Any) -> ServiceItemResult:
-        result = self.config.entity_cls()
-        return self.result_item(self, identity, record=result, links_tpl=self.links_item_tpl)
+    def __init__(self):
+        """Override constructor to discard unnecesary arguments."""
 
-    @override
+    @property
+    def config(self) -> ServiceConfig:
+        """Get fake service config."""
+        return cast("ServiceConfig", SimpleNamespace(service_id="auto_approve"))
+
+    def read(self, identity: Identity, id_: str, **kwargs: Any) -> ServiceItemResult:  # noqa ARG002
+        """Read a single auto-approve record.
+
+        Args:
+            identity: The identity requesting access.
+            id_: The record ID.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            ServiceItemResult: The auto-approve record.
+
+        """
+        return ArrayRecordItem()
+
     def read_many(
         self,
-        identity: Identity,
+        identity: Identity,  # noqa ARG002
         ids: Iterable[str],
-        fields: Iterable[str] | None = None,
-        **kwargs: Any,
+        fields: Iterable[str] | None = None,  # noqa ARG002
+        **kwargs: Any,  # noqa ARG002
     ) -> ServiceListResult:
-        if not ids:
-            return []
-        results = [self.config.entity_cls() for _ in ids]
-        return self.result_list(
-            self,
-            identity,
-            results=results,
-            links_item_tpl=self.links_item_tpl,
-        )
+        """Read multiple auto-approve records.
+
+        Args:
+            identity: The identity requesting access.
+            ids: Iterable of record IDs.
+            fields: Optional fields to include in the result.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            ServiceListResult: List of auto-approve records.
+
+        """
+        results = [AutoApprove() for _ in ids]
+        return ArrayRecordList(results)
 
 
-class NamedEntityServiceConfig(ServiceConfig):
-    """Base configuration for named entity services.
+"""
+class AutoApproveEntityServiceConfig:
 
-    Defines common configuration including result classes and schema generation
-    capabilities for named entities.
-    """
-
-    links_item: ClassVar = {}
-    result_item_cls = ArrayRecordItem
-    result_list_cls = ArrayRecordList
-
-    @classproperty
-    def schema(cls) -> type[Schema]:  # noqa N805
-        """Create the schema for the entity."""
-        return entity_schema_factory(keyword=cls.keyword, entity=cls.entity_cls)
-
-
-class AutoApproveEntityServiceConfig(NamedEntityServiceConfig):
-    """Configuration for auto-approve entity service.
-
-    Specific configuration for auto-approve workflow entities,
-    defining service ID, keyword and entity class to use.
-    """
 
     service_id = "auto_approve"
-    keyword = "auto_approve"
-    entity_cls = AutoApproveEntity
+"""

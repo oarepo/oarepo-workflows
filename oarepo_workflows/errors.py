@@ -9,15 +9,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import Any
 
+from invenio_records_resources.records import Record
 from marshmallow import ValidationError
 
-if TYPE_CHECKING:
-    from invenio_records_resources.records import Record
 
-
-def _get_id_from_record(record: Record | dict) -> str:
+def _get_id_from_record(record: Record | dict[str, Any]) -> str:
     """Get the id from a record.
 
     :param record: A record or a dict representing a record.
@@ -29,12 +27,12 @@ def _get_id_from_record(record: Record | dict) -> str:
             return str(record["id"])
     except TypeError:
         pass
-    if hasattr(record, "id"):
+    if isinstance(record, Record) and hasattr(record, "id"):
         return str(record.id)
     return str(record)
 
 
-def _format_record(record: Record | dict) -> str:
+def _format_record(record: Record | dict[str, Any]) -> str:
     """Format a record for error messages.
 
     :param record: A record or a dict representing a record.

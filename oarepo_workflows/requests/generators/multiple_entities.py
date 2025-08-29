@@ -32,22 +32,22 @@ class MultipleEntitiesGenerator(RecipientGeneratorMixin, Generator):
     """List of generators to be combined."""
 
     @override
-    def needs(self, **context: Any) -> set[Need]:
+    def needs(self, **context: Any) -> list[Need]:
         """Generate a set of needs from generators that a person needs to have.
 
         :param context: Context.
         :return: Set of needs.
         """
-        return {need for generator in self.generators for need in generator.needs(**context)}
+        return [need for generator in self.generators for need in generator.needs(**context)]
 
     @override
-    def excludes(self, **context: Any) -> set[Need]:
+    def excludes(self, **context: Any) -> list[Need]:
         """Generate a set of needs that person must not have.
 
         :param context: Context.
         :return: Set of needs.
         """
-        return {exclude for generator in self.generators for exclude in generator.excludes(**context)}
+        return [exclude for generator in self.generators for exclude in generator.excludes(**context)]
 
     @override
     def query_filter(self, **context: Any) -> list[dict]:

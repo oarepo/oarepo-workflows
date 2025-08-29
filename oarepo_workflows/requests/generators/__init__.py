@@ -11,7 +11,6 @@ from __future__ import annotations
 
 from .auto import AutoApprove, AutoRequest, auto_approve_need, auto_request_need
 from .conditionals import IfEventType, IfRequestType, IfRequestTypeBase
-from .multiple_entities import MultipleEntitiesGenerator
 from .recipient_generator import RecipientGeneratorMixin
 
 __all__ = (
@@ -20,7 +19,6 @@ __all__ = (
     "IfEventType",
     "IfRequestType",
     "IfRequestTypeBase",
-    "MultipleEntitiesGenerator",
     "RecipientGeneratorMixin",
     "auto_approve_need",
     "auto_request_need",

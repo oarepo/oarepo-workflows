@@ -9,7 +9,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from .requests import (
     WorkflowRequest,
@@ -48,12 +48,13 @@ class WorkflowRequestPolicy:
     def __init__(self):
         """Initialize the request policy."""
         for rt_code, rt in self.items():
+            rt = cast("WorkflowRequest", rt)
             rt._request_type = rt_code  # noqa SLF001 #TODO: perhaps do this differently?
 
     def __getitem__(self, request_type_id: str) -> WorkflowRequest:
         """Get the workflow request type by its id."""
         try:
-            return getattr(self, request_type_id)
+            return cast("WorkflowRequest", getattr(self, request_type_id))  # type: ignore[no-any-return]
         except AttributeError:
             raise KeyError(f"Request type {request_type_id} not defined in {self.__class__.__name__}") from None
 

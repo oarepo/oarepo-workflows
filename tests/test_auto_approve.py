@@ -11,16 +11,16 @@ import pytest
 from invenio_access.permissions import system_identity
 from invenio_requests.resolvers.registry import ResolverRegistry
 
-from oarepo_workflows.requests import AutoApprove
+from oarepo_workflows.requests import AutoApprove as AutoApproveGenerator
 from oarepo_workflows.resolvers.auto_approve import (
-    AutoApproveEntity,
+    AutoApprove,
     AutoApproveProxy,
     AutoApproveResolver,
 )
 
 
 def test_auto_approve_generator(app, search_clear):
-    a = AutoApprove()
+    a = AutoApproveGenerator()
 
     with pytest.raises(
         ValueError,
@@ -49,19 +49,19 @@ def test_auto_approve_generator(app, search_clear):
 def test_auto_approve_service(auto_approve_service):
     read_item = auto_approve_service.read(system_identity, "true")
     assert {"id": "true", "keyword": "auto_approve"}.items() <= read_item.data.items()
-    assert isinstance(read_item._obj, AutoApproveEntity)  # noqa SLF001
-    assert isinstance(read_item._record, AutoApproveEntity)  # noqa SLF001
+    assert isinstance(read_item._obj, AutoApprove)  # noqa SLF001
+    assert isinstance(read_item._record, AutoApprove)  # noqa SLF001
 
 
 def test_auto_approve_resolver(app, search_clear):
     resolved = ResolverRegistry.resolve_entity({"auto_approve": "true"})
-    assert isinstance(resolved, AutoApproveEntity)
+    assert isinstance(resolved, AutoApprove)
 
     proxy = AutoApproveProxy(AutoApproveResolver(), {"auto_approve": "true"})
 
-    assert isinstance(proxy.resolve(), AutoApproveEntity)
+    assert isinstance(proxy.resolve(), AutoApprove)
     assert proxy.pick_resolved_fields(system_identity, {"id": "true"}) == {"auto_approve": "true"}
     assert proxy.get_needs() == []
 
-    entity_reference = ResolverRegistry.reference_entity(AutoApproveEntity())
+    entity_reference = ResolverRegistry.reference_entity(AutoApprove())
     assert entity_reference == {"auto_approve": "true"}
