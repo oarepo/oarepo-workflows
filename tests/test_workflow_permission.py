@@ -17,14 +17,14 @@ from oarepo_workflows.errors import InvalidWorkflowError, MissingWorkflowError
 
 
 def test_get_workflow_id(users, workflow_model, logged_client, record_service, location, search_clear):
-    thesis = workflow_model.Draft.create({})
+    record = workflow_model.Draft.create({})
     wp = FromRecordWorkflow("read")
     with pytest.raises(InvalidWorkflowError):
-        wp._get_workflow_id(record=thesis)  # noqa SLF001
+        wp._get_workflow_id(record=record)  # noqa SLF001
 
-    fake_thesis = SimpleNamespace(parent=SimpleNamespace(workflow=""))
+    fake_record = SimpleNamespace(parent=SimpleNamespace(workflow=""))
     with pytest.raises(InvalidWorkflowError):
-        assert wp._get_workflow_id(record=fake_thesis)  # noqa SLF001
+        assert wp._get_workflow_id(record=fake_record)  # noqa SLF001
 
 
 def test_query_filter(users, logged_client, search_clear, record_service):

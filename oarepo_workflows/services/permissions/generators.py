@@ -72,6 +72,8 @@ class FromRecordWorkflow(Generator):
             workflow_id = current_oarepo_workflows.get_workflow_id(
                 record
             )  # TODO: or just scrap the id method and use _get_workflow_code_from_workflow lol
+            if not workflow_id:
+                raise MissingWorkflowError("Workflow not defined on record.", record=record)
         else:
             data = context.get("data", {})
             workflow_id = data.get("parent", {}).get("workflow", {})

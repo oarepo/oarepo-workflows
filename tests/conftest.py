@@ -84,11 +84,13 @@ def input_data_with_files_disabled(input_data):
     return data
 
 
+"""
 pytest_plugins = (
     "celery.contrib.pytest",
     "pytest_oarepo.users",
     "pytest_oarepo.fixtures",
 )
+"""
 
 
 parent_json_schema = {
