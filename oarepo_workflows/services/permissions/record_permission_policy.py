@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 from functools import reduce
+from typing import TYPE_CHECKING
 
 from invenio_records_permissions import RecordPermissionPolicy
 from invenio_records_permissions.generators import (
@@ -20,6 +21,9 @@ from invenio_search.engine import dsl
 
 from ...proxies import current_oarepo_workflows
 from .generators import FromRecordWorkflow
+
+if TYPE_CHECKING:
+    from opensearch_dsl.query import Query
 
 
 class WorkflowRecordPermissionPolicy(RecordPermissionPolicy):
@@ -114,7 +118,7 @@ class WorkflowRecordPermissionPolicy(RecordPermissionPolicy):
     can_view = (FromRecordWorkflow("view"),)
 
     @property
-    def query_filters(self) -> list[dict]:
+    def query_filters(self) -> list[Query]:
         """Return query filters from the delegated workflow permissions."""
         if self.action not in (
             "read",

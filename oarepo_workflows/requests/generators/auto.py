@@ -9,7 +9,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, override
+from typing import TYPE_CHECKING, Any, Never, override
 
 from invenio_access import SystemRoleNeed
 from invenio_records_permissions.generators import Generator
@@ -76,7 +76,7 @@ class AutoApprove(RecipientGeneratorMixin, Generator):
         )
 
     @override
-    def query_filter(self, **context: Any) -> list[dict]:
+    def query_filter(self, **context: Any) -> Never:
         """Get needs that signal workflow to automatically approve the request."""
         raise ValueError(
             "Auto-approve generator can not create needs and "

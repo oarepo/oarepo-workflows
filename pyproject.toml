@@ -1,7 +1,6 @@
 [project]
 name = "oarepo-workflows"
-version = "2.0.0"
-description = "Add your description here"
+description = "OARepo module allowing record workflow functionality"
 readme = "README.md"
 authors = [
     { name = "Ronald Krist", email = "krist@cesnet.cz" }

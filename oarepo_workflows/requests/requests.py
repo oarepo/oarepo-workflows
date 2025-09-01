@@ -87,8 +87,7 @@ class WorkflowRequest:
         """
         try:
             if hasattr(self.request_type, "is_applicable_to"):
-                # the is_applicable_to must contain a permission check, so do not need to do any check here ...
-                # TODO: invenio doesn't have is_applicable_to check
+                # invenio RequestType doesn't have is_applicable_to check
                 return self.request_type.is_applicable_to(identity, topic=record, **context)  # type: ignore[no-any-return]
             return cast(
                 "bool",

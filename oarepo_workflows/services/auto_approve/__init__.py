@@ -32,8 +32,11 @@ if TYPE_CHECKING:
     )
 
 
-class ArrayRecordItem(RecordItem):
+class AutoApproveRecordItem(RecordItem):
     """Single record result for AutoApprove."""
+
+    # TODO: overwrite superclass method or use the furthest base one and implement by demand?
+    # has_permissions_to is used in ui?
 
     def __init__(
         self,
@@ -42,11 +45,18 @@ class ArrayRecordItem(RecordItem):
         self._record = AutoApprove()
 
     @property
+    @override
     def links(self) -> Never:
         """Not used here."""
         raise NotImplementedError
 
     @property
+    @override
+    def errors(self) -> list[Never]:  # type: ignore[reportIncompatibleMethodOverride]
+        return []
+
+    @property
+    @override
     def data(self) -> dict[str, str]:
         """Get the record data.
 
@@ -62,7 +72,7 @@ class ArrayRecordItem(RecordItem):
         return self.data["id"]
 
 
-class ArrayRecordList(RecordList):
+class AutoApproveRecordList(RecordList):
     """List autopprove result."""
 
     def __init__(
@@ -71,6 +81,7 @@ class ArrayRecordList(RecordList):
     ) -> None:
         """Override constructor to discard unnecesary arguments."""
         self._results = results
+        self._params = None
 
     @property
     @override
@@ -223,7 +234,7 @@ class AutoApproveService(Service):
             ServiceItemResult: The auto-approve record.
 
         """
-        return ArrayRecordItem()
+        return AutoApproveRecordItem()
 
     def read_many(
         self,
@@ -244,8 +255,7 @@ class AutoApproveService(Service):
             ServiceListResult: List of auto-approve records.
 
         """
-        results = [AutoApprove() for _ in ids]
-        return ArrayRecordList(results)
+        return AutoApproveRecordList([AutoApprove() for _ in ids])
 
 
 """

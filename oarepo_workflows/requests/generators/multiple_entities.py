@@ -7,6 +7,7 @@
 #
 """Generator that combines multiple generators together with an 'or' operation."""
 
+# TODO: review need for this
 from __future__ import annotations
 
 import dataclasses
@@ -22,6 +23,8 @@ if TYPE_CHECKING:
     from flask_principal import Need
     from invenio_records_resources.records.api import Record
     from invenio_requests.customizations.request_types import RequestType
+
+    from ...services.permissions.generators import QueryFilter
 
 
 @dataclasses.dataclass
@@ -50,7 +53,8 @@ class MultipleEntitiesGenerator(RecipientGeneratorMixin, Generator):
         return [exclude for generator in self.generators for exclude in generator.excludes(**context)]
 
     @override
-    def query_filter(self, **context: Any) -> list[dict]:
+    def query_filter(self, **context: Any) -> QueryFilter:
+        # TODO: wrong return type?
         """Generate a list of opensearch query filters.
 
          These filters are used to filter objects. These objects are governed by a policy

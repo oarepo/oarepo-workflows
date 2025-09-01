@@ -286,7 +286,7 @@ def patch_request_permissions(app: Flask) -> None:
     replace those with workflow-based ones. If user set their own
     permissions, keep those intact.
     """
-    # TODO: this is ugly and redundant, we already have OAREPO_WORKFLOWS_SET_REQUEST_PERMISSIONS config?
+    # TODO: we already have OAREPO_WORKFLOWS_SET_REQUEST_PERMISSIONS config?
     from invenio_rdm_records.services.permissions import (
         RDMRequestsPermissionPolicy as OriginalPermissionPolicy,
     )

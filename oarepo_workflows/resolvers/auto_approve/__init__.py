@@ -9,7 +9,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, cast, override
+from typing import TYPE_CHECKING, Any, ClassVar, override
 
 from invenio_records_resources.references.entity_resolvers import EntityProxy
 from invenio_records_resources.references.entity_resolvers.base import EntityResolver
@@ -38,9 +38,9 @@ class AutoApproveProxy(EntityProxy):
         return []  # grant_tokens calls this
 
     @override
-    def pick_resolved_fields(self, identity: Identity, resolved_dict: dict) -> dict:
+    def pick_resolved_fields(self, identity: Identity, resolved_dict: dict[str, str]) -> dict[str, str]:
         """Pick resolved fields for serialization of the entity to json."""
-        return cast("dict", AutoApprove.ref_dict)
+        return AutoApprove.ref_dict
 
 
 class AutoApproveResolver(EntityResolver):
