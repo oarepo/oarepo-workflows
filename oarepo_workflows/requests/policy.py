@@ -12,13 +12,13 @@ from __future__ import annotations
 from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
-from .requests import (
-    WorkflowRequest,
-)
-
 if TYPE_CHECKING:
     from flask_principal import Identity
     from invenio_records_resources.records.api import Record
+
+    from .requests import (
+        WorkflowRequest,
+    )
 
 
 class WorkflowRequestPolicy:

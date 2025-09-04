@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     from oarepo_model.model import InvenioModel
 
 
-def validate_datetime(value):
+def validate_datetime(value) -> None:
     try:
         datetime.fromisoformat(value)
     except Exception as e:

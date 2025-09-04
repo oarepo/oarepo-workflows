@@ -11,12 +11,10 @@ from __future__ import annotations
 
 import operator
 from abc import abstractmethod
-from collections.abc import Sequence
 from functools import reduce
 from itertools import chain
 from typing import TYPE_CHECKING, Any, override
 
-from invenio_records_permissions.generators import Generator as InvenioGenerator
 from invenio_search.engine import dsl
 from oarepo_runtime.services.generators import ConditionalGenerator, Generator
 
@@ -24,8 +22,11 @@ from oarepo_workflows.errors import InvalidWorkflowError, MissingWorkflowError
 from oarepo_workflows.proxies import current_oarepo_workflows
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from flask_principal import Need
     from invenio_records_permissions import RecordPermissionPolicy
+    from invenio_records_permissions.generators import Generator as InvenioGenerator
     from invenio_records_resources.records import Record
 
 

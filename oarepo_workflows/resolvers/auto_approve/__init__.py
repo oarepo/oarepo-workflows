@@ -9,13 +9,14 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, ClassVar, override
 
 from invenio_records_resources.references.entity_resolvers import EntityProxy
 from invenio_records_resources.references.entity_resolvers.base import EntityResolver
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from flask_principal import Identity, Need
 
 

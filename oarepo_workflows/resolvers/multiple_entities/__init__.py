@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import dataclasses
 import json
-from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, cast, override
 
 from invenio_records_resources.references.entity_resolvers import EntityProxy
@@ -19,6 +18,8 @@ from invenio_records_resources.references.entity_resolvers.base import EntityRes
 from invenio_requests.resolvers.registry import ResolverRegistry
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from flask_principal import Identity, Need
 
 

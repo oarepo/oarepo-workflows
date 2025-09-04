@@ -9,13 +9,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, cast, override
 
 from oarepo_runtime.services.generators import Generator
 from opensearch_dsl.query import Query
 
-from oarepo_workflows import Workflow, WorkflowRequest
 from oarepo_workflows.errors import (
     EventTypeNotInWorkflowError,
     InvalidWorkflowError,
@@ -25,11 +23,15 @@ from oarepo_workflows.errors import (
 from oarepo_workflows.proxies import current_oarepo_workflows
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from flask_principal import Need
     from invenio_records_resources.records import Record
     from invenio_requests.customizations import EventType, RequestType
     from invenio_requests.records.api import Request
     from invenio_search.engine import dsl
+
+    from oarepo_workflows import Workflow, WorkflowRequest
 
 
 class MissingTopicError(ValueError):

@@ -10,10 +10,9 @@
 from __future__ import annotations
 
 import dataclasses
-from collections.abc import Sequence
 from functools import cached_property
 from logging import getLogger
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, cast, Sequence
 
 from invenio_requests.proxies import (
     current_requests_service,

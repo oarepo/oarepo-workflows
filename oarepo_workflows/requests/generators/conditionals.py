@@ -10,12 +10,13 @@
 from __future__ import annotations
 
 import abc
-from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, override
 
 from oarepo_runtime.services.generators import ConditionalGenerator, Generator
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from invenio_requests.customizations import EventType, RequestType
 
 

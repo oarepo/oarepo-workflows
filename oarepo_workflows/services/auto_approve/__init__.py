@@ -13,9 +13,8 @@ so there is no need to store it to database/fetch it from the database.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, cast, Sequence
 
 from invenio_records_resources.services.base.results import ServiceItemResult, ServiceListResult
 from invenio_records_resources.services.base.service import Service
@@ -25,10 +24,6 @@ from oarepo_workflows.resolvers.auto_approve import AutoApprove
 if TYPE_CHECKING:
     from flask_principal import Identity
     from invenio_records_resources.services.base.config import ServiceConfig
-    from invenio_records_resources.services.base.results import (
-        ServiceItemResult,
-        ServiceListResult,
-    )
 
 
 class AutoApproveRecordItem(ServiceItemResult):

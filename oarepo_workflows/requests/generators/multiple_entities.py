@@ -11,18 +11,18 @@ from __future__ import annotations
 
 import dataclasses
 import json
-from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Any, override
-
-from oarepo_runtime.services.generators import Generator
 
 from ...services.permissions.generators import AggregateGenerator
 from .recipient_generator import RecipientGeneratorMixin
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
+
     from invenio_records_permissions.generators import Generator as InvenioGenerator
     from invenio_records_resources.records.api import Record
     from invenio_requests.customizations.request_types import RequestType
+    from oarepo_runtime.services.generators import Generator
 
 
 @dataclasses.dataclass

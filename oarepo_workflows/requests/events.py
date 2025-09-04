@@ -10,13 +10,14 @@
 from __future__ import annotations
 
 import dataclasses
-from collections.abc import Sequence
 from functools import cached_property
 from typing import TYPE_CHECKING
 
 from oarepo_workflows.requests.generators.multiple_entities import MultipleEntitiesGenerator
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from invenio_records_permissions.generators import Generator as InvenioGenerator
     from oarepo_runtime.services.generators import Generator
 

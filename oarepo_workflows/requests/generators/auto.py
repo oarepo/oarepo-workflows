@@ -9,7 +9,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Never, override
 
 from invenio_access import SystemRoleNeed
@@ -19,6 +18,8 @@ from ...resolvers.auto_approve import AutoApprove as AutoApproveEntity
 from .recipient_generator import RecipientGeneratorMixin
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from flask_principal import Need
     from invenio_records_resources.records import Record
     from invenio_requests.customizations import RequestType
