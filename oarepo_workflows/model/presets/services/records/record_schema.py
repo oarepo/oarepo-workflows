@@ -15,9 +15,11 @@ fields, including state and state timestamp.
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, override
 
 import marshmallow as ma
+from jsonschema.exceptions import ValidationError
 from oarepo_model.customizations import AddMixins, Customization
 from oarepo_model.presets import Preset
 
@@ -26,6 +28,13 @@ if TYPE_CHECKING:
 
     from oarepo_model.builder import InvenioModelBuilder
     from oarepo_model.model import InvenioModel
+
+
+def validate_datetime(value):
+    try:
+        datetime.fromisoformat(value)
+    except Exception as e:
+        raise ValidationError(f"Invalid datetime format, expecting iso format, got {value}") from e
 
 
 class WorkflowsRecordSchemaPreset(Preset):
@@ -43,8 +52,6 @@ class WorkflowsRecordSchemaPreset(Preset):
         class StateSchemaMixin:
             state = ma.fields.String(dump_only=True)
 
-            # state_timestamp = ma.fields.String(dump_only=True,
-            # validate=[validate_datetime]) TODO: validate isn't in runtime for now
-            state_timestamp = ma.fields.String(dump_only=True)
+            state_timestamp = ma.fields.String(dump_only=True, validate=[validate_datetime])
 
         yield AddMixins("RecordSchema", StateSchemaMixin)

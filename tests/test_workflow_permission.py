@@ -13,17 +13,17 @@ import pytest
 from flask_principal import Identity, UserNeed
 
 from oarepo_workflows import FromRecordWorkflow
-from oarepo_workflows.errors import MissingWorkflowError
+from oarepo_workflows.errors import InvalidWorkflowError, MissingWorkflowError
 
 
 def test_get_workflow_id(users, workflow_model, logged_client, record_service, location, search_clear):
     record = workflow_model.Draft.create({})
     wp = FromRecordWorkflow("read")
-    with pytest.raises(MissingWorkflowError):
+    with pytest.raises(InvalidWorkflowError):
         wp._get_workflow_id(record=record)  # noqa SLF001
 
     fake_record = SimpleNamespace(parent=SimpleNamespace(workflow=""))
-    with pytest.raises(MissingWorkflowError):
+    with pytest.raises(InvalidWorkflowError):
         assert wp._get_workflow_id(record=fake_record)  # noqa SLF001
 
 

@@ -27,6 +27,9 @@ if TYPE_CHECKING:
 class Workflow:
     """A workflow definition."""
 
+    code: str
+    """A unique code for the workflow."""
+
     label: str | LazyString
     """A human-readable label for the workflow."""
 

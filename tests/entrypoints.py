@@ -10,6 +10,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from flask import Blueprint
+
 if TYPE_CHECKING:
     from typing import Any
 
@@ -25,3 +27,11 @@ def state_change_notifier_called_marker(*args: Any, **_kwargs: Any):
 def workflow_change_notifier_called_marker(*args: Any, **_kwargs: Any):
     global workflow_change_notifier_called  # noqa PLW0603
     workflow_change_notifier_called = True
+
+
+test_blueprint = Blueprint("records", __name__)
+
+
+@test_blueprint.route("/records/<pid_value>")
+def read(pid_value):
+    return "{}"

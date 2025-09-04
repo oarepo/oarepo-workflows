@@ -33,7 +33,6 @@ from oarepo_workflows.services.multiple_entities import (
 )
 """
 
-
 if TYPE_CHECKING:
     from flask import Flask
     from flask_principal import Identity
@@ -79,18 +78,22 @@ class OARepoWorkflows:
                 app.config["OAREPO_PERMISSIONS_PRESETS"][k] = ext_config.OAREPO_PERMISSIONS_PRESETS[k]
 
         app.config.setdefault("WORKFLOWS", ext_config.WORKFLOWS)
-
-        app.config.setdefault(
-            "OAREPO_WORKFLOWS_SET_REQUEST_PERMISSIONS",
-            ext_config.OAREPO_WORKFLOWS_SET_REQUEST_PERMISSIONS,
-        )
-
         app.config.setdefault("REQUESTS_ALLOWED_RECEIVERS", []).extend(ext_config.WORKFLOWS_ALLOWED_REQUEST_RECEIVERS)
+
+    def init_app(self, app: Flask) -> None:
+        """Flask application initialization."""
+        # noinspection PyAttributeOutsideInit
+        self.app = app
+        app.extensions["oarepo-workflows"] = self
 
     def init_services(self) -> None:
         """Initialize workflow services."""
         # noinspection PyAttributeOutsideInit
         self.auto_approve_service = AutoApproveService()
+
+    @cached_property
+    def workflow_by_code(self) -> dict[str, Workflow]:
+        return {w.code: w for w in self.app.config["WORKFLOWS"]}
 
     @cached_property
     def state_changed_notifiers(self) -> list[StateChangedNotifier]:
@@ -170,7 +173,7 @@ class OARepoWorkflows:
         :param commit:              whether to commit the change
         :param kwargs:              additional keyword arguments
         """
-        if new_workflow_id not in current_oarepo_workflows.record_workflows:
+        if new_workflow_id not in current_oarepo_workflows.workflow_by_code:
             raise InvalidWorkflowError(
                 f"Workflow {new_workflow_id} does not exist in the configuration.",
                 record=record,
@@ -193,7 +196,7 @@ class OARepoWorkflows:
             )
 
     @property
-    def record_workflows(self) -> dict[str, Workflow]:
+    def record_workflows(self) -> list[Workflow]:
         """Return a dictionary of available record workflows."""
         return self.app.config["WORKFLOWS"]  # type: ignore[no-any-return]
 
@@ -206,7 +209,7 @@ class OARepoWorkflows:
         """
         return cast("dict[str, WorkflowEvent]", self.app.config.get("DEFAULT_WORKFLOW_EVENTS", {}))
 
-    def get_workflow_id(self, record: Record | dict[str, Any]) -> str:
+    def get_workflow(self, record: Record | dict[str, Any]) -> Workflow:
         """Get the workflow for a record.
 
         :param record:  record to get the workflow for
@@ -222,7 +225,7 @@ class OARepoWorkflows:
                     record=record,
                 ) from e
             try:
-                return record_parent.workflow
+                workflow_id = record_parent.workflow
             except AttributeError as e:
                 raise MissingWorkflowError("Parent record does not have a workflow attribute.", record=record) from e
         else:
@@ -231,31 +234,16 @@ class OARepoWorkflows:
             except KeyError as e:
                 raise MissingWorkflowError("Record does not have a parent attribute.", record=record) from e
             try:
-                return cast("str", dict_parent["workflow"])
+                workflow_id = cast("str", dict_parent["workflow"])
             except KeyError as e:
                 raise MissingWorkflowError("Parent record does not have a workflow attribute.", record=record) from e
-
-    def get_workflow(self, record: Record | dict[str, Any]) -> Workflow:
-        """Get the workflow for a record.
-
-        :param record:  record to get the workflow for
-        :raises MissingWorkflowError: if the workflow is not found
-        :raises InvalidWorkflowError: if the workflow is invalid
-        """
-        workflow_id = self.get_workflow_id(record)
         try:
-            return self.record_workflows[workflow_id]
+            return self.workflow_by_code[workflow_id]
         except KeyError as e:
             raise InvalidWorkflowError(
                 f"Workflow {workflow_id} doesn't exist in the configuration.",
                 record=record,
             ) from e
-
-    def init_app(self, app: Flask) -> None:
-        """Flask application initialization."""
-        # noinspection PyAttributeOutsideInit
-        self.app = app
-        app.extensions["oarepo-workflows"] = self
 
 
 def finalize_app(app: Flask) -> None:
@@ -274,35 +262,3 @@ def finalize_app(app: Flask) -> None:
         ext.auto_approve_service,
         service_id=ext.auto_approve_service.config.service_id,
     )
-
-    if app.config["OAREPO_WORKFLOWS_SET_REQUEST_PERMISSIONS"]:
-        patch_request_permissions(app)
-
-
-def patch_request_permissions(app: Flask) -> None:
-    """Replace invenio request permissions.
-
-    If permissions for requests are the plain invenio permissions,
-    replace those with workflow-based ones. If user set their own
-    permissions, keep those intact.
-    """
-    # TODO: we already have OAREPO_WORKFLOWS_SET_REQUEST_PERMISSIONS config?
-    from invenio_rdm_records.services.permissions import (
-        RDMRequestsPermissionPolicy as OriginalPermissionPolicy,
-    )
-
-    with app.app_context():
-        from invenio_requests.proxies import current_requests_service
-
-        from oarepo_workflows.requests.permissions import (
-            CreatorsFromWorkflowRequestsPermissionPolicy,
-        )
-
-        current_permission_policy = app.config.get("REQUESTS_PERMISSION_POLICY")
-        if current_permission_policy is OriginalPermissionPolicy:
-            app.config["REQUESTS_PERMISSION_POLICY"] = CreatorsFromWorkflowRequestsPermissionPolicy
-            if (
-                current_requests_service.config.permission_policy_cls
-                is not CreatorsFromWorkflowRequestsPermissionPolicy
-            ):
-                raise TypeError("Permission policy setting failed.")

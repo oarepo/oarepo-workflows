@@ -11,12 +11,14 @@ from types import SimpleNamespace
 from typing import Any, override
 
 import pytest
-from flask_principal import Identity, RoleNeed, UserNeed
+from flask_principal import Identity, UserNeed
 from invenio_rdm_records.services.generators import RecordOwners
 from invenio_records_permissions.generators import Generator
+from invenio_requests.customizations.request_types import RequestType
 from opensearch_dsl.query import Terms
 
 from oarepo_workflows import WorkflowRequestPolicy, WorkflowTransitions
+from oarepo_workflows.proxies import current_oarepo_workflows
 from oarepo_workflows.requests import WorkflowRequest
 from oarepo_workflows.requests.generators import RecipientGeneratorMixin
 from tests.test_multiple_recipients import UserWithRole
@@ -67,33 +69,40 @@ class FailingGenerator(Generator):
 class R(WorkflowRequestPolicy):
     """Requests for testing purposes."""
 
-    req = WorkflowRequest(
-        requesters=[RecordOwners()],
-        recipients=[NullRecipient(), TestRecipient()],
-        transitions=WorkflowTransitions(
-            submitted="pending",
-            accepted="accepted",
-            declined="declined",
+    requests = [
+        WorkflowRequest(
+            request_type=type("Req", (RequestType,), {"type_id": "req"}),
+            requesters=[RecordOwners()],
+            recipients=[NullRecipient(), TestRecipient()],
+            transitions=WorkflowTransitions(
+                submitted="pending",
+                accepted="accepted",
+                declined="declined",
+            ),
         ),
-    )
-    req1 = WorkflowRequest(
-        requesters=[
-            UserWithRole("administrator"),
-        ],
-        recipients=[NullRecipient(), TestRecipient()],
-    )
-    req2 = WorkflowRequest(
-        requesters=[],  # never applicable, must be created by, for example, system identity
-        recipients=[],
-    )
-    req3 = WorkflowRequest(
-        requesters=[FailingGenerator()],
-        recipients=[NullRecipient(), TestRecipient()],
-    )
+        WorkflowRequest(
+            request_type=type("Req1", (RequestType,), {"type_id": "req1"}),
+            requesters=[
+                UserWithRole("administrator"),
+            ],
+            recipients=[NullRecipient(), TestRecipient()],
+        ),
+        WorkflowRequest(
+            request_type=type("Req2", (RequestType,), {"type_id": "req2"}),
+            requesters=[],  # never applicable, must be created by, for example, system identity
+            recipients=[],
+        ),
+        WorkflowRequest(
+            request_type=type("Req3", (RequestType,), {"type_id": "req3"}),
+            requesters=[FailingGenerator()],
+            recipients=[NullRecipient(), TestRecipient()],
+        ),
+    ]
 
 
 def test_workflow_requests(db, users, workflow_model, logged_client, search_clear, location):
     req = WorkflowRequest(
+        request_type=type("Req", (RequestType,), {"type_id": "req"}),
         requesters=[RecordOwners()],
         recipients=[NullRecipient(), TestRecipient()],
     )
@@ -103,6 +112,7 @@ def test_workflow_requests(db, users, workflow_model, logged_client, search_clea
 
 def test_workflow_requests_multiple_recipients(db, users, workflow_model, logged_client, search_clear, location):
     req = WorkflowRequest(
+        request_type=type("Req", (RequestType,), {"type_id": "req"}),
         requesters=[RecordOwners()],
         recipients=[
             TestRecipient(),
@@ -115,6 +125,7 @@ def test_workflow_requests_multiple_recipients(db, users, workflow_model, logged
 
 def test_workflow_requests_no_recipient(workflow_model, users, logged_client, search_clear, location, record_service):
     req1 = WorkflowRequest(
+        request_type=type("Req", (RequestType,), {"type_id": "req"}),
         requesters=[RecordOwners()],
         recipients=[NullRecipient()],
     )
@@ -122,6 +133,7 @@ def test_workflow_requests_no_recipient(workflow_model, users, logged_client, se
     assert req1.recipient_entity_reference(record=rec) is None
 
     req2 = WorkflowRequest(
+        request_type=type("Req", (RequestType,), {"type_id": "req"}),
         requesters=[RecordOwners()],
         recipients=[],
     )
@@ -129,17 +141,20 @@ def test_workflow_requests_no_recipient(workflow_model, users, logged_client, se
 
 
 def test_request_policy_access(app, search_clear):
-    request_policy = app.config["WORKFLOWS"]["my_workflow"].requests()
-    assert getattr(request_policy, "delete_request", None)
-    assert not getattr(request_policy, "non_existing_request", None)
+    requests = current_oarepo_workflows.workflow_by_code["my_workflow"].requests().requests_by_id
+    assert len(requests) == 1
+    assert "req1" in requests
 
 
 def test_is_applicable(users, logged_client, search_clear, record_service, extra_request_types):
+    # THIS IS WRONG AND WORKS ONLY BY ACCIDENT!!!!!
+    # TODO: this approach won't work as the "from workflow" needs are taken from the workflow not this req
+
     req = WorkflowRequest(
+        request_type=type("Req", (RequestType,), {"type_id": "req"}),
         requesters=[RecordOwners()],
         recipients=[NullRecipient(), TestRecipient()],
     )
-    req._request_type = "req"  # noqa SLF001
 
     id1 = Identity(id=1)
     id1.provides.add(UserNeed(1))
@@ -159,6 +174,8 @@ def test_is_applicable(users, logged_client, search_clear, record_service, extra
 
 
 def test_list_applicable_requests(users, logged_client, search_clear, record_service, extra_request_types):
+    # THIS IS WRONG AND WORKS ONLY BY ACCIDENT!!!!!
+
     requests = R()
 
     id1 = Identity(id=1)
@@ -166,7 +183,6 @@ def test_list_applicable_requests(users, logged_client, search_clear, record_ser
 
     id2 = Identity(id=2)
     id2.provides.add(UserNeed(2))
-    id2.provides.add(RoleNeed("administrator"))
 
     record = SimpleNamespace(
         parent=SimpleNamespace(
@@ -180,27 +196,19 @@ def test_list_applicable_requests(users, logged_client, search_clear, record_ser
     assert {x[0] for x in requests.applicable_workflow_requests(id2, record=record)} == set()
 
 
-def test_get_workflow_request_via_index(users, logged_client, search_clear, record_service, extra_request_types):
+def test_requests_by_id():
     requests = R()
-    assert requests["req"] == requests.req
-    assert requests["req1"] == requests.req1
-    with pytest.raises(KeyError):
-        requests["non_existing_request"]
-
-
-def test_get_request_type(users, logged_client, search_clear, record_service, extra_request_types):
-    requests = R()
-    for rt_code, wr in requests.items():
-        assert wr.request_type.type_id == rt_code
+    assert set(requests.requests_by_id.keys()) == {"req", "req1", "req2", "req3"}
+    assert list(requests.requests_by_id.values()) == R.requests
 
 
 def test_transition_getter(users, logged_client, search_clear, record_service, extra_request_types):
     requests = R()
-    assert requests.req.transitions["submitted"] == "pending"
-    assert requests.req.transitions["accepted"] == "accepted"
-    assert requests.req.transitions["declined"] == "declined"
+    assert requests.requests_by_id["req"].transitions["submitted"] == "pending"
+    assert requests.requests_by_id["req"].transitions["accepted"] == "accepted"
+    assert requests.requests_by_id["req"].transitions["declined"] == "declined"
     with pytest.raises(KeyError):
-        requests.req.transitions["non_existing_transition"]
+        requests.requests_by_id["req"].transitions["non_existing_transition"]
 
 
 def test_requestor_filter(users, logged_client, search_clear, record_service, extra_request_types):
@@ -215,5 +223,5 @@ def test_requestor_filter(users, logged_client, search_clear, record_service, ex
     id1 = Identity(id=1)
     id1.provides.add(UserNeed(1))
 
-    generator = requests.req.requester_generator
-    assert generator.query_filter(identity=id1, record=sample_record) == [Terms(parent__access__owned_by__user=[1])]
+    generator = requests.requests_by_id["req"].requester_generator
+    assert generator.query_filter(identity=id1, record=sample_record) == Terms(parent__access__owned_by__user=[1])

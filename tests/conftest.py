@@ -21,30 +21,143 @@ from flask_security import login_user
 from invenio_accounts.testutils import login_user_via_session
 from invenio_i18n import lazy_gettext as _
 from invenio_rdm_records.services.generators import RecordOwners
-from invenio_rdm_records.services.permissions import RDMRequestsPermissionPolicy
-from invenio_records_permissions.generators import AuthenticatedUser, Generator
+from invenio_records_permissions.generators import AnyUser, AuthenticatedUser, Disable, Generator
 from invenio_requests.customizations.request_types import RequestType
-from invenio_requests.proxies import current_request_type_registry
 from invenio_search.engine import dsl
 from oarepo_model.customizations import AddFileToModule
 from oarepo_model.presets.rdm import rdm_presets
 from oarepo_model.presets.records_resources import records_resources_presets
 from sqlalchemy.exc import IntegrityError
 
+from oarepo_workflows import WorkflowRequestPolicy, WorkflowTransitions
 from oarepo_workflows.base import Workflow
 from oarepo_workflows.model.presets import workflows_presets
 from oarepo_workflows.proxies import current_oarepo_workflows
-from oarepo_workflows.requests import (
-    WorkflowRequest,
-    WorkflowRequestPolicy,
-    WorkflowTransitions,
-)
+from oarepo_workflows.requests import WorkflowRequest
+from oarepo_workflows.requests.generators import RecipientGeneratorMixin
 from oarepo_workflows.services.permissions import DefaultWorkflowPermissions, IfInState
+from tests.test_multiple_recipients import UserWithRole
+
+
+class TestRecipient(RecipientGeneratorMixin, Generator):
+    """User recipient for testing purposes."""
+
+    @override
+    def reference_receivers(self, record=None, request_type=None, **context: Any):
+        assert record is not None
+        return [{"user": "1"}]
+
+
+class TestRecipient2(RecipientGeneratorMixin, Generator):
+    """User recipient for testing purposes."""
+
+    @override
+    def reference_receivers(self, record=None, request_type=None, **context: Any):
+        assert record is not None
+        return [{"user": "2"}]
+
+
+class NullRecipient(RecipientGeneratorMixin, Generator):
+    """Null recipient for testing purposes."""
+
+    @override
+    def reference_receivers(self, record=None, request_type=None, **context: Any):
+        return None
+
+
+class FailingGenerator(Generator):
+    """Failing generator for testing purposes."""
+
+    @override
+    def needs(self, **context: Any):
+        raise ValueError("Failing generator")
+
+    @override
+    def excludes(self, **context: Any):
+        raise ValueError("Failing generator")
+
+    @override
+    def query_filter(self, **context: Any):
+        raise ValueError("Failing generator")
+
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from invenio_accounts.models import User
+
+
+def create_rt(type_id) -> type:
+    return type("Req", (RequestType,), {"type_id": type_id})
+
+
+req = create_rt("req")
+req1 = create_rt("req1")
+req2 = create_rt("req2")
+req3 = create_rt("req3")
+
+
+class Administration(Generator):
+    """Administration permission generator."""
+
+    @override
+    def needs(self, **kwargs: Any):
+        return [ActionNeed("administration")]
+
+    @override
+    def query_filter(self, **kwargs: Any):
+        return dsl.Q("match_all")
+
+
+class MyWorkflowRequests(WorkflowRequestPolicy):
+    """Requests for testing."""
+
+    requests = [
+        WorkflowRequest(
+            request_type=req1,
+            requesters=[IfInState("published", RecordOwners())],
+            recipients=[Administration()],
+            transitions=WorkflowTransitions(
+                submitted="considered_for_deletion",
+                accepted="deleted",
+                declined="published",
+            ),
+        )
+    ]
+
+
+class IsApplicableTestRequestPolicy(WorkflowRequestPolicy):
+    """Requests for testing is_applicable."""
+
+    requests = [
+        WorkflowRequest(
+            request_type=type("Req", (RequestType,), {"type_id": "req"}),
+            requesters=[RecordOwners()],
+            recipients=[NullRecipient(), TestRecipient()],
+            transitions=WorkflowTransitions(
+                submitted="pending",
+                accepted="accepted",
+                declined="declined",
+            ),
+        ),
+        WorkflowRequest(
+            request_type=type("Req1", (RequestType,), {"type_id": "req1"}),
+            requesters=[
+                UserWithRole("administrator"),
+            ],
+            recipients=[NullRecipient(), TestRecipient()],
+        ),
+        WorkflowRequest(
+            request_type=type("Req2", (RequestType,), {"type_id": "req2"}),
+            requesters=[],  # never applicable, must be created by, for example, system identity
+            recipients=[],
+        ),
+        WorkflowRequest(
+            request_type=type("Req3", (RequestType,), {"type_id": "req3"}),
+            requesters=[FailingGenerator()],
+            recipients=[NullRecipient(), TestRecipient()],
+        ),
+    ]
 
 
 @pytest.fixture(scope="module")
@@ -57,23 +170,6 @@ def test_draft_service(app):
 def auto_approve_service(app):
     """Service instance."""
     return current_oarepo_workflows.auto_approve_service
-
-
-"""
-@pytest.fixture(scope="module")
-def draft_service_with_files(app):
-    return app.extensions["draft_with_files"].records_service
-
-@pytest.fixture(scope="module")
-def draft_file_service(app):
-    return app.extensions["draft_with_files"].draft_files_service
-
-
-
-@pytest.fixture(scope="module")
-def file_service(app):
-    return app.extensions["test"].files_service
-"""
 
 
 @pytest.fixture
@@ -108,19 +204,6 @@ model_types = {
     }
 }
 
-"""
-pytest_plugins = [
-    "pytest_oarepo.communities.fixtures",
-    "pytest_oarepo.communities.records",
-    "pytest_oarepo.requests.fixtures",
-    "pytest_oarepo.records",
-    ,
-    ,
-    "pytest_oarepo.files",
-    "pytest_oarepo.vocabularies"
-]
-"""
-
 
 class TestPermissionPolicy(DefaultWorkflowPermissions):
     """Test permission policy."""
@@ -134,55 +217,32 @@ class RecordOwnersReadTestWorkflowPermissionPolicy(TestPermissionPolicy):
     can_read = (RecordOwners(),)
 
 
-class Administration(Generator):
-    """Administration permission generator."""
-
-    @override
-    def needs(self, **kwargs: Any):
-        return [ActionNeed("administration")]
-
-    @override
-    def query_filter(self, **kwargs: Any):
-        return dsl.Q("match_all")
-
-
-class MyWorkflowRequests(WorkflowRequestPolicy):
-    """Requests for testing."""
-
-    delete_request = WorkflowRequest(
-        requesters=[IfInState("published", RecordOwners())],
-        recipients=[Administration()],
-        transitions=WorkflowTransitions(
-            submitted="considered_for_deletion",
-            accepted="deleted",
-            declined="published",
-        ),
-    )
-
-
-class IsApplicableTestRequestPolicy(WorkflowRequestPolicy):
-    """Requests for testing is_applicable."""
-
-    req = WorkflowRequest(requesters=[RecordOwners()], recipients=[])
-
-
-WORKFLOWS = {
-    "my_workflow": Workflow(
+WORKFLOWS = [
+    Workflow(
+        code="my_workflow",
         label=_("Default workflow"),
         permission_policy_cls=TestPermissionPolicy,
         request_policy_cls=MyWorkflowRequests,
     ),
-    "record_owners_can_read": Workflow(
+    Workflow(
+        code="record_owners_can_read",
         label=_("Record owners read workflow"),
         permission_policy_cls=RecordOwnersReadTestWorkflowPermissionPolicy,
         request_policy_cls=MyWorkflowRequests,
     ),
-    "is_applicable_workflow": Workflow(
+    Workflow(
+        code="is_applicable_workflow",
         label=_("For testing is_applicable"),
         permission_policy_cls=TestPermissionPolicy,
         request_policy_cls=IsApplicableTestRequestPolicy,
     ),
-}
+    Workflow(
+        code="no_read",
+        label=_("..."),
+        permission_policy_cls=type("NoRead", (TestPermissionPolicy,), {"can_read": (AnyUser(), Disable())}),
+        request_policy_cls=MyWorkflowRequests,
+    ),
+]
 
 
 @pytest.fixture
@@ -225,6 +285,7 @@ def extra_entry_points():
         "oarepo_workflows.workflow_changed_notifiers": [
             "test_getter = tests.entrypoints:workflow_change_notifier_called_marker",
         ],
+        "invenio_base.api_blueprints": ["test_blueprint = tests.entrypoints:test_blueprint"],
     }
 
 
@@ -238,14 +299,8 @@ def default_workflow_json():
 
 
 @pytest.fixture
-def extra_request_types():
-    def create_rt(type_id) -> type:
-        return type("Req", (RequestType,), {"type_id": type_id})
-
-    current_request_type_registry.register_type(create_rt("req"), force=True)
-    current_request_type_registry.register_type(create_rt("req1"), force=True)
-    current_request_type_registry.register_type(create_rt("req2"), force=True)
-    current_request_type_registry.register_type(create_rt("req3"), force=True)
+def extra_request_types(app):
+    pass
 
 
 @pytest.fixture(scope="session")
@@ -327,9 +382,6 @@ def app_config(app_config, workflow_model):
     app_config["RDM_PERSISTENT_IDENTIFIERS"] = {}
 
     app_config["RDM_OPTIONAL_DOI_VALIDATOR"] = lambda _draft, _previous_published, **_kwargs: True
-    app_config["REQUESTS_PERMISSION_POLICY"] = (
-        RDMRequestsPermissionPolicy  # TODO: rdm expected as default, though the app_rdm (?) config is not used for now?
-    )
 
     return app_config
 

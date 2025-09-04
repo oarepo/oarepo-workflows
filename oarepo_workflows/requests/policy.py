@@ -9,7 +9,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, cast
+from functools import cached_property
+from typing import TYPE_CHECKING, Any
 
 from .requests import (
     WorkflowRequest,
@@ -31,48 +32,31 @@ class WorkflowRequestPolicy:
 
     Example:
         class MyWorkflowRequests(WorkflowRequestPolicy):
-            delete_request = WorkflowRequest(
-                requesters = [
-                    IfInState("published", RecordOwner())
-                ],
-                recipients = [CommunityRole("curator")],
-                transitions: WorkflowTransitions(
-                    submitted = 'considered_for_deletion',
-                    approved = 'deleted',
-                    rejected = 'published'
+            requests = [
+                WorkflowRequest(
+                    request_type = DeleteRequestType,
+                    requesters = [
+                        IfInState("published", RecordOwner())
+                    ],
+                    recipients = [CommunityRole("curator")],
+                    transitions: WorkflowTransitions(
+                        submitted = 'considered_for_deletion',
+                        approved = 'deleted',
+                        rejected = 'published'
+                    )
                 )
-            )
 
     """
 
-    def __init__(self):
-        """Initialize the request policy."""
-        for rt_code, rt in self.items():
-            rt._request_type = rt_code  # noqa SLF001 #TODO: perhaps do this differently?
+    requests: list[WorkflowRequest] = []
+
+    @cached_property
+    def requests_by_id(self):
+        return {r.request_type.type_id: r for r in self.requests}
 
     def __getitem__(self, request_type_id: str) -> WorkflowRequest:
         """Get the workflow request type by its id."""
-        try:
-            return cast("WorkflowRequest", getattr(self, request_type_id))  # type: ignore[no-any-return]
-        except AttributeError:
-            raise KeyError(f"Request type {request_type_id} not defined in {self.__class__.__name__}") from None
-
-    def items(self) -> list[tuple[str, WorkflowRequest]]:
-        """Return the list of request types and their instances.
-
-        This call mimics mapping items() method.
-        """
-        ret = []
-        parent_attrs = set(dir(WorkflowRequestPolicy))
-        for attr in dir(self.__class__):
-            if parent_attrs and attr in parent_attrs:
-                continue
-            if attr.startswith("_"):
-                continue
-            possible_request = getattr(self, attr, None)
-            if isinstance(possible_request, WorkflowRequest):
-                ret.append((attr, possible_request))
-        return ret
+        return self.requests_by_id[request_type_id]
 
     def applicable_workflow_requests(
         self, identity: Identity, *, record: Record, **context: Any
@@ -85,7 +69,7 @@ class WorkflowRequestPolicy:
         """
         ret = []
 
-        for name, request in self.items():
+        for name, request in self.requests_by_id.items():
             if request.is_applicable(identity, record=record, **context):
                 ret.append((name, request))
         return ret

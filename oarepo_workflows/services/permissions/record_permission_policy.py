@@ -129,8 +129,8 @@ class WorkflowRecordPermissionPolicy(RecordPermissionPolicy):
             return super().query_filters  # type: ignore[no-any-return]
         workflows = current_oarepo_workflows.record_workflows
         queries = []
-        for workflow_id, workflow in workflows.items():
-            q_in_workflow = dsl.Q("term", **{"parent.workflow": workflow_id})
+        for workflow in workflows:
+            q_in_workflow = dsl.Q("term", **{"parent.workflow": workflow.code})
             workflow_filters = workflow.permissions(self.action, **self.over).query_filters
             if not workflow_filters:
                 workflow_filters = [dsl.Q("match_none")]

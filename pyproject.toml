@@ -1,5 +1,6 @@
 [project]
 name = "oarepo-workflows"
+dynamic = ["version"]
 description = "OARepo module allowing record workflow functionality"
 readme = "README.md"
 authors = [
@@ -14,9 +15,8 @@ dependencies = [
     "oarepo-model<=0.1.0.dev5"
 ]
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+[project.urls]
+Homepage = "https://github.com/oarepo/oarepo-workflows"
 
 [project.optional-dependencies]
 dev = [
@@ -43,7 +43,21 @@ oarepo_workflows = "oarepo_workflows.ext:finalize_app"
 oarepo_workflows = "oarepo_workflows.views.api:create_api_blueprint"
 [project.entry-points."invenio_base.blueprints"]
 oarepo_workflows = "oarepo_workflows.views.app:create_app_blueprint"
+[project.entry-points."invenio_config.module"]
+oarepo_workflows = "oarepo_workflows.initial_config"
 
 [[tool.mypy.overrides]]
 module = ["untyped_package.*"]
 follow_untyped_imports = true
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "oarepo_workflows/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/oarepo_workflows",
+]

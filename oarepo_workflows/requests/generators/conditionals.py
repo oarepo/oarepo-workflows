@@ -10,9 +10,10 @@
 from __future__ import annotations
 
 import abc
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, override
 
-from invenio_records_permissions.generators import ConditionalGenerator, Generator
+from oarepo_runtime.services.generators import ConditionalGenerator, Generator
 
 if TYPE_CHECKING:
     from invenio_requests.customizations import EventType, RequestType
@@ -21,10 +22,10 @@ if TYPE_CHECKING:
 class IfRequestTypeBase(abc.ABC, ConditionalGenerator):
     """Base class for conditional generators that generate needs based on request type."""
 
-    def __init__(self, request_types: list[str] | tuple[str] | str, then_: list[Generator]) -> None:
+    def __init__(self, request_types: Sequence[str] | str, then_: Sequence[Generator]) -> None:
         """Initialize the generator."""
         super().__init__(then_, else_=[])
-        if not isinstance(request_types, list | tuple):
+        if isinstance(request_types, str):
             request_types = [request_types]
         self.request_types = request_types
 
@@ -32,11 +33,8 @@ class IfRequestTypeBase(abc.ABC, ConditionalGenerator):
 class IfRequestType(IfRequestTypeBase):
     """Conditional generator that generates needs when a current request is of a given type."""
 
-    # kwargs shouldn't be a problem?
     @override
-    def _condition(  # type: ignore[reportIncompatibleMethodOverride]
-        self, request_type: RequestType, **kwargs: Any
-    ) -> bool:
+    def _condition(self, request_type: RequestType, **kwargs: Any) -> bool:
         return request_type.type_id in self.request_types
 
 
@@ -45,14 +43,14 @@ class IfEventType(ConditionalGenerator):
 
     def __init__(
         self,
-        event_types: list[str] | tuple[str] | str,
-        then_: list[Generator],
-        else_: list[Generator] | None = None,
+        event_types: Sequence[str] | str,
+        then_: Sequence[Generator],
+        else_: Sequence[Generator] | None = None,
     ) -> None:
         """Initialize the generator."""
         else_ = [] if else_ is None else else_
         super().__init__(then_, else_=else_)
-        if not isinstance(event_types, list | tuple):
+        if isinstance(event_types, str):
             event_types = [event_types]
         self.event_types = event_types
 

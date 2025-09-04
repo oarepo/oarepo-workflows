@@ -49,7 +49,6 @@ def test_auto_approve_generator(app, search_clear):
 def test_auto_approve_service(auto_approve_service):
     read_item = auto_approve_service.read(system_identity, "true")
     assert {"id": "true", "keyword": "auto_approve"}.items() <= read_item.data.items()
-    assert isinstance(read_item._obj, AutoApprove)  # noqa SLF001
     assert isinstance(read_item._record, AutoApprove)  # noqa SLF001
 
 

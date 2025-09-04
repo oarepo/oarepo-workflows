@@ -14,7 +14,7 @@ from invenio_requests.resolvers.registry import ResolverRegistry
 
 # from oarepo_runtime.services.permissions.generators import UserWithRole noqa ERA001
 # as OriginalUserWithRole TODO: scrapped in runtime
-from opensearch_dsl.query import MatchAll, MatchNone
+from opensearch_dsl.query import MatchAll
 
 from oarepo_workflows.requests.generators.multiple_entities import (
     MultipleEntitiesGenerator,
@@ -52,7 +52,7 @@ class OriginalUserWithRole(Generator):
         for provide in identity.provides:
             if provide.method == "role" and provide.value in self.roles:
                 return dsl.Q("match_all")
-        return dsl.Q("match_none")
+        return dsl.Q()  # in my understanding this should return neutral rather than disabling query?
 
 
 class UserWithRole(RecipientGeneratorMixin, OriginalUserWithRole):
@@ -88,7 +88,7 @@ def test_multiple_recipients_generator(app, search_clear) -> None:
     test_identity = Identity(id=1)
     test_identity.provides.add(RoleNeed("admin"))
 
-    assert a.query_filter(identity=test_identity) == [MatchAll(), MatchNone()]
+    assert a.query_filter(identity=test_identity) == MatchAll()
 
     assert a.reference_receivers() == [{"multiple": '[{"role": "admin"}, {"role": "blah"}]'}]
 

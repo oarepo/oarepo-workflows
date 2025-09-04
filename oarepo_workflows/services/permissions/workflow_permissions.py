@@ -37,9 +37,6 @@ class DefaultWorkflowPermissions(RecordPermissionPolicy):
 
     """
 
-    # TODO: new version - update; edit current version - disable -> idk if
-    #  there's other way than something like IfNoEditDraft/IfNoNewVersionDraft generators-
-
     files_edit = (
         IfInState("draft", [RecordOwners()]),
         IfInState("published", [Disable()]),
@@ -64,14 +61,14 @@ class DefaultWorkflowPermissions(RecordPermissionPolicy):
     # not intended for rdm records only, we need to keep this permission
     # simple and the implementation must use RDM-based implementation
     #
-    # TODO: we should provide somewhere RDM aware workflow permissions
     # so that repositories can use them out of the box
     can_read_deleted = (SameAs("can_read"),)
     can_update = (IfInState("draft", [RecordOwners()]),)
     can_delete = (IfInState("draft", [RecordOwners()]),)
     can_create = (AuthenticatedUser(),)
-    can_publish = (AuthenticatedUser(),)
-    can_new_version = (AuthenticatedUser(),)
+    can_publish = (RecordOwners(),)
+    can_new_version = (RecordOwners(),)
+    can_edit = (RecordOwners(),)
 
     can_create_files = (SameAs("files_edit"),)
     can_set_content_files = (SameAs("files_edit"),)
@@ -145,6 +142,3 @@ class DefaultWorkflowPermissions(RecordPermissionPolicy):
 
     # stats
     can_query_stats = (Disable(),)
-
-    # new ones?
-    can_edit = (Disable(),)  # TODO: check why i put this here

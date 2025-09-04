@@ -7,70 +7,34 @@
 #
 """Generator that combines multiple generators together with an 'or' operation."""
 
-# TODO: review need for this
 from __future__ import annotations
 
 import dataclasses
 import json
-from collections.abc import Iterable
+from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Any, override
 
-from invenio_records_permissions.generators import Generator
+from oarepo_runtime.services.generators import Generator
 
+from ...services.permissions.generators import AggregateGenerator
 from .recipient_generator import RecipientGeneratorMixin
 
 if TYPE_CHECKING:
-    from flask_principal import Need
+    from invenio_records_permissions.generators import Generator as InvenioGenerator
     from invenio_records_resources.records.api import Record
     from invenio_requests.customizations.request_types import RequestType
 
-    from ...services.permissions.generators import QueryFilter
-
 
 @dataclasses.dataclass
-class MultipleEntitiesGenerator(RecipientGeneratorMixin, Generator):
+class MultipleEntitiesGenerator(RecipientGeneratorMixin, AggregateGenerator):
     """A generator that combines multiple generators with 'or' operation."""
 
-    generators: list[Generator] | tuple[Generator]
+    generators: Sequence[InvenioGenerator]
     """List of generators to be combined."""
 
-    @override
-    def needs(self, **context: Any) -> list[Need]:
-        """Generate a set of needs from generators that a person needs to have.
-
-        :param context: Context.
-        :return: Set of needs.
-        """
-        return [need for generator in self.generators for need in generator.needs(**context)]
-
-    @override
-    def excludes(self, **context: Any) -> list[Need]:
-        """Generate a set of needs that person must not have.
-
-        :param context: Context.
-        :return: Set of needs.
-        """
-        return [exclude for generator in self.generators for exclude in generator.excludes(**context)]
-
-    @override
-    def query_filter(self, **context: Any) -> QueryFilter:
-        # TODO: wrong return type?
-        """Generate a list of opensearch query filters.
-
-         These filters are used to filter objects. These objects are governed by a policy
-         containing this generator.
-
-        :param context: Context.
-        """
-        ret: list[dict] = []
-        for generator in self.generators:
-            query_filter = generator.query_filter(**context)
-            if query_filter:
-                if isinstance(query_filter, Iterable):
-                    ret.extend(query_filter)
-                else:
-                    ret.append(query_filter)
-        return ret
+    def _generators(self, **context: Any) -> Sequence[Generator]:
+        """Return the generators."""
+        return self.generators
 
     @override
     def reference_receivers(
@@ -78,7 +42,7 @@ class MultipleEntitiesGenerator(RecipientGeneratorMixin, Generator):
         record: Record | None = None,
         request_type: RequestType | None = None,
         **context: Any,
-    ) -> list[dict[str, str]]:  # pragma: no cover
+    ) -> Sequence[Mapping[str, str]]:
         """Return the reference receiver(s) of the request.
 
         This call requires the context to contain at least "record" and "request_type"

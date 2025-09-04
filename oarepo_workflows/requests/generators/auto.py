@@ -9,10 +9,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Never, override
 
 from invenio_access import SystemRoleNeed
-from invenio_records_permissions.generators import Generator
+from oarepo_runtime.services.generators import Generator
 
 from ...resolvers.auto_approve import AutoApprove as AutoApproveEntity
 from .recipient_generator import RecipientGeneratorMixin
@@ -34,7 +35,7 @@ class AutoRequest(Generator):
     """
 
     @override
-    def needs(self, **context: Any) -> list[Need]:
+    def needs(self, **context: Any) -> Sequence[Need]:
         """Get needs that signal workflow to automatically create the request."""
         return [auto_request_need]
 
@@ -60,7 +61,7 @@ class AutoApprove(RecipientGeneratorMixin, Generator):
         return [AutoApproveEntity.ref_dict]
 
     @override
-    def needs(self, **context: Any) -> list[Need]:
+    def needs(self, **context: Any) -> Sequence[Need]:
         """Get needs that signal workflow to automatically approve the request."""
         raise ValueError(
             "Auto-approve generator can not create needs and "
@@ -68,7 +69,7 @@ class AutoApprove(RecipientGeneratorMixin, Generator):
         )
 
     @override
-    def excludes(self, **context: Any) -> list[Need]:
+    def excludes(self, **context: Any) -> Sequence[Need]:
         """Get needs that signal workflow to automatically approve the request."""
         raise ValueError(
             "Auto-approve generator can not create needs and "

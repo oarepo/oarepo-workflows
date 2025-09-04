@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, cast, override
 
 from invenio_records_resources.references.entity_resolvers import EntityProxy
@@ -39,7 +40,7 @@ class MultipleEntitiesProxy(EntityProxy):
         )
 
     @override
-    def get_needs(self, ctx: dict | None = None) -> list[Need]:
+    def get_needs(self, ctx: dict | None = None) -> Sequence[Need]:
         """Get needs that the entity generate."""
         ret: list[Need] = []
         for entity in self._resolve().entities:

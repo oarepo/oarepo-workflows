@@ -10,33 +10,77 @@
 from __future__ import annotations
 
 import operator
+from abc import abstractmethod
+from collections.abc import Sequence
 from functools import reduce
 from itertools import chain
-from typing import TYPE_CHECKING, Any, Never, override
+from typing import TYPE_CHECKING, Any, override
 
-from invenio_records_permissions.generators import ConditionalGenerator, Generator
+from invenio_records_permissions.generators import Generator as InvenioGenerator
 from invenio_search.engine import dsl
-from opensearch_dsl.query import Query
+from oarepo_runtime.services.generators import ConditionalGenerator, Generator
 
 from oarepo_workflows.errors import InvalidWorkflowError, MissingWorkflowError
 from oarepo_workflows.proxies import current_oarepo_workflows
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
-
     from flask_principal import Need
     from invenio_records_permissions import RecordPermissionPolicy
     from invenio_records_resources.records import Record
 
 
-type QueryFilter = list[Never] | Query  # TODO: move these things to runtime if we want to use them
-
-
 # invenio_records_permissions.generators.ConditionalGenerator._make_query
-def _make_query(generators: Iterable[Generator], **context: Any) -> QueryFilter:
+# TODO: my current understanding is query_filter only support 'needs' not 'excludes'; ie we do or on them, match_none
+#  is eaten by match_all, therefore invenio implementation of Disable is incorrect given how permission_filter works?
+# test seems to confirm this behavior
+
+# TODO: move to runtime
+
+
+# this implementation returns "match_none" instead
+def _make_query_filter_from_multiple_generators(generators: Sequence[Generator], **context: Any) -> dsl.query.Query:
     queries = [g.query_filter(**context) for g in generators]
     queries = [q for q in queries if q]
-    return reduce(operator.or_, queries) if queries else []
+    return reduce(operator.or_, queries) if queries else dsl.Q("match_none")
+
+
+class AggregateGenerator(Generator):
+    @abstractmethod
+    def _generators(self, **context) -> Sequence[Generator]:
+        raise NotImplementedError
+
+    @override
+    def needs(self, **context: Any) -> Sequence[Need]:
+        """Get the needs from the policy."""
+        needs = [generator.needs(**context) for generator in self._generators(**context)]
+        return list(chain.from_iterable(needs))
+
+    @override
+    def excludes(self, **context: Any) -> Sequence[Need]:
+        """Get the excludes from the policy."""
+        excludes = [generator.excludes(**context) for generator in self._generators(**context)]
+        return list(chain.from_iterable(excludes))
+
+    @override
+    def query_filter(self, **context: Any) -> dsl.query.Query:
+        """Search filters."""
+        return _make_query_filter_from_multiple_generators(self._generators(**context), **context)
+
+
+class ConditionalGeneratorWithQueryFilter(ConditionalGenerator):
+    @abstractmethod
+    def _query_instate(self, **context: Any) -> dsl.query.Query:
+        raise NotImplementedError
+
+    @override
+    def query_filter(self, **context: Any) -> dsl.query.Query:
+        """Apply then or else filter."""
+        then_query = _make_query_filter_from_multiple_generators(self.then_, **context)  # TODO: Invenio has bug here?
+        else_query = _make_query_filter_from_multiple_generators(self.else_, **context)
+
+        # the special case now collapses into match_none too?
+
+        return (self._query_instate(**context) & then_query) | (~self._query_instate(**context) & else_query)
 
 
 class FromRecordWorkflow(Generator):
@@ -69,20 +113,16 @@ class FromRecordWorkflow(Generator):
         :param record: Record to get the workflow from.
         :param context: Context to get the workflow from.
         :return: Workflow id.
-        :raises MissingWorkflowError: If the workflow is not found on the record/data.
+        :raises MissingWorkflowError: If the workflow is not found in the data.
         """
         if record:
-            workflow_id = current_oarepo_workflows.get_workflow_id(
-                record
-            )  # TODO: or just scrap the id method and use _get_workflow_code_from_workflow
-            if not workflow_id:
-                raise MissingWorkflowError("Workflow not defined on record.", record=record)
+            workflow_code = current_oarepo_workflows.get_workflow(record).code
         else:
             data = context.get("data", {})
-            workflow_id = data.get("parent", {}).get("workflow", {})
-            if not workflow_id:
+            workflow_code = data.get("parent", {}).get("workflow", {})
+            if not workflow_code:
                 raise MissingWorkflowError("Workflow not defined in input.", record=data)
-        return workflow_id
+        return workflow_code
 
     def _get_permissions_from_workflow(
         self,
@@ -98,32 +138,31 @@ class FromRecordWorkflow(Generator):
         for the action are returned.
         """
         workflow_id = self._get_workflow_id(record, **context)
-        if workflow_id not in current_oarepo_workflows.record_workflows:
+        if workflow_id not in current_oarepo_workflows.workflow_by_code:
             raise InvalidWorkflowError(
                 f"Workflow {workflow_id} does not exist in the configuration.",
                 record=record or context.get("data", {}),
             )
-        policy = current_oarepo_workflows.record_workflows[workflow_id].permissions
+        policy = current_oarepo_workflows.workflow_by_code[workflow_id].permissions
         return policy(action_name, record=record, **context)
 
     @override
-    def needs(self, record: Record | None = None, **context: Any) -> list[Need]:
+    def needs(self, record: Record | None = None, **context: Any) -> Sequence[Need]:
         """Return needs that are generated by the workflow permission."""
-        return self._get_permissions_from_workflow(self._action, record, **context).needs  # type: ignore[no-any-return]
+        return self._get_permissions_from_workflow(self._action, record, **context).needs
 
     @override
-    def excludes(self, **context: Any) -> list[Need]:
+    def excludes(self, **context: Any) -> Sequence[Need]:
         """Return excludes that are generated by the workflow permission."""
-        return self._get_permissions_from_workflow(self._action, **context).excludes  # type: ignore[no-any-return]
+        return self._get_permissions_from_workflow(self._action, **context).excludes
 
     @override
-    def query_filter(self, record: Record | None = None, **context: Any) -> QueryFilter:  # type: ignore[reportIncompatibleMethodOverride]
+    def query_filter(self, record: Record | None = None, **context: Any) -> dsl.query.Query:
         """Return query filters that are generated by the workflow permission.
 
         Note: this implementation in fact will be called from WorkflowRecordPermissionPolicy.query_filters
         for each registered workflow type. The query_filters are then combined into a single query.
         """
-        # TODO: query_filter vs query_filters
         # query filters do not use reduce on the list
         queries = self._get_permissions_from_workflow(self._action, record, **context).query_filters
         return reduce(operator.or_, queries) if queries else dsl.Q("match_none")
@@ -144,7 +183,7 @@ class WorkflowPermission(FromRecordWorkflow):
         super().__init__(action)
 
 
-class IfInState(ConditionalGenerator):
+class IfInState(ConditionalGeneratorWithQueryFilter):
     """Generator that checks if the record is in a specific state.
 
     If it is in the state, the then_ generators are used, otherwise the else_ generators are used.
@@ -161,20 +200,16 @@ class IfInState(ConditionalGenerator):
     def __init__(
         self,
         state: str | list[str] | tuple[str, ...],
-        then_: list[Generator] | tuple[Generator] | Generator | None = None,
-        else_: list[Generator] | tuple[Generator] | Generator | None = None,
+        then_: Sequence[InvenioGenerator],
+        else_: Sequence[InvenioGenerator] | None = None,
     ) -> None:
         """Initialize the generator."""
-        if isinstance(then_, Generator):
-            then_ = [then_]
-        if isinstance(else_, Generator):
-            else_ = [else_]
-        super().__init__(then_ or [], else_=else_ or [])
         if isinstance(state, str):
             state = [state]
         if not isinstance(state, list | tuple):
             raise TypeError(f"State must be a string, list or tuple. Got {type(state)}.")
         self.state = state
+        super().__init__(then_, else_ or [])
 
     @override
     def _condition(self, record: Record, **context: Any) -> bool:  # type: ignore[reportIncompatibleMethodOverride]
@@ -185,22 +220,8 @@ class IfInState(ConditionalGenerator):
             return False
 
     @override
-    # i'm slightly confused about the return type here - invenio returns an empty list at base? what is the accurate
-    # dsl.Q for match_all; match_none; don't return anything? empty list is valid for of query for
-    # "not return anything"?
-    def query_filter(self, **context: Any) -> QueryFilter:  # type: ignore[reportIncompatibleMethodOverride]
-        """Apply then or else filter."""
-        field = "state"
-
-        q_instate = dsl.Q("terms", **{field: self.state})
-        then_query = self._make_query(self.then_, **context) if self.then_ else dsl.Q("match_none")
-        else_query = self._make_query(self.else_, **context) if self.else_ else dsl.Q("match_none")
-
-        if then_query is None and else_query is None:
-            return []  # is this actually returned at any part?
-
-        # should always be this?; overriding []
-        return (q_instate & then_query) | (~q_instate & else_query)
+    def _query_instate(self, **context: Any) -> dsl.query.Query:
+        return dsl.Q("terms", state=self.state)
 
     def __repr__(self) -> str:
         """Return representation of the generator."""
@@ -211,7 +232,7 @@ class IfInState(ConditionalGenerator):
         return repr(self)
 
 
-class SameAs(Generator):
+class SameAs(AggregateGenerator):
     """Generator that delegates the permissions to another action.
 
     Example:
@@ -238,35 +259,36 @@ class SameAs(Generator):
 
     # noinspection PyUnusedLocal
     # depends on whether it's ours or invenio
-    def _generators(self, *, policy: RecordPermissionPolicy) -> tuple[Generator] | list[Generator]:
+    def _generators(self, policy: RecordPermissionPolicy, **context) -> Sequence[Generator]:
         """Get the generators from the policy."""
         return getattr(policy, self.delegated_permission_name)  # type: ignore[no-any-return]
 
     @override
-    def needs(self, *, policy: RecordPermissionPolicy | None = None, **context: Any) -> list[Need]:
+    def needs(self, policy: RecordPermissionPolicy | None = None, **context: Any) -> Sequence[Need]:  # type: ignore[reportIncompatibleMethodOverride]
         """Get the needs from the policy."""
         if policy is None:
             raise ValueError(
                 f"SameAs: Policy must be passed to the generator. Got the following context: {context.keys()}"
             )
-        needs = [generator.needs(policy=policy, **context) for generator in self._generators(policy=policy)]
-        return list(chain.from_iterable(needs))
+        return super().needs(**context | {"policy": policy})
 
     @override
-    def excludes(self, *, policy: RecordPermissionPolicy | None = None, **context: Any) -> list[Need]:
+    def excludes(self, policy: RecordPermissionPolicy | None = None, **context: Any) -> Sequence[Need]:  # type: ignore[reportIncompatibleMethodOverride]
         """Get the excludes from the policy."""
         if policy is None:
             raise ValueError(
                 f"SameAs: Policy must be passed to the generator. Got the following context: {context.keys()}"
             )
-        excludes = [generator.excludes(policy=policy, **context) for generator in self._generators(policy=policy)]
-        return list(chain.from_iterable(excludes))
+        return super().excludes(**context | {"policy": policy})
 
     @override
-    # TODO: is this correct?
-    def query_filter(self, *, policy: RecordPermissionPolicy, **context: Any) -> QueryFilter:  # type: ignore[reportIncompatibleMethodOverride]
-        """Search filters."""
-        return _make_query(self._generators(policy=policy), **context)
+    def query_filter(self, policy: RecordPermissionPolicy | None = None, **context: Any) -> dsl.query.Query:  # type: ignore[reportIncompatibleMethodOverride]
+        """Get the query_filter from the policy."""
+        if policy is None:
+            raise ValueError(
+                f"SameAs: Policy must be passed to the generator. Got the following context: {context.keys()}"
+            )
+        return super().query_filter(**context | {"policy": policy})
 
     def __repr__(self) -> str:
         """Return representation of the generator."""

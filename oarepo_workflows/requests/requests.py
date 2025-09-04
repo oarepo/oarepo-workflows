@@ -10,12 +10,12 @@
 from __future__ import annotations
 
 import dataclasses
+from collections.abc import Sequence
 from functools import cached_property
 from logging import getLogger
 from typing import TYPE_CHECKING, Any, cast
 
 from invenio_requests.proxies import (
-    current_request_type_registry,
     current_requests_service,
 )
 
@@ -38,7 +38,7 @@ if TYPE_CHECKING:
 log = getLogger(__name__)
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(kw_only=True)
 class WorkflowRequest:
     """Workflow request definition.
 
@@ -47,10 +47,13 @@ class WorkflowRequest:
     are the generators that define who can approve the request.
     """
 
-    requesters: list[Generator] | tuple[Generator]
+    request_type: type[RequestType]
+    """Request type of the workflow request."""
+
+    requesters: Sequence[Generator]
     """Generators that define who can submit the request."""
 
-    recipients: list[Generator] | tuple[Generator]
+    recipients: Sequence[Generator]
     """Generators that define who can approve the request."""
 
     events: dict[str, WorkflowEvent] = dataclasses.field(default_factory=dict)
@@ -61,8 +64,6 @@ class WorkflowRequest:
 
     escalations: list[WorkflowRequestEscalation] | None = None
     """Escalations applied to the request if not approved/declined in time."""
-
-    _request_type: str | None = dataclasses.field(default=None, init=False)
 
     @cached_property
     def requester_generator(self) -> Generator:
@@ -104,22 +105,6 @@ class WorkflowRequest:
         except Exception:
             log.exception("Error checking request applicability")
             return False
-
-    @cached_property
-    def request_type(self) -> RequestType:
-        """Return the request type for the workflow request."""
-        if self._request_type is None:
-            raise InvalidConfigurationError(
-                f"Probably this WorkflowRequest ({self}) is not part of a Workflow. "
-                "Please add it to a workflow or manually set the ._request_type attribute "
-                "to a code of a registered request type."
-            )
-        try:
-            return current_request_type_registry.lookup(self._request_type)
-        except KeyError as e:
-            raise InvalidConfigurationError(
-                f"Request type {self._request_type} not found in the request type registry."
-            ) from e
 
     @property
     def allowed_events(self) -> dict[str, WorkflowEvent]:
