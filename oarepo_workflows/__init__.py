@@ -20,6 +20,7 @@ from oarepo_workflows.services.permissions import (
 )
 
 from .base import Workflow
+from .proxies import current_oarepo_workflows
 from .requests import (
     AutoApprove,
     AutoRequest,
@@ -41,4 +42,5 @@ __all__ = (
     "WorkflowRequestEscalation",
     "WorkflowRequestPolicy",
     "WorkflowTransitions",
+    "current_oarepo_workflows",
 )

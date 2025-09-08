@@ -18,7 +18,7 @@ from ...resolvers.auto_approve import AutoApprove as AutoApproveEntity
 from .recipient_generator import RecipientGeneratorMixin
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
 
     from flask_principal import Need
     from invenio_records_resources.records import Record
@@ -54,7 +54,7 @@ class AutoApprove(RecipientGeneratorMixin, Generator):
         record: Record | None = None,
         request_type: RequestType | None = None,
         **kwargs: Any,
-    ) -> list[dict[str, str]]:
+    ) -> list[Mapping[str, str]]:
         """Return the reference receiver(s) of the auto-approve request.
 
         Returning "auto_approve" is a signal to the workflow that the request should be auto-approved.

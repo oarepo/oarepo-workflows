@@ -14,7 +14,7 @@ so there is no need to store it to database/fetch it from the database.
 from __future__ import annotations
 
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any, cast, Sequence
+from typing import TYPE_CHECKING, Any, cast
 
 from invenio_records_resources.services.base.results import ServiceItemResult, ServiceListResult
 from invenio_records_resources.services.base.service import Service
@@ -22,6 +22,8 @@ from invenio_records_resources.services.base.service import Service
 from oarepo_workflows.resolvers.auto_approve import AutoApprove
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
+
     from flask_principal import Identity
     from invenio_records_resources.services.base.config import ServiceConfig
 
@@ -36,7 +38,7 @@ class AutoApproveRecordItem(ServiceItemResult):
         self._record = AutoApprove()
 
     @property
-    def data(self) -> dict[str, str]:
+    def data(self) -> Mapping[str, str]:
         """Get the record data.
 
         Returns:
@@ -55,7 +57,6 @@ class AutoApproveRecordList(ServiceListResult):
     ) -> None:
         """Override constructor to discard unnecesary arguments."""
         self._results = results
-        self._params = None
 
     @property
     def total(self) -> int:

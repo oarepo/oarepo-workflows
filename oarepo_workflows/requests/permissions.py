@@ -38,7 +38,8 @@ class CreatorsFromWorkflowRequestsPermissionPolicy(InvenioRequestsPermissionPoli
 
     can_create_comment = (
         SystemProcess(),
-        IfEventType([LogEventType.type_id, CommentEventType.type_id], [Creator(), Receiver()]),
+        IfEventType(CommentEventType, [Creator(), Receiver()]),
+        IfEventType(LogEventType, [Creator(), Receiver()]),
         EventCreatorsFromWorkflow(),
     )
 

@@ -22,7 +22,6 @@ if TYPE_CHECKING:
     from invenio_records_permissions.generators import Generator as InvenioGenerator
     from invenio_records_resources.records.api import Record
     from invenio_requests.customizations.request_types import RequestType
-    from oarepo_runtime.services.generators import Generator
 
 
 @dataclasses.dataclass
@@ -32,7 +31,8 @@ class MultipleEntitiesGenerator(RecipientGeneratorMixin, AggregateGenerator):
     generators: Sequence[InvenioGenerator]
     """List of generators to be combined."""
 
-    def _generators(self, **context: Any) -> Sequence[Generator]:
+    @override
+    def _generators(self, **context: Any) -> Sequence[InvenioGenerator]:
         """Return the generators."""
         return self.generators
 
@@ -42,7 +42,7 @@ class MultipleEntitiesGenerator(RecipientGeneratorMixin, AggregateGenerator):
         record: Record | None = None,
         request_type: RequestType | None = None,
         **context: Any,
-    ) -> Sequence[Mapping[str, str]]:
+    ) -> list[Mapping[str, str]]:
         """Return the reference receiver(s) of the request.
 
         This call requires the context to contain at least "record" and "request_type"

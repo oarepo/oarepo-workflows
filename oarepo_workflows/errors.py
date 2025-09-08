@@ -103,3 +103,16 @@ class RequestTypeNotInWorkflowError(Exception):
     def description(self) -> str:
         """Exception's description."""
         return f"Request type {self.request_type} not in workflow {self.workflow}."
+
+
+class UnregisteredRequestTypeError(Exception):
+    """Exception raised when a RequestType is not registered."""
+
+    def __init__(self, request_type: str) -> None:
+        """Initialize the exception."""
+        self.request_type = request_type
+
+    @property
+    def description(self) -> str:
+        """Exception's description."""
+        return f"Request type {self.request_type} is not registered."

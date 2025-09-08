@@ -52,7 +52,7 @@ class OriginalUserWithRole(Generator):
         for provide in identity.provides:
             if provide.method == "role" and provide.value in self.roles:
                 return dsl.Q("match_all")
-        return dsl.Q()  # in my understanding this should return neutral rather than disabling query?
+        return dsl.Q("match_none")
 
 
 class UserWithRole(RecipientGeneratorMixin, OriginalUserWithRole):

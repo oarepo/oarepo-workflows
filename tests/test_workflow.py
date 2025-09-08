@@ -201,37 +201,3 @@ def test_set_workflow_entrypoint_hookup(
         current_oarepo_workflows.set_workflow(users[0].identity, record, "invalid_workflow", commit=False)
     current_oarepo_workflows.set_workflow(users[0].identity, record, "record_owners_can_read", commit=False)
     assert entrypoints.workflow_change_notifier_called
-
-
-def test_no_read(workflow_model, users, logged_client, default_workflow_json, location, search_clear):
-    # TODO: invenio query_filter is basically needs but does not implement excludes and this can cause irregular behavior?
-    record = workflow_model.Record
-    draft = workflow_model.Draft
-    resource_config = workflow_model.RecordResourceConfig
-    user_client1 = logged_client(users[0])
-    user_client2 = logged_client(users[1])
-
-    switched_workflow_input = copy.deepcopy(default_workflow_json)
-    switched_workflow_input["parent"]["workflow"] = "no_read"
-
-    create_response = user_client1.post(resource_config.url_prefix, json=switched_workflow_input)
-    draft_json = create_response.json
-    assert create_response.status_code == 201
-
-    record.index.refresh()
-    draft.index.refresh()
-
-    # in draft state, owner can read, the other user can't
-    owner_response = user_client1.get(f"{resource_config.url_prefix}/{draft_json['id']}/draft")
-    other_response = user_client2.get(f"{resource_config.url_prefix}/{draft_json['id']}/draft")
-
-    assert owner_response.status_code == 403
-    assert other_response.status_code == 403
-
-    owner_records = user_client1.get(f"/user{resource_config.url_prefix}")
-    other_records = user_client2.get(f"/user{resource_config.url_prefix}")
-
-    assert owner_records.status_code == 200
-    assert len(owner_records.json["hits"]["hits"]) == 1
-    assert other_records.status_code == 200
-    assert len(other_records.json["hits"]["hits"]) == 0

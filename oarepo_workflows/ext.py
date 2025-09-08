@@ -17,21 +17,11 @@ from invenio_drafts_resources.services.records.uow import ParentRecordCommitOp
 from invenio_records_resources.services.uow import unit_of_work
 from oarepo_runtime.proxies import current_runtime
 
-from oarepo_workflows.errors import InvalidWorkflowError, MissingWorkflowError
+from oarepo_workflows.errors import InvalidWorkflowError, MissingWorkflowError, UnregisteredRequestTypeError
 from oarepo_workflows.proxies import current_oarepo_workflows
 from oarepo_workflows.services.auto_approve import AutoApproveService
+from oarepo_workflows.services.multiple_entities import MultipleEntitiesEntityService
 from oarepo_workflows.services.uow import StateChangeOperation
-
-"""
-from oarepo_workflows.services.auto_approve import (
-    AutoApproveEntityService,
-    AutoApproveEntityServiceConfig,
-)
-from oarepo_workflows.services.multiple_entities import (
-    MultipleEntitiesEntityService,
-    MultipleEntitiesEntityServiceConfig,
-)
-"""
 
 if TYPE_CHECKING:
     from flask import Flask
@@ -90,9 +80,11 @@ class OARepoWorkflows:
         """Initialize workflow services."""
         # noinspection PyAttributeOutsideInit
         self.auto_approve_service = AutoApproveService()
+        self.multiple_recipients_service = MultipleEntitiesEntityService()
 
     @cached_property
     def workflow_by_code(self) -> dict[str, Workflow]:
+        """Return workflow by workflow code."""
         return {w.code: w for w in self.app.config["WORKFLOWS"]}
 
     @cached_property
@@ -262,3 +254,15 @@ def finalize_app(app: Flask) -> None:
         ext.auto_approve_service,
         service_id=ext.auto_approve_service.config.service_id,
     )
+
+    records_resources.registry.register(
+        ext.multiple_recipients_service,
+        service_id=ext.multiple_recipients_service.config.service_id,
+    )
+
+    for workflow in ext.record_workflows:
+        for r in workflow.requests().requests:
+            try:
+                r.request_type  # noqa B018
+            except KeyError as e:
+                raise UnregisteredRequestTypeError(r._request_type) from e  # noqa SLF001

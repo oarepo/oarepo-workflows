@@ -12,13 +12,13 @@ from __future__ import annotations
 from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
+from .requests import (
+    WorkflowRequest,
+)
+
 if TYPE_CHECKING:
     from flask_principal import Identity
     from invenio_records_resources.records.api import Record
-
-    from .requests import (
-        WorkflowRequest,
-    )
 
 
 class WorkflowRequestPolicy:
@@ -48,10 +48,27 @@ class WorkflowRequestPolicy:
 
     """
 
-    requests: list[WorkflowRequest] = []
+    @cached_property
+    def requests(self) -> list[WorkflowRequest]:
+        """Return the list of request types and their instances.
+
+        This call mimics mapping items() method.
+        """
+        ret = []
+        parent_attrs = set(dir(WorkflowRequestPolicy))
+        for attr in dir(self.__class__):
+            if parent_attrs and attr in parent_attrs:
+                continue
+            if attr.startswith("_"):
+                continue
+            possible_request = getattr(self, attr, None)
+            if isinstance(possible_request, WorkflowRequest):
+                ret.append(possible_request)
+        return ret
 
     @cached_property
-    def requests_by_id(self):
+    def requests_by_id(self) -> dict[str, WorkflowRequest]:
+        """Return a dictionary of workflow requests by id."""
         return {r.request_type.type_id: r for r in self.requests}
 
     def __getitem__(self, request_type_id: str) -> WorkflowRequest:

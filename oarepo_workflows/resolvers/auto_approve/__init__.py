@@ -9,13 +9,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, override
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Any, override
 
 from invenio_records_resources.references.entity_resolvers import EntityProxy
 from invenio_records_resources.references.entity_resolvers.base import EntityResolver
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
 
     from flask_principal import Identity, Need
 
@@ -23,8 +24,8 @@ if TYPE_CHECKING:
 class AutoApprove:
     """Entity representing auto approve."""
 
-    serialization: ClassVar[dict[str, str]] = {"id": "true", "keyword": "auto_approve", "type": "keyword"}
-    ref_dict: ClassVar[dict[str, str]] = {"auto_approve": "true"}
+    serialization = MappingProxyType({"id": "true", "keyword": "auto_approve", "type": "keyword"})
+    ref_dict = MappingProxyType({"auto_approve": "true"})
 
 
 class AutoApproveProxy(EntityProxy):
@@ -40,7 +41,7 @@ class AutoApproveProxy(EntityProxy):
         return []  # grant_tokens calls this
 
     @override
-    def pick_resolved_fields(self, identity: Identity, resolved_dict: dict[str, str]) -> dict[str, str]:
+    def pick_resolved_fields(self, identity: Identity, resolved_dict: dict[str, str]) -> Mapping[str, str]:
         """Pick resolved fields for serialization of the entity to json."""
         return AutoApprove.ref_dict
 
@@ -60,7 +61,7 @@ class AutoApproveResolver(EntityResolver):
         return ref_dict == AutoApprove.ref_dict
 
     @override
-    def _reference_entity(self, entity: Any) -> dict[str, str]:
+    def _reference_entity(self, entity: Any) -> Mapping[str, str]:
         """Return a reference dictionary for the entity."""
         return AutoApprove.ref_dict
 

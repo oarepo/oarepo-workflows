@@ -10,15 +10,13 @@
 from __future__ import annotations
 
 from .auto import AutoApprove, AutoRequest, auto_approve_need, auto_request_need
-from .conditionals import IfEventType, IfRequestType, IfRequestTypeBase
+from .conditionals import IfEventType
 from .recipient_generator import RecipientGeneratorMixin
 
 __all__ = (
     "AutoApprove",
     "AutoRequest",
     "IfEventType",
-    "IfRequestType",
-    "IfRequestTypeBase",
     "RecipientGeneratorMixin",
     "auto_approve_need",
     "auto_request_need",

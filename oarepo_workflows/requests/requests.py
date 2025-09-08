@@ -12,9 +12,10 @@ from __future__ import annotations
 import dataclasses
 from functools import cached_property
 from logging import getLogger
-from typing import TYPE_CHECKING, Any, cast, Sequence
+from typing import TYPE_CHECKING, Any, cast
 
 from invenio_requests.proxies import (
+    current_request_type_registry,
     current_requests_service,
 )
 
@@ -25,12 +26,14 @@ from oarepo_workflows.requests.generators.multiple_entities import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
     from datetime import timedelta
 
     from flask_principal import Identity
-    from invenio_records_permissions.generators import Generator
+    from invenio_records_permissions.generators import Generator as InvenioGenerator
     from invenio_records_resources.records.api import Record
     from invenio_requests.customizations.request_types import RequestType
+    from oarepo_runtime.services.generators import Generator
 
     from oarepo_workflows.requests.events import WorkflowEvent
 
@@ -46,13 +49,10 @@ class WorkflowRequest:
     are the generators that define who can approve the request.
     """
 
-    request_type: type[RequestType]
-    """Request type of the workflow request."""
-
-    requesters: Sequence[Generator]
+    requesters: Sequence[InvenioGenerator]
     """Generators that define who can submit the request."""
 
-    recipients: Sequence[Generator]
+    recipients: Sequence[InvenioGenerator]
     """Generators that define who can approve the request."""
 
     events: dict[str, WorkflowEvent] = dataclasses.field(default_factory=dict)
@@ -69,7 +69,7 @@ class WorkflowRequest:
         """Return the requesters as a single requester generator."""
         return MultipleEntitiesGenerator(self.requesters)
 
-    def recipient_entity_reference(self, **context: Any) -> dict | None:
+    def recipient_entity_reference(self, **context: Any) -> Mapping[str, str] | None:
         """Return the reference receiver of the workflow request with the given context.
 
         Note: invenio supports only one receiver, so the first one is returned at the moment.
@@ -110,6 +110,19 @@ class WorkflowRequest:
         """Return the allowed events for the workflow request."""
         return current_oarepo_workflows.default_workflow_events | self.events
 
+    def __get__(self, instance: Any, owner: Any) -> WorkflowRequest:
+        """Get the workflow request."""
+        return self
+
+    def __set_name__(self, owner: type, name: str) -> None:
+        """Set the name of the workflow request to the request type id."""
+        self._request_type = name
+
+    @property
+    def request_type(self) -> RequestType:
+        """Return the request type."""
+        return current_request_type_registry.lookup(self._request_type, quiet=False)
+
 
 @dataclasses.dataclass
 class WorkflowTransitions:
@@ -143,7 +156,7 @@ class WorkflowRequestEscalation:
     """
 
     after: timedelta
-    recipients: list[Generator] | tuple[Generator]
+    recipients: Sequence[InvenioGenerator]
 
     @property
     def escalation_id(self) -> str:
@@ -161,7 +174,7 @@ class WorkflowRequestEscalation:
 
 def RecipientEntityReference(  # noqa N802
     request_or_escalation: WorkflowRequest | WorkflowRequestEscalation, **context: Any
-) -> dict | None:
+) -> Mapping[str, str] | None:
     """Return the reference receiver of the workflow request or workflow request escalation with the given context.
 
     Note: invenio supports only one receiver, so the first one is returned at the moment.

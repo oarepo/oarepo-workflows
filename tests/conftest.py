@@ -21,12 +21,11 @@ from flask_security import login_user
 from invenio_accounts.testutils import login_user_via_session
 from invenio_i18n import lazy_gettext as _
 from invenio_rdm_records.services.generators import RecordOwners
-from invenio_records_permissions.generators import AnyUser, AuthenticatedUser, Disable, Generator
+from invenio_records_permissions.generators import AuthenticatedUser, Generator
 from invenio_requests.customizations.request_types import RequestType
 from invenio_search.engine import dsl
 from oarepo_model.customizations import AddFileToModule
-from oarepo_model.presets.rdm import rdm_presets
-from oarepo_model.presets.records_resources import records_resources_presets
+from oarepo_model.presets.records_resources import records_resources_preset
 from sqlalchemy.exc import IntegrityError
 
 from oarepo_workflows import WorkflowRequestPolicy, WorkflowTransitions
@@ -37,6 +36,11 @@ from oarepo_workflows.requests import WorkflowRequest
 from oarepo_workflows.requests.generators import RecipientGeneratorMixin
 from oarepo_workflows.services.permissions import DefaultWorkflowPermissions, IfInState
 from tests.test_multiple_recipients import UserWithRole
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from invenio_accounts.models import User
 
 
 class TestRecipient(RecipientGeneratorMixin, Generator):
@@ -81,22 +85,6 @@ class FailingGenerator(Generator):
         raise ValueError("Failing generator")
 
 
-if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from invenio_accounts.models import User
-
-
-def create_rt(type_id) -> type:
-    return type("Req", (RequestType,), {"type_id": type_id})
-
-
-req = create_rt("req")
-req1 = create_rt("req1")
-req2 = create_rt("req2")
-req3 = create_rt("req3")
-
-
 class Administration(Generator):
     """Administration permission generator."""
 
@@ -112,52 +100,43 @@ class Administration(Generator):
 class MyWorkflowRequests(WorkflowRequestPolicy):
     """Requests for testing."""
 
-    requests = [
-        WorkflowRequest(
-            request_type=req1,
-            requesters=[IfInState("published", RecordOwners())],
-            recipients=[Administration()],
-            transitions=WorkflowTransitions(
-                submitted="considered_for_deletion",
-                accepted="deleted",
-                declined="published",
-            ),
-        )
-    ]
+    req = WorkflowRequest(
+        requesters=[IfInState("published", [RecordOwners()])],
+        recipients=[Administration()],
+        transitions=WorkflowTransitions(
+            submitted="considered_for_deletion",
+            accepted="deleted",
+            declined="published",
+        ),
+    )
 
 
 class IsApplicableTestRequestPolicy(WorkflowRequestPolicy):
     """Requests for testing is_applicable."""
 
-    requests = [
-        WorkflowRequest(
-            request_type=type("Req", (RequestType,), {"type_id": "req"}),
-            requesters=[RecordOwners()],
-            recipients=[NullRecipient(), TestRecipient()],
-            transitions=WorkflowTransitions(
-                submitted="pending",
-                accepted="accepted",
-                declined="declined",
-            ),
+    req = WorkflowRequest(
+        requesters=[RecordOwners()],
+        recipients=[NullRecipient(), TestRecipient()],
+        transitions=WorkflowTransitions(
+            submitted="pending",
+            accepted="accepted",
+            declined="declined",
         ),
-        WorkflowRequest(
-            request_type=type("Req1", (RequestType,), {"type_id": "req1"}),
-            requesters=[
-                UserWithRole("administrator"),
-            ],
-            recipients=[NullRecipient(), TestRecipient()],
-        ),
-        WorkflowRequest(
-            request_type=type("Req2", (RequestType,), {"type_id": "req2"}),
-            requesters=[],  # never applicable, must be created by, for example, system identity
-            recipients=[],
-        ),
-        WorkflowRequest(
-            request_type=type("Req3", (RequestType,), {"type_id": "req3"}),
-            requesters=[FailingGenerator()],
-            recipients=[NullRecipient(), TestRecipient()],
-        ),
-    ]
+    )
+    req1 = WorkflowRequest(
+        requesters=[
+            UserWithRole("administrator"),
+        ],
+        recipients=[NullRecipient(), TestRecipient()],
+    )
+    req2 = WorkflowRequest(
+        requesters=[],  # never applicable, must be created by, for example, system identity
+        recipients=[],
+    )
+    req3 = WorkflowRequest(
+        requesters=[FailingGenerator()],
+        recipients=[NullRecipient(), TestRecipient()],
+    )
 
 
 @pytest.fixture(scope="module")
@@ -179,22 +158,6 @@ def input_data_with_files_disabled(input_data):
     data["files"]["enabled"] = False
     return data
 
-
-"""
-pytest_plugins = (
-    "celery.contrib.pytest",
-    "pytest_oarepo.users",
-    "pytest_oarepo.fixtures",
-)
-"""
-
-
-parent_json_schema = {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "$id": "local://parent-v1.0.0.json",
-    "type": "object",
-    "properties": {"id": {"type": "string"}},
-}
 
 model_types = {
     "Metadata": {
@@ -236,33 +199,12 @@ WORKFLOWS = [
         permission_policy_cls=TestPermissionPolicy,
         request_policy_cls=IsApplicableTestRequestPolicy,
     ),
-    Workflow(
-        code="no_read",
-        label=_("..."),
-        permission_policy_cls=type("NoRead", (TestPermissionPolicy,), {"can_read": (AnyUser(), Disable())}),
-        request_policy_cls=MyWorkflowRequests,
-    ),
 ]
 
 
 @pytest.fixture
 def record_service(workflow_model):
     return workflow_model.proxies.current_service
-
-
-"""
-@pytest.fixture(scope="function")
-def sample_metadata_list():
-    data_path = f"tests/thesis/data/sample_data.yaml"
-    docs = list(yaml.load_all(open(data_path), Loader=yaml.SafeLoader))
-    return docs
-
-
-
-@pytest.fixture()
-def input_data(sample_metadata_list):
-    return sample_metadata_list[0]
-"""
 
 
 @pytest.fixture
@@ -285,7 +227,6 @@ def extra_entry_points():
         "oarepo_workflows.workflow_changed_notifiers": [
             "test_getter = tests.entrypoints:workflow_change_notifier_called_marker",
         ],
-        "invenio_base.api_blueprints": ["test_blueprint = tests.entrypoints:test_blueprint"],
     }
 
 
@@ -298,15 +239,11 @@ def default_workflow_json():
     }
 
 
-@pytest.fixture
-def extra_request_types(app):
-    pass
-
-
 @pytest.fixture(scope="session")
 def workflow_model():
     from oarepo_model.api import model
-    from oarepo_model.presets.drafts import drafts_presets
+    from oarepo_model.presets.drafts import drafts_preset
+    from oarepo_rdm.model.presets import rdm_preset
 
     t1 = time.time()
 
@@ -314,9 +251,9 @@ def workflow_model():
         name="rdm_test",
         version="1.0.0",
         presets=[
-            records_resources_presets,
-            drafts_presets,
-            rdm_presets,
+            records_resources_preset,
+            drafts_preset,
+            rdm_preset,
             workflows_presets,
         ],
         types=[model_types],
@@ -382,6 +319,13 @@ def app_config(app_config, workflow_model):
     app_config["RDM_PERSISTENT_IDENTIFIERS"] = {}
 
     app_config["RDM_OPTIONAL_DOI_VALIDATOR"] = lambda _draft, _previous_published, **_kwargs: True
+
+    app_config["REQUESTS_REGISTERED_TYPES"] = [
+        type("Req", (RequestType,), {"type_id": "req"})(),
+        type("Req1", (RequestType,), {"type_id": "req1"})(),
+        type("Req2", (RequestType,), {"type_id": "req2"})(),
+        type("Req3", (RequestType,), {"type_id": "req3"})(),
+    ]
 
     return app_config
 
