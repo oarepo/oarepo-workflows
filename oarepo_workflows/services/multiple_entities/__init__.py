@@ -43,6 +43,7 @@ class MultipleEntitiesResultItem(ServiceItemResult):
     ):
         """Override constructor to discard unnecesary arguments."""
         self._record = entity
+        self._obj = entity
 
     @property
     def data(self) -> dict[str, Any]:
@@ -61,11 +62,6 @@ class MultipleEntitiesResultList(ServiceListResult):
     def __init__(self, results: list[MultipleEntitiesEntity]) -> None:
         """Override constructor to discard unnecesary arguments."""
         self._results = results
-
-    @property
-    def total(self) -> int:
-        """Get total number of hits."""
-        return len(self._results)
 
     @property
     def hits(self) -> Any:
@@ -101,7 +97,7 @@ class MultipleEntitiesEntityService(Service):
     def read_many(
         self,
         identity: Identity,  # noqa ARG002
-        ids: Iterable[str],
+        ids: Sequence[str],
         fields: Sequence[str] | None = None,  # noqa ARG002
         **kwargs: Any,  # noqa ARG002
     ) -> MultipleEntitiesResultList:

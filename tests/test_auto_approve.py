@@ -51,6 +51,10 @@ def test_auto_approve_service(auto_approve_service):
     assert {"id": "true", "keyword": "auto_approve"}.items() <= read_item.data.items()
     assert isinstance(read_item._record, AutoApprove)  # noqa SLF001
 
+    read_list = auto_approve_service.read_many(system_identity, ["true", "true"])
+    expected_list = [{'id': 'true', 'keyword': 'auto_approve'}, {'id': 'true', 'keyword': 'auto_approve'}]
+    assert sorted(list(read_list.hits), key=lambda x: str(x)) == sorted(expected_list, key=lambda x: str(x))
+
 
 def test_auto_approve_resolver(app, search_clear):
     resolved = ResolverRegistry.resolve_entity({"auto_approve": "true"})

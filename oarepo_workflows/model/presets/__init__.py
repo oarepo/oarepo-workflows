@@ -39,7 +39,7 @@ from oarepo_workflows.model.presets.services.records.service_config import (
     WorkflowsServiceConfigPreset,
 )
 
-workflows_presets = [
+workflows_preset = [
     WorkflowsDraftPreset,
     WorkflowsParentRecordPreset,
     WorkflowsRecordPreset,

@@ -218,7 +218,7 @@ class SameAs(AggregateGenerator):
             raise ValueError(
                 f"SameAs: Policy must be passed to the generator. Got the following context: {context.keys()}"
             )
-        # the annotation should not be necessary here
+        # the type: ignore should not be necessary here
         return super().needs(**context | {"policy": policy})  # type: ignore[no-any-return]
 
     @override

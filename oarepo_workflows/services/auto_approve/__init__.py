@@ -36,6 +36,7 @@ class AutoApproveRecordItem(ServiceItemResult):
     ):
         """Override constructor to discard unnecesary arguments."""
         self._record = AutoApprove()
+        self._obj = AutoApprove()
 
     @property
     def data(self) -> Mapping[str, str]:
@@ -57,11 +58,6 @@ class AutoApproveRecordList(ServiceListResult):
     ) -> None:
         """Override constructor to discard unnecesary arguments."""
         self._results = results
-
-    @property
-    def total(self) -> int:
-        """Get total number of hits."""
-        return len(self._results)
 
     @property
     def hits(self) -> Any:

@@ -30,12 +30,11 @@ from sqlalchemy.exc import IntegrityError
 
 from oarepo_workflows import WorkflowRequestPolicy, WorkflowTransitions
 from oarepo_workflows.base import Workflow
-from oarepo_workflows.model.presets import workflows_presets
+from oarepo_workflows.model.presets import workflows_preset
 from oarepo_workflows.proxies import current_oarepo_workflows
 from oarepo_workflows.requests import WorkflowRequest
 from oarepo_workflows.requests.generators import RecipientGeneratorMixin
 from oarepo_workflows.services.permissions import DefaultWorkflowPermissions, IfInState
-from tests.test_multiple_recipients import UserWithRole
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -125,7 +124,7 @@ class IsApplicableTestRequestPolicy(WorkflowRequestPolicy):
     )
     req1 = WorkflowRequest(
         requesters=[
-            UserWithRole("administrator"),
+            # UserWithRole("administrator"),
         ],
         recipients=[NullRecipient(), TestRecipient()],
     )
@@ -149,6 +148,11 @@ def test_draft_service(app):
 def auto_approve_service(app):
     """Service instance."""
     return current_oarepo_workflows.auto_approve_service
+
+@pytest.fixture(scope="module")
+def multiple_recipients_service(app):
+    """Service instance."""
+    return current_oarepo_workflows.multiple_recipients_service
 
 
 @pytest.fixture
@@ -254,7 +258,7 @@ def workflow_model():
             records_resources_preset,
             drafts_preset,
             rdm_preset,
-            workflows_presets,
+            workflows_preset,
         ],
         types=[model_types],
         metadata_type="Metadata",
