@@ -59,8 +59,6 @@ class WorkflowRequestPolicy:
         for attr in dir(self.__class__):
             if parent_attrs and attr in parent_attrs:
                 continue
-            if attr.startswith("_"):
-                continue
             possible_request = getattr(self, attr, None)
             if isinstance(possible_request, WorkflowRequest):
                 ret.append(possible_request)

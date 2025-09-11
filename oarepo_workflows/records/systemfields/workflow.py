@@ -35,7 +35,14 @@ class WorkflowField(MappingSystemFieldMixin, ModelField):
         self._workflow = None  # added in db
         super().__init__(model_field_name="workflow", key="workflow")
 
-    @property
-    def mapping(self) -> dict[str, dict[str, str]]:
-        """Elasticsearch mapping."""
-        return {self.attr_name: {"type": "keyword"}}  # type: ignore[reportReturnType]
+    def _set(self, model, value):
+        """Internal method to set value on the model's field."""
+        # TODO: check
+        super()._set(model, value)
+        if record.workflow not in current_oarepo_workflows.workflow_by_code:
+            raise InvalidWorkflowError(
+                f"Workflow {record.workflow} does not exist in the configuration.",
+                record=record,
+            )
+
+

@@ -70,13 +70,6 @@ class RecordStateField(MappingSystemFieldMixin, SystemField):
             self.set_dictkey(record, value)
             cast("dict", record)["state_timestamp"] = datetime.now(tz=UTC).isoformat()
 
-    @property
-    def mapping(self) -> dict[str, dict[str, str]]:
-        """Return the opensearch mapping for the state field."""
-        return {
-            self.attr_name: {"type": "keyword"},  # type: ignore[reportReturnType]
-        }
-
 
 class RecordStateTimestampField(MappingSystemFieldMixin, SystemField):
     """State system field."""
@@ -108,18 +101,3 @@ class RecordStateTimestampField(MappingSystemFieldMixin, SystemField):
         if record is None:
             return self  # type: ignore[no-any-return]
         return self.get_dictkey(record)  # type: ignore[no-any-return]
-
-    @property
-    def mapping(self) -> dict[str, dict[str, str]]:
-        """Return the opensearch mapping for the state field."""
-        # not needed as oarepo-model-builder-workflows already generated this field into the mapping
-        # attr_name isn't typed in invenio but should always be a string
-        return {
-            self.attr_name: {  # type: ignore[reportReturnType]
-                "type": "date",
-                "format": "strict_date_time||strict_date_time_no_millis||"
-                "basic_date_time||basic_date_time_no_millis||"
-                "basic_date||strict_date||"
-                "strict_date_hour_minute_second||strict_date_hour_minute_second_fraction",
-            },
-        }

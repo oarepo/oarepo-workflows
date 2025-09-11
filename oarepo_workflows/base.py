@@ -44,11 +44,20 @@ class Workflow:
 
         :param  action:      action for which permission is asked
         """
-        return self.permission_policy_cls(action, **over)
+        return self.permission_policy_with_requests_cls(action, **over)
 
     def requests(self) -> WorkflowRequestPolicy:
         """Return instance of request policy for this workflow."""
         return self.request_policy_cls()
+
+    @property
+    def permission_policy_with_requests_cls(self) -> type[DefaultWorkflowPermissions]:
+        extra_permissions = {}
+        for r in self.requests:
+            extra_permissions[f"can_{r.request_type.type_id}_create"] = (r.requester_generator,)
+            for e in r.events:
+                extra_permissions[f"can_{r.request_type.type_id}_{e.event_type.type_id}_create"] = (e.submitter_generator,)
+        return type(f"{self.permission_policy_cls.__name__}WithRequests", (self.permission_policy_cls,), extra_permissions)
 
     def __post_init__(self) -> None:
         """Check that the classes are subclasses of the expected classes.

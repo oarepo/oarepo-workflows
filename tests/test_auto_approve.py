@@ -24,21 +24,21 @@ def test_auto_approve_generator(app, search_clear):
 
     with pytest.raises(
         ValueError,
-        match="Auto-approve generator can not create needs and "
+        match=r"Auto-approve generator can not create needs and "
         "should be used only in `recipient` section of WorkflowRequest.",
     ):
         a.needs()
 
     with pytest.raises(
         ValueError,
-        match="Auto-approve generator can not create needs and "
+        match=r"Auto-approve generator can not create needs and "
         "should be used only in `recipient` section of WorkflowRequest.",
     ):
         a.excludes()
 
     with pytest.raises(
         ValueError,
-        match="Auto-approve generator can not create needs and "
+        match=r"Auto-approve generator can not create needs and "
         "should be used only in `recipient` section of WorkflowRequest.",
     ):
         a.query_filter()
@@ -48,12 +48,15 @@ def test_auto_approve_generator(app, search_clear):
 
 def test_auto_approve_service(auto_approve_service):
     read_item = auto_approve_service.read(system_identity, "true")
-    assert {"id": "true", "keyword": "auto_approve"}.items() <= read_item.data.items()
+    assert {"id": "true", "keyword": "auto_approve", "type": "keyword"}.items() <= read_item.data.items()
     assert isinstance(read_item._record, AutoApprove)  # noqa SLF001
 
     read_list = auto_approve_service.read_many(system_identity, ["true", "true"])
-    expected_list = [{'id': 'true', 'keyword': 'auto_approve'}, {'id': 'true', 'keyword': 'auto_approve'}]
-    assert sorted(list(read_list.hits), key=lambda x: str(x)) == sorted(expected_list, key=lambda x: str(x))
+    expected_list = [
+        {"id": "true", "keyword": "auto_approve", "type": "keyword"},
+        {"id": "true", "keyword": "auto_approve", "type": "keyword"},
+    ]
+    assert sorted(read_list.hits, key=lambda x: str(x)) == sorted(expected_list, key=lambda x: str(x))
 
 
 def test_auto_approve_resolver(app, search_clear):

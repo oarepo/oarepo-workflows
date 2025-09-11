@@ -9,9 +9,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, cast, override
+from typing import TYPE_CHECKING, Any, override
 
+from invenio_search.engine import dsl
 from oarepo_runtime.services.generators import ConditionalGenerator
+from oarepo_runtime.typing import require_kwargs
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -35,5 +37,10 @@ class IfEventType(ConditionalGenerator):
         self.event_type = event_type
 
     @override
-    def _condition(self, event_type: type[EventType], **kwargs: Any) -> bool:  # type: ignore[reportIncompatibleMethodOverride]
-        return cast("bool", event_type == self.event_type)
+    @require_kwargs("event_type")
+    def _condition(self, *, event_type: type[EventType], **kwargs: Any) -> bool:
+        return event_type == self.event_type
+
+    @override
+    def _query_instate(self, **context: Any) -> dsl.query.Query:
+        return dsl.Q("term", type_id=self.event_type)

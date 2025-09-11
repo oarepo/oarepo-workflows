@@ -35,15 +35,11 @@ from oarepo_workflows.model.presets.services.records.permission_policy import (
 from oarepo_workflows.model.presets.services.records.record_schema import (
     WorkflowsRecordSchemaPreset,
 )
-from oarepo_workflows.model.presets.services.records.service_config import (
-    WorkflowsServiceConfigPreset,
-)
 
 workflows_preset = [
     WorkflowsDraftPreset,
     WorkflowsParentRecordPreset,
     WorkflowsRecordPreset,
-    WorkflowsServiceConfigPreset,
     WorkflowsParentRecordMetadataPreset,
     WorkflowsPermissionPolicyPreset,
     WorkflowsParentRecordSchemaPreset,

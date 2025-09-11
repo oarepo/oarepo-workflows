@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 
 class AutoApprove:
     """Entity representing auto approve."""
-
+    id = "true"
     serialization = MappingProxyType({"id": "true", "keyword": "auto_approve", "type": "keyword"})
     ref_dict = MappingProxyType({"auto_approve": "true"})
 

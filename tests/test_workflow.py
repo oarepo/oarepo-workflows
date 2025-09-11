@@ -85,7 +85,9 @@ def test_workflow_publish(workflow_model, users, logged_client, default_workflow
     assert other_response.json["state"] == published_json["state"]
 
 
-def test_query_filter(workflow_model, users, logged_client, default_workflow_json, location, search_clear):
+def test_query_filter(
+    workflow_model, users, logged_client, default_workflow_json, search_with_field_mapping, location, search_clear
+):
     user_client1 = logged_client(users[0])
     user_client2 = logged_client(users[1])
     record = workflow_model.Record

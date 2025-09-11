@@ -20,56 +20,50 @@ from invenio_records_resources.services.base.results import ServiceItemResult, S
 from invenio_records_resources.services.base.service import Service
 
 from oarepo_workflows.resolvers.auto_approve import AutoApprove
-
+import marshmallow as ma
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
     from flask_principal import Identity
     from invenio_records_resources.services.base.config import ServiceConfig
 
-
-class AutoApproveRecordItem(ServiceItemResult):
-    """Single record result for AutoApprove."""
-
-    def __init__(
-        self,
-    ):
-        """Override constructor to discard unnecesary arguments."""
-        self._record = AutoApprove()
-        self._obj = AutoApprove()
-
-    @property
-    def data(self) -> Mapping[str, str]:
-        """Get the record data.
-
-        Returns:
-            dict: The serialized record data.
-
-        """
-        return AutoApprove.serialization
-
+class AutoApproveSchema(ma.Schema):
+    class Meta:
+        unknown = ma.INCLUDE
 
 class AutoApproveRecordList(ServiceListResult):
     """List autopprove result."""
 
-    def __init__(
-        self,
-        results: list[AutoApprove],
-    ) -> None:
-        """Override constructor to discard unnecesary arguments."""
-        self._results = results
 
     @property
-    def hits(self) -> Any:
+    def hits(self) -> Generator[dict[str, Any], None, None]:
         """Get iterator over search result hits.
 
         Yields:
             dict: The serialized record data for each hit.
 
         """
-        for _ in self._results:
-            yield AutoApprove.serialization
 
+        yield AutoApprove.serialization
+
+    def __len__(self):
+        """Return the total numer of hits."""
+        return 1
+
+    def __iter__(self):
+        """Iterator over the hits."""
+        return iter(self.hits)
+
+    def to_dict(self):
+        return {"hits": {"total": 1, "hits": list(self.hits)}}
+
+class AutoApproveServiceConfig(ServiceConfig):
+    """Service configuration."""
+    service_id = "auto_approve"
+    permission_policy_cls = EveryonePermissionPolicy
+
+    result_item_cls = RecordItem
+    result_list_cls = AutoApproveRecordList
 
 class AutoApproveService(Service):
     """Service implementation for named entities.
@@ -77,14 +71,6 @@ class AutoApproveService(Service):
     Provides concrete implementation of read operations for named entities
     that don't require database storage.
     """
-
-    def __init__(self):
-        """Override constructor to discard unnecesary arguments."""
-
-    @property
-    def config(self) -> ServiceConfig:
-        """Get fake service config."""
-        return cast("ServiceConfig", SimpleNamespace(service_id="auto_approve"))
 
     def read(self, identity: Identity, id_: str, **kwargs: Any) -> ServiceItemResult:  # noqa ARG002
         """Read a single auto-approve record.
@@ -98,7 +84,7 @@ class AutoApproveService(Service):
             ServiceItemResult: The auto-approve record.
 
         """
-        return AutoApproveRecordItem()
+        return self.result_item(self, identity, AutoApprove(), schema=AutoApproveSchema())
 
     def read_many(
         self,
@@ -119,4 +105,4 @@ class AutoApproveService(Service):
             ServiceListResult: List of auto-approve records.
 
         """
-        return AutoApproveRecordList([AutoApprove() for _ in ids])
+        return self.result_list()

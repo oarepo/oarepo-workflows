@@ -40,7 +40,7 @@ class WorkflowsMappingPreset(Preset):
         model: InvenioModel,
         dependencies: dict[str, Any],
     ) -> Generator[Customization]:
-        parent_mapping = {
+        workflow_mapping = {
             "mappings": {
                 "properties": {
                     "state": {"type": "keyword", "ignore_above": 1024},
@@ -59,6 +59,6 @@ class WorkflowsMappingPreset(Preset):
             }
         }
 
-        yield PatchJSONFile("draft-mapping", parent_mapping)
+        yield PatchJSONFile("draft-mapping", workflow_mapping)
 
-        yield PatchJSONFile("record-mapping", parent_mapping)
+        yield PatchJSONFile("record-mapping", workflow_mapping)

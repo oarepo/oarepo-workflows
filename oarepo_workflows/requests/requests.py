@@ -72,12 +72,9 @@ class WorkflowRequest:
     def recipient_entity_reference(self, **context: Any) -> Mapping[str, str] | None:
         """Return the reference receiver of the workflow request with the given context.
 
-        Note: invenio supports only one receiver, so the first one is returned at the moment.
-        Later on, a composite receiver can be implemented.
-
         :param context: Context of the request.
         """
-        return RecipientEntityReference(self, **context)
+        return _get_recipient_entity_reference(self, **context)
 
     def is_applicable(self, identity: Identity, *, record: Record, **context: Any) -> bool:
         """Check if the request is applicable for the identity and context (which might include record, community, ...).
@@ -158,6 +155,13 @@ class WorkflowRequestEscalation:
     after: timedelta
     recipients: Sequence[InvenioGenerator]
 
+    def recipient_entity_reference(self, **context: Any) -> Mapping[str, str] | None:
+        """Return the reference receiver of the workflow escalation with the given context.
+
+        :param context: Context of the request.
+        """
+        return _get_recipient_entity_reference(self, **context)
+
     @property
     def escalation_id(self) -> str:
         """Return the escalation ID."""
@@ -172,7 +176,7 @@ class WorkflowRequestEscalation:
         return f"{self.after=},{self.recipients=}"
 
 
-def RecipientEntityReference(  # noqa N802
+def _get_recipient_entity_reference(  # noqa N802
     request_or_escalation: WorkflowRequest | WorkflowRequestEscalation, **context: Any
 ) -> Mapping[str, str] | None:
     """Return the reference receiver of the workflow request or workflow request escalation with the given context.
@@ -184,8 +188,6 @@ def RecipientEntityReference(  # noqa N802
     :param context: Context of the request.
 
     :return: Reference receiver as a dictionary or None if no receiver has been resolved.
-
-    Implementation note: intentionally looks like a class, later on might be converted into one extending from dict.
     """
     if not request_or_escalation.recipients:
         return None

@@ -20,7 +20,7 @@ from invenio_requests.resolvers.registry import ResolverRegistry
 from oarepo_workflows.resolvers.multiple_entities import MultipleEntitiesEntity, MultipleEntitiesResolver
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Sequence
+    from collections.abc import Sequence
 
     from flask_principal import Identity
     from invenio_records_resources.references.entity_resolvers.base import EntityProxy
@@ -87,12 +87,9 @@ class MultipleEntitiesEntityService(Service):
         return cast("ServiceConfig", SimpleNamespace(service_id="multiple"))
 
     def read(self, identity: Identity, id_: str, **kwargs: Any) -> MultipleEntitiesResultItem:  # noqa ARG002
-        """Return a service result item from multiple entity id."""
-        entities = [
-            cast("EntityProxy", ResolverRegistry.resolve_entity_proxy(ref_dict, raise_=True))
-            for ref_dict in json.loads(id_)
-        ]
-        return MultipleEntitiesResultItem(entity=MultipleEntitiesEntity(entities=entities))
+        """Return a service result item from multiple entity id.""" # todo multiple constant
+        entity_proxy = ResolverRegistry.resolve_entity_proxy({"multiple": id_}, raise_=True)
+        return MultipleEntitiesResultItem(entity=entity_proxy.resolve())
 
     def read_many(
         self,

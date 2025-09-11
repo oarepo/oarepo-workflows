@@ -144,49 +144,6 @@ class OARepoWorkflows:
             )
         )
 
-    @unit_of_work()
-    def set_workflow(
-        self,
-        identity: Identity,
-        record: Record,
-        new_workflow_id: str,
-        *args: Any,
-        uow: UnitOfWork,
-        commit: bool = True,
-        **kwargs: Any,
-    ) -> None:
-        """Set a new workflow on a record.
-
-        :param identity:            identity of the user who initiated the workflow change
-        :param record:              record whose workflow is being changed
-        :param new_workflow_id:     new workflow to set
-        :param args:                additional arguments
-        :param uow:                 unit of work
-        :param commit:              whether to commit the change
-        :param kwargs:              additional keyword arguments
-        """
-        if new_workflow_id not in current_oarepo_workflows.workflow_by_code:
-            raise InvalidWorkflowError(
-                f"Workflow {new_workflow_id} does not exist in the configuration.",
-                record=record,
-            )
-        parent = record.parent
-        previous_value = parent.workflow  # type: ignore[attr-defined]
-        parent.workflow = new_workflow_id  # type: ignore[attr-defined]
-        if commit:
-            service = current_runtime.get_record_service_for_record(record)
-            uow.register(ParentRecordCommitOp(parent, indexer_context={"service": service}))
-        for workflow_changed_notifier in self.workflow_changed_notifiers:
-            workflow_changed_notifier(
-                identity,
-                record,
-                previous_value,
-                new_workflow_id,
-                *args,
-                uow=uow,
-                **kwargs,
-            )
-
     @property
     def record_workflows(self) -> list[Workflow]:
         """Return a dictionary of available record workflows."""
@@ -211,7 +168,7 @@ class OARepoWorkflows:
         if hasattr(record, "parent"):
             try:
                 record_parent: WithWorkflow = record.parent  # type: ignore[reportAttributeAccessIssue]
-            except AttributeError as e:
+            except AttributeError as e:  # TODO: hasattr(record, "parent") already tested?
                 raise MissingWorkflowError(
                     "Record does not have a parent attribute, is it a draft-enabled record?",
                     record=record,

@@ -25,10 +25,19 @@ if TYPE_CHECKING:
 
 @dataclasses.dataclass
 class MultipleEntitiesEntity:
-    """Entity representing multiple entities."""
+    """Entity representing multiple entities.
+
+    Implementation note: entities is intentionally list of EntityProxy and not list of resolved entities.
+    The reason is that these are used to be converted to entity references and having proxy here makes it easier.
+    """
 
     entities: list[EntityProxy]
 
+    @property
+    def id(self) -> str:
+        ref_dict_list = [part.reference_dict for part in entity.entities]
+        ref_dict_list.sort(key=lambda x: (next(iter(x.keys())), next(iter(x.values()))))
+        return json.dumps(ref_dict_list, sort_keys=True)
 
 class MultipleEntitiesProxy(EntityProxy):
     """Proxy for multiple-entities entity."""
@@ -71,7 +80,7 @@ class MultipleEntitiesResolver(EntityResolver):
     @override
     def _reference_entity(self, entity: MultipleEntitiesEntity) -> dict[str, str]:
         """Return a reference dictionary for the entity."""
-        return {self.type_id: json.dumps([part.reference_dict for part in entity.entities])}
+        return {self.type_id: entity.id}
 
     @override
     def matches_entity(self, entity: Any) -> bool:

@@ -26,6 +26,7 @@ from invenio_requests.customizations.request_types import RequestType
 from invenio_search.engine import dsl
 from oarepo_model.customizations import AddFileToModule
 from oarepo_model.presets.records_resources import records_resources_preset
+from oarepo_runtime.services.records.mapping import update_all_records_mappings
 from sqlalchemy.exc import IntegrityError
 
 from oarepo_workflows import WorkflowRequestPolicy, WorkflowTransitions
@@ -123,9 +124,7 @@ class IsApplicableTestRequestPolicy(WorkflowRequestPolicy):
         ),
     )
     req1 = WorkflowRequest(
-        requesters=[
-            # UserWithRole("administrator"),
-        ],
+        requesters=[],
         recipients=[NullRecipient(), TestRecipient()],
     )
     req2 = WorkflowRequest(
@@ -148,6 +147,7 @@ def test_draft_service(app):
 def auto_approve_service(app):
     """Service instance."""
     return current_oarepo_workflows.auto_approve_service
+
 
 @pytest.fixture(scope="module")
 def multiple_recipients_service(app):
@@ -489,3 +489,11 @@ def logged_client(client) -> Callable[[User], LoggedClient]:
         return LoggedClient(client, user)
 
     return _logged_client
+
+
+@pytest.fixture(scope="module")
+def search_with_field_mapping(app, search):
+    """Search fixture."""
+    # Ensure all record mappings are updated
+    update_all_records_mappings()
+    return search

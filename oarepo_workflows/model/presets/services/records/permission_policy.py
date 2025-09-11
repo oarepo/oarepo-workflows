@@ -17,9 +17,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, override
 
+from invenio_records_permissions.policies.records import RecordPermissionPolicy
 from oarepo_model.customizations import ChangeBase, Customization
 from oarepo_model.presets import Preset
-from oarepo_runtime.services.config import EveryonePermissionPolicy
 
 from oarepo_workflows.services.permissions.record_permission_policy import (
     WorkflowRecordPermissionPolicy,
@@ -46,7 +46,7 @@ class WorkflowsPermissionPolicyPreset(Preset):
     ) -> Generator[Customization]:
         yield ChangeBase(
             "PermissionPolicy",
-            EveryonePermissionPolicy,
+            RecordPermissionPolicy,
             WorkflowRecordPermissionPolicy,
             subclass=True,
         )
