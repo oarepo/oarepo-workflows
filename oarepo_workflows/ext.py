@@ -13,14 +13,14 @@ import importlib.metadata
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, cast
 
-from invenio_drafts_resources.services.records.uow import ParentRecordCommitOp
 from invenio_records_resources.services.uow import unit_of_work
-from oarepo_runtime.proxies import current_runtime
 
 from oarepo_workflows.errors import InvalidWorkflowError, MissingWorkflowError, UnregisteredRequestTypeError
-from oarepo_workflows.proxies import current_oarepo_workflows
-from oarepo_workflows.services.auto_approve import AutoApproveService
-from oarepo_workflows.services.multiple_entities import MultipleEntitiesEntityService
+from oarepo_workflows.services.auto_approve import AutoApproveService, AutoApproveServiceConfig
+from oarepo_workflows.services.multiple_entities import (
+    MultipleEntitiesEntityService,
+    MultipleEntitiesEntityServiceConfig,
+)
 from oarepo_workflows.services.uow import StateChangeOperation
 
 if TYPE_CHECKING:
@@ -60,13 +60,6 @@ class OARepoWorkflows:
         """
         from . import ext_config
 
-        if "OAREPO_PERMISSIONS_PRESETS" not in app.config:
-            app.config["OAREPO_PERMISSIONS_PRESETS"] = {}
-
-        for k in ext_config.OAREPO_PERMISSIONS_PRESETS:
-            if k not in app.config["OAREPO_PERMISSIONS_PRESETS"]:
-                app.config["OAREPO_PERMISSIONS_PRESETS"][k] = ext_config.OAREPO_PERMISSIONS_PRESETS[k]
-
         app.config.setdefault("WORKFLOWS", ext_config.WORKFLOWS)
         app.config.setdefault("REQUESTS_ALLOWED_RECEIVERS", []).extend(ext_config.WORKFLOWS_ALLOWED_REQUEST_RECEIVERS)
 
@@ -79,8 +72,8 @@ class OARepoWorkflows:
     def init_services(self) -> None:
         """Initialize workflow services."""
         # noinspection PyAttributeOutsideInit
-        self.auto_approve_service = AutoApproveService()
-        self.multiple_recipients_service = MultipleEntitiesEntityService()
+        self.auto_approve_service = AutoApproveService(AutoApproveServiceConfig())
+        self.multiple_recipients_service = MultipleEntitiesEntityService(MultipleEntitiesEntityServiceConfig())
 
     @cached_property
     def workflow_by_code(self) -> dict[str, Workflow]:
@@ -99,6 +92,7 @@ class OARepoWorkflows:
         group_name = "oarepo_workflows.state_changed_notifiers"
         return [ep.load() for ep in importlib.metadata.entry_points(group=group_name)]
 
+    # TODO: scrape
     @cached_property
     def workflow_changed_notifiers(self) -> list[WorkflowChangeNotifier]:
         """Return a list of workflow changed notifiers.

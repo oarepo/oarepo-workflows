@@ -62,7 +62,8 @@ class MultipleEntitiesGenerator(RecipientGeneratorMixin, AggregateGenerator):
                 )
 
             generator_references = generator.reference_receivers(record=record, request_type=request_type, **context)
-            references.extend(generator_references)
+            if generator_references:
+                references.extend(generator_references)
         if not references:
             return []
         if len(references) == 1:

@@ -76,6 +76,7 @@ class WorkflowRequestPolicy:
     def applicable_workflow_requests(
         self, identity: Identity, *, record: Record, **context: Any
     ) -> list[tuple[str, WorkflowRequest]]:
+        # TODO: perhaps scrap later if this isn't the best approach to use in requests
         """Return a list of applicable requests for the identity and context.
 
         :param identity: Identity of the requester.

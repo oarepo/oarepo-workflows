@@ -13,101 +13,88 @@ import json
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, cast
 
-from invenio_records_resources.services.base.results import ServiceItemResult, ServiceListResult
+import marshmallow as ma
+from invenio_records_resources.proxies import current_service_registry
+from invenio_records_resources.services.base.config import ServiceConfig
 from invenio_records_resources.services.base.service import Service
+from invenio_records_resources.services.records.schema import ServiceSchemaWrapper
 from invenio_requests.resolvers.registry import ResolverRegistry
+from oarepo_runtime.services.config import EveryonePermissionPolicy
+from oarepo_runtime.services.results import RecordItem
 
+from oarepo_workflows.resolvers.auto_approve import AutoApprove
 from oarepo_workflows.resolvers.multiple_entities import MultipleEntitiesEntity, MultipleEntitiesResolver
+from oarepo_workflows.services.results import FakeHits, FakeResults, InMemoryResultList
+
+# from oarepo_workflows.services.auto_approve import InMemoryResultList
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from flask_principal import Identity
     from invenio_records_resources.references.entity_resolvers.base import EntityProxy
-    from invenio_records_resources.services.base.config import ServiceConfig
 
 
-def _serialize(entity: MultipleEntitiesEntity) -> dict[str, Any]:
-    """Serialize entity to a dict."""
-    ref = MultipleEntitiesResolver().reference_entity(entity)
-    id_ = next(iter(ref.values()))
-    return {"id": id_, "entities": json.loads(id_)}
+class MultipleEntitiesSchema(ma.Schema):
+    id = ma.fields.String()
+
+    @ma.post_dump
+    def serialize_entities(self, data, many, **kwargs) -> None:
+        multiple_entity = self.context["record"] # == instantiated entity from the result list; is it always in here?
+        identity = self.context["identity"]
+        # TODO: does this even makes sense with all types of entities?
+        projections = []
+        for entity_proxy in multiple_entity.entities:
+            service = current_service_registry.get(entity_proxy._resolver._service_id)
+            entity_schema = service.schema  # is there a possible service with no schema? fallback?
+            entity = entity_proxy.resolve()
+            projection = (
+                entity_schema.dump(  # this won't work on Users - User entity is not UserAggregate used in service
+                    # this would only really work if we made special entity-service record mapping in config
+                    entity,
+                    context={
+                        "identity": identity,
+                        "record": entity,
+                    },
+                )
+            )
+            projections.append(projection)
+        data["entities"] = projections
 
 
-class MultipleEntitiesResultItem(ServiceItemResult):
-    """Single record result for multiple entities."""
+class MultipleEntitiesEntityServiceConfig(ServiceConfig):
+    # TODO: i still think there should be superclass for these two (for now) services
+    """Service configuration."""
 
-    def __init__(
-        self,
-        entity: MultipleEntitiesEntity,
-    ):
-        """Override constructor to discard unnecesary arguments."""
-        self._record = entity
-        self._obj = entity
+    service_id = "multiple"
+    permission_policy_cls = EveryonePermissionPolicy
 
-    @property
-    def data(self) -> dict[str, Any]:
-        """Get the record data.
-
-        Returns:
-            dict: The serialized record data.
-
-        """
-        return _serialize(self._record)
-
-
-class MultipleEntitiesResultList(ServiceListResult):
-    """List multiple entities result."""
-
-    def __init__(self, results: list[MultipleEntitiesEntity]) -> None:
-        """Override constructor to discard unnecesary arguments."""
-        self._results = results
-
-    @property
-    def hits(self) -> Any:
-        """Get iterator over search result hits.
-
-        Yields:
-            dict: The serialized record data for each hit.
-
-        """
-        for result in self._results:
-            yield _serialize(result)
+    result_item_cls = RecordItem
+    result_list_cls = InMemoryResultList
+    record_cls = MultipleEntitiesEntity
+    schema = MultipleEntitiesSchema
 
 
 class MultipleEntitiesEntityService(Service):
     """Service implementation for multiple entities."""
 
-    def __init__(self):
-        """Override constructor to discard unnecesary arguments."""
-
     @property
-    def config(self) -> ServiceConfig:
-        """Get fake service config."""
-        return cast("ServiceConfig", SimpleNamespace(service_id="multiple"))
+    def schema(self):
+        """Returns the data schema instance."""
+        return ServiceSchemaWrapper(self, schema=self.config.schema)
 
-    def read(self, identity: Identity, id_: str, **kwargs: Any) -> MultipleEntitiesResultItem:  # noqa ARG002
-        """Return a service result item from multiple entity id.""" # todo multiple constant
+    def read(self, identity: Identity, id_: str, **kwargs: Any) -> RecordItem:  # noqa ARG002
+        """Return a service result item from multiple entity id."""
         entity_proxy = ResolverRegistry.resolve_entity_proxy({"multiple": id_}, raise_=True)
-        return MultipleEntitiesResultItem(entity=entity_proxy.resolve())
+        return self.result_item(self, identity, entity_proxy.resolve(), schema=self.schema)
 
     def read_many(
         self,
-        identity: Identity,  # noqa ARG002
+        identity: Identity,
         ids: Sequence[str],
         fields: Sequence[str] | None = None,  # noqa ARG002
         **kwargs: Any,  # noqa ARG002
-    ) -> MultipleEntitiesResultList:
+    ) -> InMemoryResultList:
         """Return a service result list from multiple entity ids."""
-        results = []
-        if ids:
-            expanded = [json.loads(id_) for id_ in ids]
-            for exp in expanded:
-                entities = [
-                    cast("EntityProxy", ResolverRegistry.resolve_entity_proxy(ref_dict, raise_=True))
-                    for ref_dict in exp
-                ]
-                results.append(MultipleEntitiesEntity(entities=entities))
-        return MultipleEntitiesResultList(
-            results=results,
-        )
+        results = [ResolverRegistry.resolve_entity_proxy({"multiple": id_}, raise_=True).resolve() for id_ in ids]
+        return self.result_list(self, identity, FakeResults(FakeHits(results)))

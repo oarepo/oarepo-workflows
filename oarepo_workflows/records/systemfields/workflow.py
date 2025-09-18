@@ -14,6 +14,9 @@ from typing import Protocol
 from invenio_records.systemfields.model import ModelField
 from oarepo_runtime.records.systemfields import MappingSystemFieldMixin
 
+from oarepo_workflows import current_oarepo_workflows
+from oarepo_workflows.errors import InvalidWorkflowError
+
 
 class WithWorkflow(Protocol):
     """A protocol for a record's parent containing a workflow field.
@@ -35,14 +38,11 @@ class WorkflowField(MappingSystemFieldMixin, ModelField):
         self._workflow = None  # added in db
         super().__init__(model_field_name="workflow", key="workflow")
 
-    def _set(self, model, value):
+    def _set(self, model, value) -> None:
         """Internal method to set value on the model's field."""
-        # TODO: check
-        super()._set(model, value)
-        if record.workflow not in current_oarepo_workflows.workflow_by_code:
+        if value not in current_oarepo_workflows.workflow_by_code:
             raise InvalidWorkflowError(
-                f"Workflow {record.workflow} does not exist in the configuration.",
-                record=record,
+                f"Workflow {value} does not exist in the configuration.",
+                record=model,
             )
-
-
+        super()._set(model, value)

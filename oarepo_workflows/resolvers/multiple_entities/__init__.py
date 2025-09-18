@@ -31,13 +31,15 @@ class MultipleEntitiesEntity:
     The reason is that these are used to be converted to entity references and having proxy here makes it easier.
     """
 
+    # TODO: perhaps rename to something like (sub)entities_proxies to avoid confusion?
     entities: list[EntityProxy]
 
     @property
     def id(self) -> str:
-        ref_dict_list = [part.reference_dict for part in entity.entities]
+        ref_dict_list = [entity.reference_dict for entity in self.entities]
         ref_dict_list.sort(key=lambda x: (next(iter(x.keys())), next(iter(x.values()))))
         return json.dumps(ref_dict_list, sort_keys=True)
+
 
 class MultipleEntitiesProxy(EntityProxy):
     """Proxy for multiple-entities entity."""
@@ -53,8 +55,9 @@ class MultipleEntitiesProxy(EntityProxy):
     def get_needs(self, ctx: dict | None = None) -> Sequence[Need]:
         """Get needs that the entity generate."""
         ret: list[Need] = []
-        for entity in self._resolve().entities:
-            ret.extend(entity.get_needs(ctx) or [])
+        entity = self._entity if self._entity else self._resolve()
+        for subentity_proxy in entity.entities:
+            ret.extend(subentity_proxy.get_needs(ctx) or [])
         return ret
 
     @override
@@ -66,6 +69,7 @@ class MultipleEntitiesProxy(EntityProxy):
 class MultipleEntitiesResolver(EntityResolver):
     """A resolver that resolves multiple entities entity."""
 
+    # TODO: move as constant to MultipleEntitiesEntity? Would be similar to AutoApprove
     type_id = "multiple"
 
     def __init__(self) -> None:

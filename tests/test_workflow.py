@@ -9,11 +9,9 @@ from __future__ import annotations
 
 import copy
 
-import pytest
-
 from oarepo_workflows.errors import InvalidWorkflowError
 from oarepo_workflows.proxies import current_oarepo_workflows
-
+import pytest
 
 def test_create_without_workflow(workflow_model, users, logged_client, default_workflow_json, search_clear):
     # create draft
@@ -22,7 +20,6 @@ def test_create_without_workflow(workflow_model, users, logged_client, default_w
     create_response = user_client1.post(workflow_model.RecordResourceConfig.url_prefix, json={})
     assert create_response.status_code == 400
     assert create_response.json["errors"][0]["messages"] == ["Workflow not defined in input."]
-
 
 def test_workflow_read(workflow_model, users, logged_client, default_workflow_json, location, search_clear):
     # create draft
@@ -142,7 +139,6 @@ def test_invalid_workflow_input(workflow_model, users, logged_client, default_wo
     assert missing_wf_response.status_code == 400
     assert missing_wf_response.json["errors"][0]["messages"] == ["Workflow not defined in input."]
 
-
 def test_state_change(
     users,
     record_service,
@@ -155,21 +151,6 @@ def test_state_change(
     )._record
     current_oarepo_workflows.set_state(users[0].identity, record, "approving", commit=False)
     assert record["state"] == "approving"
-
-
-def test_set_workflow(
-    users,
-    logged_client,
-    default_workflow_json,
-    record_service,
-    location,
-    search_clear,
-):
-    record = record_service.create(users[0].identity, default_workflow_json)._record  # noqa SLF001
-    with pytest.raises(InvalidWorkflowError):
-        current_oarepo_workflows.set_workflow(users[0].identity, record, "invalid_workflow", commit=False)
-    current_oarepo_workflows.set_workflow(users[0].identity, record, "record_owners_can_read", commit=False)
-    assert record.parent.workflow == "record_owners_can_read"
 
 
 def test_state_change_entrypoint_hookup(
@@ -185,21 +166,3 @@ def test_state_change_entrypoint_hookup(
     record = record_service.create(users[0].identity, default_workflow_json)._record  # noqa SLF001
     current_oarepo_workflows.set_state(users[0].identity, record, "approving", commit=False)
     assert entrypoints.state_change_notifier_called
-
-
-def test_set_workflow_entrypoint_hookup(
-    users,
-    logged_client,
-    default_workflow_json,
-    record_service,
-    location,
-    search_clear,
-):
-    from tests import entrypoints
-
-    entrypoints.workflow_change_notifier_called = False
-    record = record_service.create(users[0].identity, default_workflow_json)._record  # noqa SLF001
-    with pytest.raises(InvalidWorkflowError):
-        current_oarepo_workflows.set_workflow(users[0].identity, record, "invalid_workflow", commit=False)
-    current_oarepo_workflows.set_workflow(users[0].identity, record, "record_owners_can_read", commit=False)
-    assert entrypoints.workflow_change_notifier_called

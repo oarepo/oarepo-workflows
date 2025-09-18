@@ -52,12 +52,15 @@ class Workflow:
 
     @property
     def permission_policy_with_requests_cls(self) -> type[DefaultWorkflowPermissions]:
+        """Return a permission policy class merged with permissions for creating requests and events."""
         extra_permissions = {}
-        for r in self.requests:
+        for r in self.requests().requests:
             extra_permissions[f"can_{r.request_type.type_id}_create"] = (r.requester_generator,)
-            for e in r.events:
-                extra_permissions[f"can_{r.request_type.type_id}_{e.event_type.type_id}_create"] = (e.submitter_generator,)
-        return type(f"{self.permission_policy_cls.__name__}WithRequests", (self.permission_policy_cls,), extra_permissions)
+            for event_id, e in r.events.items():
+                extra_permissions[f"can_{r.request_type.type_id}_{event_id}_create"] = (e.submitter_generator,)
+        return type(
+            f"{self.permission_policy_cls.__name__}WithRequests", (self.permission_policy_cls,), extra_permissions
+        )
 
     def __post_init__(self) -> None:
         """Check that the classes are subclasses of the expected classes.
@@ -105,35 +108,5 @@ class StateChangedNotifier(Protocol):
         :param args:            additional arguments
         :param uow:             unit of work
         :param kwargs:          additional keyword arguments
-        """
-        ...
-
-
-class WorkflowChangeNotifier(Protocol):
-    """A protocol for a workflow change notifier.
-
-    Workflow changed notifier is a callable that is called
-    when a workflow of a record changes.
-    """
-
-    def __call__(
-        self,
-        identity: Identity,
-        record: Record,
-        previous_workflow_id: str,
-        new_workflow_id: str,
-        *args: Any,
-        uow: UnitOfWork,
-        **kwargs: Any,
-    ):
-        """Notify about a workflow change.
-
-        :param identity:                identity of the user who initiated the workflow change
-        :param record:                  record whose workflow changed
-        :param previous_workflow_id:    previous workflow of the record
-        :param new_workflow_id:         new workflow of the record
-        :param args:                    additional arguments
-        :param uow:                     unit of work
-        :param kwargs:                  additional keyword arguments
         """
         ...

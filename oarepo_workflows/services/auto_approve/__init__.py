@@ -13,57 +13,51 @@ so there is no need to store it to database/fetch it from the database.
 
 from __future__ import annotations
 
-from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
-from invenio_records_resources.services.base.results import ServiceItemResult, ServiceListResult
+import marshmallow as ma
+from invenio_records_resources.services.base.config import ServiceConfig
 from invenio_records_resources.services.base.service import Service
+from invenio_records_resources.services.records.schema import ServiceSchemaWrapper
+from oarepo_runtime.services.config import EveryonePermissionPolicy
+from oarepo_runtime.services.results import RecordItem
 
 from oarepo_workflows.resolvers.auto_approve import AutoApprove
-import marshmallow as ma
+from oarepo_workflows.services.results import FakeHits, FakeResults, InMemoryResultList
+
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
     from flask_principal import Identity
-    from invenio_records_resources.services.base.config import ServiceConfig
+    from invenio_records_resources.services.base.results import ServiceItemResult, ServiceListResult
+
 
 class AutoApproveSchema(ma.Schema):
     class Meta:
         unknown = ma.INCLUDE
 
-class AutoApproveRecordList(ServiceListResult):
-    """List autopprove result."""
+    id = ma.fields.String(dump_only=True)
+    type = ma.fields.String(dump_only=True)
 
+    """
+    @ma.post_dump
+    def serialize(self, data, many, **kwargs):
+        data |= AutoApprove.serialization
+        return data
+    """
 
-    @property
-    def hits(self) -> Generator[dict[str, Any], None, None]:
-        """Get iterator over search result hits.
-
-        Yields:
-            dict: The serialized record data for each hit.
-
-        """
-
-        yield AutoApprove.serialization
-
-    def __len__(self):
-        """Return the total numer of hits."""
-        return 1
-
-    def __iter__(self):
-        """Iterator over the hits."""
-        return iter(self.hits)
-
-    def to_dict(self):
-        return {"hits": {"total": 1, "hits": list(self.hits)}}
 
 class AutoApproveServiceConfig(ServiceConfig):
     """Service configuration."""
+
     service_id = "auto_approve"
     permission_policy_cls = EveryonePermissionPolicy
 
     result_item_cls = RecordItem
-    result_list_cls = AutoApproveRecordList
+    result_list_cls = InMemoryResultList
+    record_cls = AutoApprove
+    schema = AutoApproveSchema
+
 
 class AutoApproveService(Service):
     """Service implementation for named entities.
@@ -71,6 +65,11 @@ class AutoApproveService(Service):
     Provides concrete implementation of read operations for named entities
     that don't require database storage.
     """
+
+    @property
+    def schema(self):
+        """Returns the data schema instance."""
+        return ServiceSchemaWrapper(self, schema=self.config.schema)
 
     def read(self, identity: Identity, id_: str, **kwargs: Any) -> ServiceItemResult:  # noqa ARG002
         """Read a single auto-approve record.
@@ -84,11 +83,11 @@ class AutoApproveService(Service):
             ServiceItemResult: The auto-approve record.
 
         """
-        return self.result_item(self, identity, AutoApprove(), schema=AutoApproveSchema())
+        return self.result_item(self, identity, AutoApprove(), schema=self.schema)
 
     def read_many(
         self,
-        identity: Identity,  # noqa ARG002
+        identity: Identity,
         ids: Sequence[str],
         fields: Sequence[str] | None = None,  # noqa ARG002
         **kwargs: Any,  # noqa ARG002
@@ -105,4 +104,4 @@ class AutoApproveService(Service):
             ServiceListResult: List of auto-approve records.
 
         """
-        return self.result_list()
+        return self.result_list(self, identity, FakeResults(FakeHits([AutoApprove()])))

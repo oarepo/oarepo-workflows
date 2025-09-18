@@ -46,10 +46,11 @@ class DefaultWorkflowPermissions(RecordPermissionPolicy):
 
     def __init__(self, action_name: str | None = None, **over: Any) -> None:
         """Initialize the workflow permissions."""
-        can = getattr(self, f"can_{action_name}")
-        if self.system_process not in can:
-            can = (*can, self.system_process)
-            setattr(self.__class__, f"can_{action_name}", can)
+        if hasattr(self, f"can_{action_name}"): # edge case in FromRecordWorkflow; request action doesn't have to be defined if it's not in workflow
+            can = getattr(self, f"can_{action_name}") #TODO: do we want this
+            if self.system_process not in can:
+                can = (*can, self.system_process)
+                setattr(self.__class__, f"can_{action_name}", can)
         over["policy"] = self
         super().__init__(action_name, **over)
 

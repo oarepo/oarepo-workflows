@@ -16,12 +16,16 @@ from invenio_requests.services.permissions import (
     PermissionPolicy as InvenioRequestsPermissionPolicy,
 )
 
+from oarepo_workflows import FromRecordWorkflow
 from oarepo_workflows.requests.generators.conditionals import IfEventType
-from oarepo_workflows.requests.generators.workflow_based import (
-    EventCreatorsFromWorkflow,
-    RequestCreatorsFromWorkflow,
-)
+from invenio_pidstore.errors import PIDDoesNotExistError
 
+# TODO: LOG event for deleted draft causes crash
+def _events_record_getter(*, request, **kwargs):
+    try:
+        return request.topic.resolve()
+    except PIDDoesNotExistError:
+        return None
 
 class CreatorsFromWorkflowRequestsPermissionPolicy(InvenioRequestsPermissionPolicy):
     """Permissions for requests based on workflows.
@@ -33,14 +37,17 @@ class CreatorsFromWorkflowRequestsPermissionPolicy(InvenioRequestsPermissionPoli
 
     can_create = (
         SystemProcess(),
-        RequestCreatorsFromWorkflow(),
+        FromRecordWorkflow(action=lambda *, request_type, **kwargs: f"{request_type.type_id}_create"),
     )
 
     can_create_comment = (
         SystemProcess(),
         IfEventType(CommentEventType, [Creator(), Receiver()]),
         IfEventType(LogEventType, [Creator(), Receiver()]),
-        EventCreatorsFromWorkflow(),
+        FromRecordWorkflow(
+            action=lambda *, request, event_type, **kwargs: f"{request.type.type_id}_{event_type.type_id}_create",
+            record_getter=_events_record_getter,
+        ),
     )
 
     # any user can search for requests, but non-authenticated will not get a hit

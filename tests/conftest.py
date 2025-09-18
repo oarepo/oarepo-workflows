@@ -43,6 +43,16 @@ if TYPE_CHECKING:
     from invenio_accounts.models import User
 
 
+@pytest.fixture(scope="module")
+def request_types():
+    return [
+        type("Req", (RequestType,), {"type_id": "req"})(),
+        type("Req1", (RequestType,), {"type_id": "req1"})(),
+        type("Req2", (RequestType,), {"type_id": "req2"})(),
+        type("Req3", (RequestType,), {"type_id": "req3"})(),
+    ]
+
+
 class TestRecipient(RecipientGeneratorMixin, Generator):
     """User recipient for testing purposes."""
 
@@ -293,7 +303,7 @@ def workflow_model():
 
 @pytest.fixture(scope="module")
 # def app_config(app_config, empty_model, draft_model, draft_model_with_files):
-def app_config(app_config, workflow_model):
+def app_config(app_config, workflow_model, request_types):
     """Override pytest-invenio app_config fixture.
 
     Needed to set the fields on the custom fields schema.
@@ -324,13 +334,8 @@ def app_config(app_config, workflow_model):
 
     app_config["RDM_OPTIONAL_DOI_VALIDATOR"] = lambda _draft, _previous_published, **_kwargs: True
 
-    app_config["REQUESTS_REGISTERED_TYPES"] = [
-        type("Req", (RequestType,), {"type_id": "req"})(),
-        type("Req1", (RequestType,), {"type_id": "req1"})(),
-        type("Req2", (RequestType,), {"type_id": "req2"})(),
-        type("Req3", (RequestType,), {"type_id": "req3"})(),
-    ]
-
+    app_config["REQUESTS_REGISTERED_TYPES"] = request_types
+    # app_confi
     return app_config
 
 

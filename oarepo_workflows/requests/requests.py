@@ -176,7 +176,7 @@ class WorkflowRequestEscalation:
         return f"{self.after=},{self.recipients=}"
 
 
-def _get_recipient_entity_reference(  # noqa N802
+def _get_recipient_entity_reference(
     request_or_escalation: WorkflowRequest | WorkflowRequestEscalation, **context: Any
 ) -> Mapping[str, str] | None:
     """Return the reference receiver of the workflow request or workflow request escalation with the given context.

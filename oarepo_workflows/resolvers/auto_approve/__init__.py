@@ -12,6 +12,7 @@ from __future__ import annotations
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, override
 
+from invenio_checks.utils import classproperty
 from invenio_records_resources.references.entity_resolvers import EntityProxy
 from invenio_records_resources.references.entity_resolvers.base import EntityResolver
 
@@ -23,9 +24,19 @@ if TYPE_CHECKING:
 
 class AutoApprove:
     """Entity representing auto approve."""
+    # TODO: ok? - serialization is done through schema
     id = "true"
-    serialization = MappingProxyType({"id": "true", "keyword": "auto_approve", "type": "keyword"})
-    ref_dict = MappingProxyType({"auto_approve": "true"})
+    type = "auto_approve"
+
+    # serialization = MappingProxyType({"id": "true", "keyword": "auto_approve", "type": "keyword"})
+    @classproperty
+    def ref_dict(self):
+        return {self.type: self.id}
+
+    # def loads(self):
+    #    return True
+
+    # def
 
 
 class AutoApproveProxy(EntityProxy):

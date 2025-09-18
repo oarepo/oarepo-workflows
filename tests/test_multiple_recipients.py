@@ -23,7 +23,6 @@ from oarepo_workflows.resolvers.multiple_entities import (
     MultipleEntitiesProxy,
     MultipleEntitiesResolver,
 )
-from oarepo_workflows.services.multiple_entities import _serialize
 
 if TYPE_CHECKING:
     from flask import Flask
@@ -83,17 +82,21 @@ def test_multiple_recipients_resolver(app: Flask, search_clear) -> None:
         RoleNeed("admin"),
         RoleNeed("blah"),
     }
-    proxy = MultipleEntitiesProxy(MultipleEntitiesResolver(), {"multiple": '[{"group":"admin"},{"group":"blah"}]'})
-    assert isinstance(proxy.resolve(), MultipleEntitiesEntity)
-    assert proxy.pick_resolved_fields(system_identity, _serialize(proxy.resolve())) == {
-        "multiple": '[{"group": "admin"}, {"group": "blah"}]'
-    }
-    assert set(proxy.get_needs()) == {RoleNeed("admin"), RoleNeed("blah")}
     entity_reference = ResolverRegistry.reference_entity(resolved)
     assert entity_reference == {"multiple": '[{"group": "admin"}, {"group": "blah"}]'}
 
+# TODO: fix after settling on how to correctly do multiple entities entity marshmallow serialization
+def test_multiple_entities_entity_proxy(workflow_model, search_clear, location):
+    record = workflow_model.Draft.create({})
+    proxy = MultipleEntitiesProxy(MultipleEntitiesResolver(), {"multiple": '[{"group":"admin"},{"group":"blah"}]'})
+    assert isinstance(proxy.resolve(), MultipleEntitiesEntity)
+    assert proxy.pick_resolved_fields(system_identity, (proxy.resolve())) == {
+        "multiple": '[{"group": "admin"}, {"group": "blah"}]'
+    }
+    assert set(proxy.get_needs()) == {RoleNeed("admin"), RoleNeed("blah")}
 
-def test_service(multiple_recipients_service):
+
+def test_service(multiple_recipients_service, users, search_clear):
     read_item = multiple_recipients_service.read(system_identity, '[{"user": "1"}, {"user": "2"}]')
     assert {
         "id": '[{"user": "1"}, {"user": "2"}]',

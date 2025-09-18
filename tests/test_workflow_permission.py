@@ -20,11 +20,11 @@ def test_get_workflow_id(users, workflow_model, logged_client, record_service, l
     record = workflow_model.Draft.create({})
     wp = FromRecordWorkflow("read")
     with pytest.raises(InvalidWorkflowError):
-        wp._get_workflow_id(record=record)  # noqa SLF001
+        wp._get_workflow(record=record)  # noqa SLF001
 
     fake_record = SimpleNamespace(parent=SimpleNamespace(workflow=""))
     with pytest.raises(InvalidWorkflowError):
-        assert wp._get_workflow_id(record=fake_record)  # noqa SLF001
+        assert wp._get_workflow(record=fake_record)  # noqa SLF001
 
 
 def test_get_workflow_errors(users, workflow_model, logged_client, record_service, location, search_clear):

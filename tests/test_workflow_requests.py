@@ -7,11 +7,14 @@
 #
 from __future__ import annotations
 
+import copy
 from types import SimpleNamespace
 
 import pytest
 from flask_principal import Identity, UserNeed
 from invenio_rdm_records.services.generators import RecordOwners
+from invenio_records_resources.services.errors import PermissionDeniedError
+from invenio_requests.proxies import current_requests_service
 from opensearch_dsl.query import Terms
 
 from oarepo_workflows.proxies import current_oarepo_workflows
@@ -133,3 +136,15 @@ def test_requestor_filter(users, logged_client, search_clear, record_service):
 
     generator = requests.requests_by_id["req"].requester_generator
     assert generator.query_filter(identity=id1, record=sample_record) == Terms(parent__access__owned_by__user=[1])
+
+
+def test_requests_permissions(workflow_model, users, default_workflow_json, request_types, location, search_clear):
+    edited_json = copy.deepcopy(default_workflow_json)  # TODO: leave these to requests? It would be simpler
+    edited_json["parent"]["workflow"] = "is_applicable_workflow"
+    draft = workflow_model.proxies.current_service.create(users[0].identity, edited_json)
+    req_type = next(rt for rt in request_types if rt.type_id == "req")
+    with pytest.raises(PermissionDeniedError):
+        current_requests_service.create(
+            users[1].identity, {}, req_type, None, topic=draft._record, creator=users[1].user
+        )
+    current_requests_service.create(users[0].identity, {}, req_type, None, topic=draft._record, creator=users[0].user)

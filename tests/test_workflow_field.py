@@ -8,7 +8,17 @@
 from __future__ import annotations
 
 from invenio_access.permissions import system_identity
+import pytest
 
+from oarepo_workflows.errors import InvalidWorkflowError
+
+def test_change_workflow(workflow_model, location, search_clear):
+    draft = workflow_model.Draft.create({})
+    draft.parent.workflow = "my_workflow"
+    with pytest.raises(InvalidWorkflowError):
+        draft.parent.workflow = "non_existing_workflow"
+    with pytest.raises(InvalidWorkflowError):
+        draft.parent.workflow = None
 
 def test_workflow_read(users, logged_client, default_workflow_json, record_service, location, search_clear):
     data = record_service.create(system_identity, default_workflow_json)
