@@ -25,7 +25,10 @@ from invenio_rdm_records.services.generators import RecordOwners
 from invenio_records_permissions.generators import AuthenticatedUser, Generator
 from invenio_requests.customizations.request_types import RequestType
 from invenio_search.engine import dsl
-from invenio_users_resources.proxies import current_groups_service, current_users_service
+from invenio_users_resources.proxies import (
+    current_groups_service,
+    current_users_service,
+)
 from oarepo_model.customizations import AddFileToModule
 from oarepo_model.presets.records_resources import records_resources_preset
 from oarepo_runtime.services.records.mapping import update_all_records_mappings
@@ -383,7 +386,7 @@ def _create_role(id_, name, description, is_managed, database) -> Role:
 def role(db):
     """Create a single group."""
     return _create_role(
-        id="it-dep",
+        id_="it-dep",
         name="it-dep",
         description="IT Department",
         is_managed=False,

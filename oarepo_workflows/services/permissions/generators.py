@@ -47,7 +47,11 @@ class FromRecordWorkflow(Generator):
 
     _action: str | Callable[..., str]
 
-    def __init__(self, action: str | Callable[..., str], record_getter: Callable[..., Record] | None = None) -> None:
+    def __init__(
+        self,
+        action: str | Callable[..., str],
+        record_getter: Callable[..., Record] | None = None,
+    ) -> None:
         """Initialize the permission."""
         # might not be needed in subclasses
         super().__init__()

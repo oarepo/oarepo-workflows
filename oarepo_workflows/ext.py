@@ -15,8 +15,15 @@ from typing import TYPE_CHECKING, Any, cast
 
 from invenio_records_resources.services.uow import unit_of_work
 
-from oarepo_workflows.errors import InvalidWorkflowError, MissingWorkflowError, UnregisteredRequestTypeError
-from oarepo_workflows.services.auto_approve import AutoApproveService, AutoApproveServiceConfig
+from oarepo_workflows.errors import (
+    InvalidWorkflowError,
+    MissingWorkflowError,
+    UnregisteredRequestTypeError,
+)
+from oarepo_workflows.services.auto_approve import (
+    AutoApproveService,
+    AutoApproveServiceConfig,
+)
 from oarepo_workflows.services.multiple_entities import (
     MultipleEntitiesEntityService,
     MultipleEntitiesEntityServiceConfig,
@@ -138,7 +145,10 @@ class OARepoWorkflows:
         Default workflow events are those that can be added to any request.
         The dictionary is taken from the configuration key `DEFAULT_WORKFLOW_EVENTS`.
         """
-        return cast("dict[str, WorkflowEvent]", self.app.config.get("DEFAULT_WORKFLOW_EVENTS", {}))
+        return cast(
+            "dict[str, WorkflowEvent]",
+            self.app.config.get("DEFAULT_WORKFLOW_EVENTS", {}),
+        )
 
     def get_workflow(self, record: Record | dict[str, Any]) -> Workflow:
         """Get the workflow for a record.
@@ -203,5 +213,6 @@ def finalize_app(app: Flask) -> None:
         for r in workflow.requests().requests:
             try:
                 r.request_type  # noqa B018
+            # TODO: ugly; how to test?
             except KeyError as e:
                 raise UnregisteredRequestTypeError(r._request_type) from e  # noqa SLF001

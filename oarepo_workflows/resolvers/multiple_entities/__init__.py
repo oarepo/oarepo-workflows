@@ -57,7 +57,13 @@ class MultipleEntitiesProxy(EntityProxy):
         """Resolve the entity reference into entity."""
         values = json.loads(self._parse_ref_dict_id())
         return MultipleEntitiesEntity(
-            entities=[cast("EntityProxy", ResolverRegistry.resolve_entity_proxy(ref, raise_=True)) for ref in values]
+            entities=[
+                cast(
+                    "EntityProxy",
+                    ResolverRegistry.resolve_entity_proxy(ref, raise_=True),
+                )
+                for ref in values
+            ]
         )
 
     @override
@@ -74,7 +80,7 @@ class MultipleEntitiesProxy(EntityProxy):
         """Pick resolved fields for serialization of the entity to json."""
         entity_refs = json.loads(resolved_dict["id"])
         field_keys = []
-        hit: dict[str, Any] = defaultdict(dict)
+        hit: dict[str, dict[str, dict[str, str]]] = defaultdict(dict)
         for entity_ref in entity_refs:
             type_ = next(iter(entity_ref.keys()))
             id_ = next(iter(entity_ref.values()))

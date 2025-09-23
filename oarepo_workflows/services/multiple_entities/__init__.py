@@ -58,7 +58,10 @@ class MultipleEntitiesEntityService(Service):
 
     def read(self, identity: Identity, id_: str, **kwargs: Any) -> RecordItem:  # noqa ARG002
         """Return a service result item from multiple entity id."""
-        entity_proxy = cast("EntityProxy", ResolverRegistry.resolve_entity_proxy({"multiple": id_}, raise_=True))
+        entity_proxy = cast(
+            "EntityProxy",
+            ResolverRegistry.resolve_entity_proxy({"multiple": id_}, raise_=True),
+        )
         return self.result_item(self, identity, entity_proxy.resolve(), schema=self.schema)
 
     def read_many(
@@ -70,7 +73,10 @@ class MultipleEntitiesEntityService(Service):
     ) -> InMemoryResultList:
         """Return a service result list from multiple entity ids."""
         results = [
-            cast("EntityProxy", ResolverRegistry.resolve_entity_proxy({"multiple": id_}, raise_=True)).resolve()
+            cast(
+                "EntityProxy",
+                ResolverRegistry.resolve_entity_proxy({"multiple": id_}, raise_=True),
+            ).resolve()
             for id_ in ids
         ]
         # TODO: I would guess we need our own typed service superclass ig but why is it complaining

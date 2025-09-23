@@ -59,7 +59,9 @@ class Workflow:
             for event_id, e in r.events.items():
                 extra_permissions[f"can_{r.request_type.type_id}_{event_id}_create"] = (e.submitter_generator,)
         return type(
-            f"{self.permission_policy_cls.__name__}WithRequests", (self.permission_policy_cls,), extra_permissions
+            f"{self.permission_policy_cls.__name__}WithRequests",
+            (self.permission_policy_cls,),
+            extra_permissions,
         )
 
     def __post_init__(self) -> None:

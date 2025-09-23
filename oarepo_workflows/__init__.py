@@ -9,9 +9,6 @@
 
 from __future__ import annotations
 
-__version__ = "2.0.0dev1"
-"""Version of the library."""
-
 from oarepo_workflows.services.permissions import (
     FromRecordWorkflow,
     IfInState,
@@ -29,6 +26,10 @@ from .requests import (
     WorkflowRequestPolicy,
     WorkflowTransitions,
 )
+
+__version__ = "2.0.0dev1"
+"""Version of the library."""
+
 
 __all__ = (
     "AutoApprove",

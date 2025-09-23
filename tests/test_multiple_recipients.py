@@ -87,9 +87,10 @@ def test_multiple_recipients_resolver(app: Flask, search_clear) -> None:
     assert entity_reference == {"multiple": '[{"user": "1"}, {"user": "2"}]'}
 
 
-def test_multiple_entities_entity_proxy(users, workflow_model, location, search_clear):
-    workflow_model.Draft.create({})
+def test_multiple_entities_entity_proxy(users, role, workflow_model, location, search_clear):
     proxy = MultipleEntitiesProxy(MultipleEntitiesResolver(), {"multiple": '[{"user": "1"}, {"user": "2"}]'})
+    needs = proxy.get_needs()
+    assert set(needs) == {UserNeed(1), UserNeed(2)}
     entity = proxy.resolve()
     assert isinstance(entity, MultipleEntitiesEntity)
     serialization = MultipleEntitiesSchema().dump(entity)
@@ -140,9 +141,7 @@ def test_multiple_entities_entity_proxy(users, workflow_model, location, search_
         "verified_at": None,
     }
 
-
-def test_multiple_entities_entity_proxy_mixed_entity(users, role, workflow_model, location, search_clear):
-    workflow_model.Draft.create({})
+    # must be in the same test due to db issues causing search to not reindex users
     proxy = MultipleEntitiesProxy(MultipleEntitiesResolver(), {"multiple": '[{"user": "1"}, {"group": "it-dep"}]'})
     entity = proxy.resolve()
     assert isinstance(entity, MultipleEntitiesEntity)

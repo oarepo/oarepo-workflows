@@ -13,7 +13,9 @@ import dataclasses
 from functools import cached_property
 from typing import TYPE_CHECKING
 
-from oarepo_workflows.requests.generators.multiple_entities import MultipleEntitiesGenerator
+from oarepo_workflows.requests.generators.multiple_entities import (
+    MultipleEntitiesGenerator,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
