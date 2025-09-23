@@ -22,21 +22,19 @@ from oarepo_runtime.services.generators import (
 
 from oarepo_workflows.errors import InvalidWorkflowError, MissingWorkflowError
 from oarepo_workflows.proxies import current_oarepo_workflows
+from oarepo_workflows.requests import RecipientGeneratorMixin
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Sequence
+    from collections.abc import Callable, Mapping, Sequence
 
     from flask_principal import Need
     from invenio_records_permissions import RecordPermissionPolicy
     from invenio_records_permissions.generators import Generator as InvenioGenerator
     from invenio_records_resources.records import Record
+    from invenio_requests.customizations.request_types import RequestType
 
-
-# invenio_records_permissions.generators.ConditionalGenerator._make_query
-def _make_query(generators: Iterable[Generator], **context: Any) -> dict | None:
-    queries = [g.query_filter(**context) for g in generators]
-    queries = [q for q in queries if q]
-    return reduce(operator.or_, queries) if queries else dsl.Q("match_none")
+    from oarepo_workflows import Workflow
+    from oarepo_workflows.services.permissions import DefaultWorkflowPermissions
 
 
 class FromRecordWorkflow(Generator):
@@ -198,20 +196,21 @@ class IfInState(RecipientGeneratorMixin, ConditionalGenerator):
         except AttributeError:
             return False
 
+    # TODO: 1. ConditionalGenerator is basically AggregateGenerator with _generators based on condition
+    #       2. ReferenceReceivers could use some kind of aggregate mixin too; this is trivial
+    #       3. Hot to solve reportArgumentType; record obviously can't be None though the mixin says it should
+    @override
     def reference_receivers(
-            self,
-            record: Optional[Record] = None,
-            request_type: Optional[RequestType] = None,
-            **context: Any,
-    ) -> list[dict[str, str]]:
+        self,
+        record: Record | None = None,
+        request_type: RequestType | None = None,
+        **context: Any,
+    ) -> list[Mapping[str, str]]:
         from oarepo_workflows.requests.generators.multiple_entities import MultipleEntitiesGenerator
-        if self._condition(record, **context):
-            recipients = self.then_
-        else:
-            recipients = self.else_
+
+        recipients = self.then_ if self._condition(record, **context) else self.else_  # type: ignore[reportArgumentType]
         generator = MultipleEntitiesGenerator(recipients)
-        receivers = generator.reference_receivers(record= record, request_type=request_type, **context)
-        return receivers
+        return generator.reference_receivers(record=record, request_type=request_type, **context)
 
     @override
     def _query_instate(self, **context: Any) -> dsl.query.Query:
