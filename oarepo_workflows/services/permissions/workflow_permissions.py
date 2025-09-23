@@ -11,7 +11,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from invenio_rdm_records.services.generators import RecordOwners
+from invenio_rdm_records.services.generators import IfRecordDeleted, RecordOwners
+from invenio_rdm_records.services.permissions import UserManager
 from invenio_records_permissions import RecordPermissionPolicy
 from invenio_records_permissions.generators import (
     AuthenticatedUser,
@@ -46,8 +47,10 @@ class DefaultWorkflowPermissions(RecordPermissionPolicy):
 
     def __init__(self, action_name: str | None = None, **over: Any) -> None:
         """Initialize the workflow permissions."""
-        if hasattr(self, f"can_{action_name}"): # edge case in FromRecordWorkflow; request action doesn't have to be defined if it's not in workflow
-            can = getattr(self, f"can_{action_name}") #TODO: do we want this
+        if hasattr(
+            self, f"can_{action_name}"
+        ):  # edge case in FromRecordWorkflow; request action doesn't have to be defined if it's not in workflow
+            can = getattr(self, f"can_{action_name}")
             if self.system_process not in can:
                 can = (*can, self.system_process)
                 setattr(self.__class__, f"can_{action_name}", can)
@@ -58,12 +61,9 @@ class DefaultWorkflowPermissions(RecordPermissionPolicy):
         IfInState("draft", [RecordOwners()]),
         IfInState("published", [AuthenticatedUser()]),
     )
-    # can_read_deleted is used by RDM. As long as workflows are
-    # not intended for rdm records only, we need to keep this permission
-    # simple and the implementation must use RDM-based implementation
-    #
-    # so that repositories can use them out of the box
-    can_read_deleted = (SameAs("can_read"),)
+
+    # from RDM
+    can_read_deleted = (IfRecordDeleted(then_=[UserManager, SystemProcess()], else_=[SameAs("can_read")]),)
     can_update = (IfInState("draft", [RecordOwners()]),)
     can_delete = (IfInState("draft", [RecordOwners()]),)
     can_create = (AuthenticatedUser(),)

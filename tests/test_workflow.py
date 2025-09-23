@@ -9,9 +9,8 @@ from __future__ import annotations
 
 import copy
 
-from oarepo_workflows.errors import InvalidWorkflowError
 from oarepo_workflows.proxies import current_oarepo_workflows
-import pytest
+
 
 def test_create_without_workflow(workflow_model, users, logged_client, default_workflow_json, search_clear):
     # create draft
@@ -20,6 +19,7 @@ def test_create_without_workflow(workflow_model, users, logged_client, default_w
     create_response = user_client1.post(workflow_model.RecordResourceConfig.url_prefix, json={})
     assert create_response.status_code == 400
     assert create_response.json["errors"][0]["messages"] == ["Workflow not defined in input."]
+
 
 def test_workflow_read(workflow_model, users, logged_client, default_workflow_json, location, search_clear):
     # create draft
@@ -138,6 +138,7 @@ def test_invalid_workflow_input(workflow_model, users, logged_client, default_wo
     missing_wf_response = user_client1.post(resource_config.url_prefix, json={})
     assert missing_wf_response.status_code == 400
     assert missing_wf_response.json["errors"][0]["messages"] == ["Workflow not defined in input."]
+
 
 def test_state_change(
     users,

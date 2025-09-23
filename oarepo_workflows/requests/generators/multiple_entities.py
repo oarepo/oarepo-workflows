@@ -10,9 +10,9 @@
 from __future__ import annotations
 
 import dataclasses
-import json
 from typing import TYPE_CHECKING, Any, override
 
+from ...resolvers.multiple_entities import MultipleEntitiesEntity
 from ...services.permissions.generators import AggregateGenerator
 from .recipient_generator import RecipientGeneratorMixin
 
@@ -69,4 +69,4 @@ class MultipleEntitiesGenerator(RecipientGeneratorMixin, AggregateGenerator):
         if len(references) == 1:
             return references
 
-        return [{"multiple": json.dumps(references)}]
+        return [{"multiple": MultipleEntitiesEntity.create_id(references)}]

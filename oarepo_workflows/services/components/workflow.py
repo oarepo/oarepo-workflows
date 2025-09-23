@@ -9,9 +9,10 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, override
 
 from invenio_records_resources.services.records.components.base import ServiceComponent
+from oarepo_runtime.typing import require_kwargs
 
 from oarepo_workflows.errors import MissingWorkflowError
 
@@ -37,11 +38,13 @@ class WorkflowComponent(ServiceComponent):
     # is set at the beginning of the record creation process. This makes sure
     # that for example file checks are done with the correct workflow set.
 
+    @override
+    @require_kwargs("data", "record")
     def create(
         self,
         identity: Identity,
-        data: dict[str, Any] | None = None,  # can we have None here?
-        record: Record | None = None,
+        data: dict[str, Any],
+        record: Record,
         **kwargs: Any,
     ) -> None:
         """Implement record creation checks and set the workflow on the created record."""
@@ -61,4 +64,4 @@ class WorkflowComponent(ServiceComponent):
                 "make sure you are using workflow-enabled policy.",
                 record=data,
             ) from e
-        record.parent.workflow = workflow_id
+        record.parent.workflow = workflow_id  # type: ignore[reportAttributeAccessIssue, reportOptionalMemberAccess]

@@ -32,7 +32,6 @@ if TYPE_CHECKING:
     from oarepo_workflows.base import (
         StateChangedNotifier,
         Workflow,
-        WorkflowChangeNotifier,
     )
     from oarepo_workflows.records.systemfields.workflow import WithWorkflow
     from oarepo_workflows.requests.events import WorkflowEvent
@@ -90,17 +89,6 @@ class OARepoWorkflows:
         They are registered as entry points in the group `oarepo_workflows.state_changed_notifiers`.
         """
         group_name = "oarepo_workflows.state_changed_notifiers"
-        return [ep.load() for ep in importlib.metadata.entry_points(group=group_name)]
-
-    # TODO: scrape
-    @cached_property
-    def workflow_changed_notifiers(self) -> list[WorkflowChangeNotifier]:
-        """Return a list of workflow changed notifiers.
-
-        Workflow changed notifiers are callables that are called when a workflow of a record changes.
-        They are registered as entry points in the group `oarepo_workflows.workflow_changed_notifiers`.
-        """
-        group_name = "oarepo_workflows.workflow_changed_notifiers"
         return [ep.load() for ep in importlib.metadata.entry_points(group=group_name)]
 
     @unit_of_work()

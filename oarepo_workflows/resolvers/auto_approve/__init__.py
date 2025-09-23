@@ -9,10 +9,8 @@
 
 from __future__ import annotations
 
-from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, override
 
-from invenio_checks.utils import classproperty
 from invenio_records_resources.references.entity_resolvers import EntityProxy
 from invenio_records_resources.references.entity_resolvers.base import EntityResolver
 
@@ -24,19 +22,20 @@ if TYPE_CHECKING:
 
 class AutoApprove:
     """Entity representing auto approve."""
-    # TODO: ok? - serialization is done through schema
+
     id = "true"
     type = "auto_approve"
+    # TODO: see below
+    # ref_dict = MappingProxyType({"auto_approve": "true"}) - must be dict due to how
+    # invenio_records_resources.references.registry.ResolverRegistryBase.reference_entity is implemented
 
-    # serialization = MappingProxyType({"id": "true", "keyword": "auto_approve", "type": "keyword"})
-    @classproperty
-    def ref_dict(self):
-        return {self.type: self.id}
+    # for mypy ref_dict: ClassVar[dict[str, str]] = {"auto_approve": "true"}
 
-    # def loads(self):
-    #    return True
+    # Instead of ClassVar; typing for classproperty does not work
 
-    # def
+    # idea: define reference dict type
+
+    ref_dict: Mapping[str, str] = {"auto_approve": "true"}
 
 
 class AutoApproveProxy(EntityProxy):
@@ -52,7 +51,7 @@ class AutoApproveProxy(EntityProxy):
         return []  # grant_tokens calls this
 
     @override
-    def pick_resolved_fields(self, identity: Identity, resolved_dict: dict[str, str]) -> Mapping[str, str]:
+    def pick_resolved_fields(self, identity: Identity, resolved_dict: Mapping[str, str]) -> Mapping[str, str]:
         """Pick resolved fields for serialization of the entity to json."""
         return AutoApprove.ref_dict
 

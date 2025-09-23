@@ -23,28 +23,25 @@ from oarepo_runtime.services.config import EveryonePermissionPolicy
 from oarepo_runtime.services.results import RecordItem
 
 from oarepo_workflows.resolvers.auto_approve import AutoApprove
-from oarepo_workflows.services.results import FakeHits, FakeResults, InMemoryResultList
+from oarepo_workflows.services.results import InMemoryResultList
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
+    from collections.abc import Sequence
 
     from flask_principal import Identity
-    from invenio_records_resources.services.base.results import ServiceItemResult, ServiceListResult
+    from invenio_records_resources.services.base.results import ServiceListResult
 
 
 class AutoApproveSchema(ma.Schema):
+    """Marshmallow schema for auto-approve."""
+
     class Meta:
+        """Marshmallow schema meta."""
+
         unknown = ma.INCLUDE
 
     id = ma.fields.String(dump_only=True)
     type = ma.fields.String(dump_only=True)
-
-    """
-    @ma.post_dump
-    def serialize(self, data, many, **kwargs):
-        data |= AutoApprove.serialization
-        return data
-    """
 
 
 class AutoApproveServiceConfig(ServiceConfig):
@@ -67,11 +64,11 @@ class AutoApproveService(Service):
     """
 
     @property
-    def schema(self):
+    def schema(self) -> ServiceSchemaWrapper:
         """Returns the data schema instance."""
         return ServiceSchemaWrapper(self, schema=self.config.schema)
 
-    def read(self, identity: Identity, id_: str, **kwargs: Any) -> ServiceItemResult:  # noqa ARG002
+    def read(self, identity: Identity, id_: str, **kwargs: Any) -> RecordItem:  # noqa ARG002
         """Read a single auto-approve record.
 
         Args:
@@ -88,7 +85,7 @@ class AutoApproveService(Service):
     def read_many(
         self,
         identity: Identity,
-        ids: Sequence[str],
+        ids: Sequence[str],  # noqa ARG002
         fields: Sequence[str] | None = None,  # noqa ARG002
         **kwargs: Any,  # noqa ARG002
     ) -> ServiceListResult:
@@ -104,4 +101,4 @@ class AutoApproveService(Service):
             ServiceListResult: List of auto-approve records.
 
         """
-        return self.result_list(self, identity, FakeResults(FakeHits([AutoApprove()])))
+        return self.result_list(identity, [AutoApprove()], self.schema)

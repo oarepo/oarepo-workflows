@@ -18,12 +18,14 @@ from typing import TYPE_CHECKING, Any, override
 import pytest
 from flask_principal import ActionNeed, Identity, Need, UserNeed
 from flask_security import login_user
+from invenio_accounts.proxies import current_datastore
 from invenio_accounts.testutils import login_user_via_session
 from invenio_i18n import lazy_gettext as _
 from invenio_rdm_records.services.generators import RecordOwners
 from invenio_records_permissions.generators import AuthenticatedUser, Generator
 from invenio_requests.customizations.request_types import RequestType
 from invenio_search.engine import dsl
+from invenio_users_resources.proxies import current_groups_service, current_users_service
 from oarepo_model.customizations import AddFileToModule
 from oarepo_model.presets.records_resources import records_resources_preset
 from oarepo_runtime.services.records.mapping import update_all_records_mappings
@@ -40,7 +42,7 @@ from oarepo_workflows.services.permissions import DefaultWorkflowPermissions, If
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from invenio_accounts.models import User
+    from invenio_accounts.models import Role, User
 
 
 @pytest.fixture(scope="module")
@@ -238,9 +240,6 @@ def extra_entry_points():
         "oarepo_workflows.state_changed_notifiers": [
             "test_getter = tests.entrypoints:state_change_notifier_called_marker",
         ],
-        "oarepo_workflows.workflow_changed_notifiers": [
-            "test_getter = tests.entrypoints:workflow_change_notifier_called_marker",
-        ],
     }
 
 
@@ -369,6 +368,29 @@ def password():
     return base64.b64encode(os.urandom(16)).decode("utf-8")
 
 
+def _create_role(id_, name, description, is_managed, database) -> Role:
+    """Create a Role/Group."""
+    r = current_datastore.create_role(id=id_, name=name, description=description, is_managed=is_managed)
+    current_datastore.commit()
+
+    current_groups_service.indexer.process_bulk_queue()
+    current_groups_service.indexer.refresh()
+
+    return r
+
+
+@pytest.fixture
+def role(db):
+    """Create a single group."""
+    return _create_role(
+        id="it-dep",
+        name="it-dep",
+        description="IT Department",
+        is_managed=False,
+        database=db,
+    )
+
+
 def _create_user(user_fixture, app, db) -> None:
     """Create users, reusing it if it already exists."""
     try:
@@ -450,6 +472,9 @@ def users(app, db, UserFixture, password):  # noqa: N803 # as it is a fixture na
         confirmed=True,
     )
     _create_user(user5, app, db)
+
+    current_users_service.indexer.process_bulk_queue()
+    current_users_service.indexer.refresh()
 
     return [user1, user2, user3, user4, user5]
 

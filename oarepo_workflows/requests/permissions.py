@@ -18,14 +18,7 @@ from invenio_requests.services.permissions import (
 
 from oarepo_workflows import FromRecordWorkflow
 from oarepo_workflows.requests.generators.conditionals import IfEventType
-from invenio_pidstore.errors import PIDDoesNotExistError
 
-# TODO: LOG event for deleted draft causes crash
-def _events_record_getter(*, request, **kwargs):
-    try:
-        return request.topic.resolve()
-    except PIDDoesNotExistError:
-        return None
 
 class CreatorsFromWorkflowRequestsPermissionPolicy(InvenioRequestsPermissionPolicy):
     """Permissions for requests based on workflows.
@@ -37,7 +30,7 @@ class CreatorsFromWorkflowRequestsPermissionPolicy(InvenioRequestsPermissionPoli
 
     can_create = (
         SystemProcess(),
-        FromRecordWorkflow(action=lambda *, request_type, **kwargs: f"{request_type.type_id}_create"),
+        FromRecordWorkflow(action=lambda *, request_type, **kwargs: f"{request_type.type_id}_create"),  # noqa ARG005
     )
 
     can_create_comment = (
@@ -45,8 +38,8 @@ class CreatorsFromWorkflowRequestsPermissionPolicy(InvenioRequestsPermissionPoli
         IfEventType(CommentEventType, [Creator(), Receiver()]),
         IfEventType(LogEventType, [Creator(), Receiver()]),
         FromRecordWorkflow(
-            action=lambda *, request, event_type, **kwargs: f"{request.type.type_id}_{event_type.type_id}_create",
-            record_getter=_events_record_getter,
+            action=lambda *, request, event_type, **kwargs: f"{request.type.type_id}_{event_type.type_id}_create",  # noqa ARG005
+            record_getter=lambda *, request, **kwargs: request.topic.resolve(),  # noqa ARG005
         ),
     )
 

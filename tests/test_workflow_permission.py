@@ -39,7 +39,7 @@ def test_get_workflow_errors(users, workflow_model, logged_client, record_servic
         assert current_oarepo_workflows.get_workflow(bad_data)
 
 
-def test_query_filter(users, logged_client, search_clear, record_service):
+def test_query_filter_missing(users, logged_client, search_clear, record_service):
     wp = FromRecordWorkflow("read")
 
     id1 = Identity(id=1)

@@ -11,14 +11,17 @@ from __future__ import annotations
 
 import dataclasses
 import json
+from collections import defaultdict
 from typing import TYPE_CHECKING, Any, cast, override
 
 from invenio_records_resources.references.entity_resolvers import EntityProxy
 from invenio_records_resources.references.entity_resolvers.base import EntityResolver
+from invenio_records_resources.services.records.results import FieldsResolver
 from invenio_requests.resolvers.registry import ResolverRegistry
+from invenio_requests.services.results import EntityResolverExpandableField
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
 
     from flask_principal import Identity, Need
 
@@ -31,11 +34,17 @@ class MultipleEntitiesEntity:
     The reason is that these are used to be converted to entity references and having proxy here makes it easier.
     """
 
-    # TODO: perhaps rename to something like (sub)entities_proxies to avoid confusion?
     entities: list[EntityProxy]
+
+    @classmethod
+    def create_id(cls, entity_references: list[Mapping[str, str]]) -> str:
+        """Create id from entity references."""
+        entity_references.sort(key=lambda x: (next(iter(x.keys())), next(iter(x.values()))))
+        return json.dumps(entity_references, sort_keys=True)
 
     @property
     def id(self) -> str:
+        """Return id of the entity."""
         ref_dict_list = [entity.reference_dict for entity in self.entities]
         ref_dict_list.sort(key=lambda x: (next(iter(x.keys())), next(iter(x.values()))))
         return json.dumps(ref_dict_list, sort_keys=True)
@@ -61,9 +70,19 @@ class MultipleEntitiesProxy(EntityProxy):
         return ret
 
     @override
-    def pick_resolved_fields(self, identity: Identity, resolved_dict: dict) -> dict:
+    def pick_resolved_fields(self, identity: Identity, resolved_dict: dict[str, Any]) -> dict[str, Any]:
         """Pick resolved fields for serialization of the entity to json."""
-        return {"multiple": resolved_dict["id"]}
+        entity_refs = json.loads(resolved_dict["id"])
+        field_keys = []
+        hit: dict[str, Any] = defaultdict(dict)
+        for entity_ref in entity_refs:
+            type_ = next(iter(entity_ref.keys()))
+            id_ = next(iter(entity_ref.values()))
+            field_keys.append(f"{type_}.{id_}")
+            hit[type_] |= {id_: {type_: id_}}
+        fr = FieldsResolver([EntityResolverExpandableField(field_key) for field_key in field_keys])
+        fr.resolve(identity, [hit])
+        return fr.expand(identity, hit)  # type: ignore[no-any-return]
 
 
 class MultipleEntitiesResolver(EntityResolver):

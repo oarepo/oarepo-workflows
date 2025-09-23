@@ -1,77 +1,55 @@
-from collections.abc import Sequence
-from typing import Any
+#
+# Copyright (C) 2024 CESNET z.s.p.o.
+#
+# oarepo-workflows is free software; you can redistribute it and/or
+# modify it under the terms of the MIT License; see LICENSE file for more
+# details.
+#
+"""Service results."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+from invenio_records_resources.services.base.results import ServiceListResult
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
+
+    from flask_principal import Identity
+    from invenio_records_resources.services.records.schema import ServiceSchemaWrapper
 
 
-# TODO: this is used as AttrList in opensearch-dsl; idk whether its allowed to use here (ie. dependence of different search backend)
-class FakeHits:
-    def __init__(self, hits: Sequence[Any]):
-        self.hits = hits
-        self.total = {"value": len(hits)}
+class InMemoryResultList(ServiceListResult):
+    """Service result list for storing in memory results.
 
-    def __iter__(self):
-        return iter(self.hits)
+    Uses resolved objects instead of opensearch hits.
 
+    Note: we cannot use invenio implementation because it requires opensearch hits containing dictionaries with
+    data of the resolved objects. We have no way of converting these back to objects via record load and
+    serializing them with schema dump. That's why we return them as they are.
+    """
 
-class FakeResults:
-    def __init__(self, hits):
-        self.hits = hits
-        self.labelled_facets = []
-
-    def __iter__(self):
-        return iter(self.hits)
-
-    def __len__(self):
-        return len(self.hits.hits)
-
-
-from invenio_records_resources.services.records.results import RecordList
-
-
-class InMemoryResultList(RecordList):
     def __init__(
         self,
-        service,
-        identity,
-        results,
-        params=None,
-        links_tpl=None,
-        links_item_tpl=None,
-        nested_links_item=None,
-        schema=None,
-        expandable_fields=None,
-        expand=False,
-    ):
-        """Constructor.
+        identity: Identity,
+        results: list[Any],
+        schema: ServiceSchemaWrapper,
+    ) -> None:
+        """Create the list.
 
-        :params service: a service instance
         :params identity: an identity that performed the service request
         :params results: the search results
-        :params params: dictionary of the query parameters
+        :params schema: schema to use for serialization of the result entities
         """
-        hits = FakeHits(results)
-        results = FakeResults(hits)
-        super().__init__(
-            service,
-            identity,
-            results,
-            params,
-            links_tpl,
-            links_item_tpl,
-            nested_links_item,
-            schema,
-            expandable_fields,
-            expand,
-        )
+        self._identity = identity
+        self._results = results
+        self._schema = schema
 
     @property
-    def hits(self):
+    def hits(self) -> Generator[dict[str, Any]]:
         """Iterator over the hits."""
         for record in self._results:  # here we can just use the instantiated entity objects
-            # Load dump
-            # TODO: the line below i think does stuff that doesn't make sense if we don't have real search results
-            # record = self._service.record_cls.loads(hit.to_dict()) # this is completely unnecessary imo?
-
-            # Project the record
             projection = self._schema.dump(
                 record,
                 context={
@@ -79,10 +57,4 @@ class InMemoryResultList(RecordList):
                     "record": record,
                 },
             )
-            if self._links_item_tpl:
-                projection["links"] = self._links_item_tpl.expand(self._identity, record)
-            if self._nested_links_item:
-                for link in self._nested_links_item:
-                    link.expand(self._identity, record, projection)
-
             yield projection

@@ -24,7 +24,6 @@ if TYPE_CHECKING:
 
 @dataclasses.dataclass
 class WorkflowEvent:
-    # TODO: possibly add id or event type also here
     """Class representing a workflow event."""
 
     submitters: Sequence[InvenioGenerator]

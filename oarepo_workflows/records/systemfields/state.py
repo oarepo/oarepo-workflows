@@ -10,10 +10,12 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Any, Protocol, Self, cast, overload, override
+from typing import TYPE_CHECKING, Any, Protocol, Self, cast, overload, override
 
 from invenio_records.systemfields.base import SystemField
-from oarepo_runtime.records.systemfields import MappingSystemFieldMixin
+
+if TYPE_CHECKING:
+    from invenio_records.models import RecordMetadataBase
 
 
 class WithState(Protocol):
@@ -31,7 +33,7 @@ class WithState(Protocol):
     """Timestamp of the last state change."""
 
 
-class RecordStateField(MappingSystemFieldMixin, SystemField):
+class RecordStateField(SystemField):
     """State system field."""
 
     def __init__(self, key: str = "state", initial: str = "draft") -> None:
@@ -43,9 +45,14 @@ class RecordStateField(MappingSystemFieldMixin, SystemField):
         """Set the initial state when record is created."""
         self.set_dictkey(record, self._initial)
 
+    # field_data
     @override
-    def post_init(  # type: ignore[override]
-        self, record: WithState, data: dict, model: Any | None = None, **kwargs: Any
+    def post_init(  # type: ignore[reportIncompatibleMethodOverride]
+        self,
+        record: WithState,
+        data: dict[str, Any] | None = None,
+        model: RecordMetadataBase | None = None,
+        **kwargs: Any,
     ) -> None:
         """Set the initial state when record is created."""
         if not record.state:
@@ -63,7 +70,7 @@ class RecordStateField(MappingSystemFieldMixin, SystemField):
             return self  # type: ignore[no-any-return]
         return self.get_dictkey(record)  # type: ignore[no-any-return]
 
-    # NoReturn is whem method always raises an exception
+    # Ignore because superclass always causes exception so the correct return type is NoReturn
     def __set__(self, record: WithState, value: str) -> None:  # type: ignore[reportIncompatibleMethodOverride]
         """Directly set the state of the record."""
         if self.get_dictkey(record) != value:
@@ -71,7 +78,7 @@ class RecordStateField(MappingSystemFieldMixin, SystemField):
             cast("dict", record)["state_timestamp"] = datetime.now(tz=UTC).isoformat()
 
 
-class RecordStateTimestampField(MappingSystemFieldMixin, SystemField):
+class RecordStateTimestampField(SystemField):
     """State system field."""
 
     def __init__(self, key: str = "state_timestamp") -> None:
@@ -84,7 +91,11 @@ class RecordStateTimestampField(MappingSystemFieldMixin, SystemField):
 
     @override
     def post_init(  # type: ignore[reportIncompatibleMethodOverride]
-        self, record: WithState, data: dict, model: Any | None = None, **kwargs: Any
+        self,
+        record: WithState,
+        data: dict[str, Any] | None = None,
+        model: RecordMetadataBase | None = None,
+        **kwargs: Any,
     ) -> None:
         """Set the initial state when record is created."""
         if not record.state_timestamp:
