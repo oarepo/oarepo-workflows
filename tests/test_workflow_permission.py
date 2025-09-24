@@ -5,28 +5,41 @@
 # modify it under the terms of the MIT License; see LICENSE file for more
 # details.
 #
+from __future__ import annotations
+
 from types import SimpleNamespace
 
-from oarepo_workflows import FromRecordWorkflow
-from oarepo_workflows.errors import MissingWorkflowError
-from thesis.records.api import ThesisRecord
 import pytest
-
 from flask_principal import Identity, UserNeed
 
+from oarepo_workflows import FromRecordWorkflow, current_oarepo_workflows
+from oarepo_workflows.errors import InvalidWorkflowError, MissingWorkflowError
 
-def test_get_workflow_id(users, logged_client, search_clear, record_service):
-    thesis = ThesisRecord.create({})
+
+def test_get_workflow_id(users, workflow_model, logged_client, record_service, location, search_clear):
+    record = workflow_model.Draft.create({})
     wp = FromRecordWorkflow("read")
-    with pytest.raises(MissingWorkflowError):
-        wp._get_workflow_id(record=thesis)
+    with pytest.raises(InvalidWorkflowError):
+        wp._get_workflow(record=record)  # noqa SLF001
 
-    fake_thesis = SimpleNamespace(parent=SimpleNamespace(workflow=""))
-    with pytest.raises(MissingWorkflowError):
-        assert wp._get_workflow_id(record=fake_thesis)  # noqa
+    fake_record = SimpleNamespace(parent=SimpleNamespace(workflow=""))
+    with pytest.raises(InvalidWorkflowError):
+        assert wp._get_workflow(record=fake_record)  # noqa SLF001
 
 
-def test_query_filter(users, logged_client, search_clear, record_service):
+def test_get_workflow_errors(users, workflow_model, logged_client, record_service, location, search_clear):
+    fake_record = SimpleNamespace(parent=SimpleNamespace())
+    with pytest.raises(MissingWorkflowError, match=r"Parent record does not have a workflow attribute."):
+        assert current_oarepo_workflows.get_workflow(fake_record)
+    bad_data = {}
+    with pytest.raises(MissingWorkflowError, match=r"Record does not have a parent attribute."):
+        assert current_oarepo_workflows.get_workflow(bad_data)
+    bad_data = {"parent": {}}
+    with pytest.raises(MissingWorkflowError, match=r"Parent record does not have a workflow attribute."):
+        assert current_oarepo_workflows.get_workflow(bad_data)
+
+
+def test_query_filter_missing(users, logged_client, search_clear, record_service):
     wp = FromRecordWorkflow("read")
 
     id1 = Identity(id=1)

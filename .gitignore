@@ -94,4 +94,24 @@ thesis
 node_modules
 .venv-builder/
 
+# mypy
+.mypy_cache/
+.mypy.ini
+.dmypy.json
+dmypy.json
+
+#
+# OARepo specific gitignore
+#
+.runner.sh
+.env-services
+.eslintrc.yaml
+.mypy.ini
+.ruff.toml
+
+# Ruff stuff:
+.ruff.toml
+.ruff_cache/
+.mypy.ini
+
 forked_install.sh

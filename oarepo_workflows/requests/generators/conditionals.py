@@ -9,33 +9,17 @@
 
 from __future__ import annotations
 
-import abc
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, override
 
-from invenio_records_permissions.generators import ConditionalGenerator, Generator
+from invenio_search.engine import dsl
+from oarepo_runtime.services.generators import ConditionalGenerator
+from oarepo_runtime.typing import require_kwargs
 
 if TYPE_CHECKING:
-    from invenio_requests.customizations import EventType, RequestType
+    from collections.abc import Sequence
 
-
-class IfRequestTypeBase(abc.ABC, ConditionalGenerator):
-    """Base class for conditional generators that generate needs based on request type."""
-
-    def __init__(
-        self, request_types: list[str] | tuple[str] | str, then_: list[Generator]
-    ) -> None:
-        """Initialize the generator."""
-        super().__init__(then_, else_=[])
-        if not isinstance(request_types, (list, tuple)):
-            request_types = [request_types]
-        self.request_types = request_types
-
-
-class IfRequestType(IfRequestTypeBase):
-    """Conditional generator that generates needs when a current request is of a given type."""
-
-    def _condition(self, request_type: RequestType, **kwargs: Any) -> bool:
-        return request_type.type_id in self.request_types
+    from invenio_records_permissions.generators import Generator as InvenioGenerator
+    from invenio_requests.customizations import EventType
 
 
 class IfEventType(ConditionalGenerator):
@@ -43,16 +27,20 @@ class IfEventType(ConditionalGenerator):
 
     def __init__(
         self,
-        event_types: list[str] | tuple[str] | str,
-        then_: list[Generator],
-        else_: list[Generator] | None = None,
+        event_type: type[EventType],
+        then_: Sequence[InvenioGenerator],
+        else_: Sequence[InvenioGenerator] | None = None,
     ) -> None:
         """Initialize the generator."""
         else_ = [] if else_ is None else else_
         super().__init__(then_, else_=else_)
-        if not isinstance(event_types, (list, tuple)):
-            event_types = [event_types]
-        self.event_types = event_types
+        self.event_type = event_type
 
-    def _condition(self, event_type: EventType, **kwargs: Any) -> bool:
-        return event_type.type_id in self.event_types
+    @override
+    @require_kwargs("event_type")
+    def _condition(self, *, event_type: type[EventType], **kwargs: Any) -> bool:
+        return event_type == self.event_type
+
+    @override
+    def _query_instate(self, **context: Any) -> dsl.query.Query:
+        return dsl.Q("term", type_id=self.event_type)

@@ -27,6 +27,9 @@ if TYPE_CHECKING:
 class Workflow:
     """A workflow definition."""
 
+    code: str
+    """A unique code for the workflow."""
+
     label: str | LazyString
     """A human-readable label for the workflow."""
 
@@ -41,22 +44,44 @@ class Workflow:
 
         :param  action:      action for which permission is asked
         """
-        return self.permission_policy_cls(action, **over)
+        return self.permission_policy_with_requests_cls(action, **over)
 
     def requests(self) -> WorkflowRequestPolicy:
         """Return instance of request policy for this workflow."""
         return self.request_policy_cls()
+
+    @property
+    def permission_policy_with_requests_cls(self) -> type[DefaultWorkflowPermissions]:
+        """Return a permission policy class merged with permissions for creating requests and events."""
+        extra_permissions = {}
+        for r in self.requests().requests:
+            extra_permissions[f"can_{r.request_type.type_id}_create"] = (r.requester_generator,)
+            for event_id, e in r.events.items():
+                extra_permissions[f"can_{r.request_type.type_id}_{event_id}_create"] = (e.submitter_generator,)
+        return type(
+            f"{self.permission_policy_cls.__name__}WithRequests",
+            (self.permission_policy_cls,),
+            extra_permissions,
+        )
 
     def __post_init__(self) -> None:
         """Check that the classes are subclasses of the expected classes.
 
         This is just a sanity check to raise an error as soon as possible.
         """
-        assert not issubclass(
-            self.permission_policy_cls, WorkflowRecordPermissionPolicy
-        )
-        assert issubclass(self.permission_policy_cls, DefaultWorkflowPermissions)
-        assert issubclass(self.request_policy_cls, WorkflowRequestPolicy)
+        if issubclass(self.permission_policy_cls, WorkflowRecordPermissionPolicy):
+            raise TypeError(
+                f"Workflow permission policy {self.permission_policy_cls} is not a "
+                f"subclass of WorkflowRecordPermissionPolicy."
+            )
+        if not issubclass(self.permission_policy_cls, DefaultWorkflowPermissions):
+            raise TypeError(
+                f"Workflow permission policy {self.permission_policy_cls} is a subclass of DefaultWorkflowPermissions."
+            )
+        if not issubclass(self.request_policy_cls, WorkflowRequestPolicy):
+            raise TypeError(
+                f"Workflow request permission policy {self.request_policy_cls} is a subclass of WorkflowRequestPolicy."
+            )
 
 
 class StateChangedNotifier(Protocol):
@@ -85,35 +110,5 @@ class StateChangedNotifier(Protocol):
         :param args:            additional arguments
         :param uow:             unit of work
         :param kwargs:          additional keyword arguments
-        """
-        ...
-
-
-class WorkflowChangeNotifier(Protocol):
-    """A protocol for a workflow change notifier.
-
-    Workflow changed notifier is a callable that is called
-    when a workflow of a record changes.
-    """
-
-    def __call__(
-        self,
-        identity: Identity,
-        record: Record,
-        previous_workflow_id: str,
-        new_workflow_id: str,
-        *args: Any,
-        uow: UnitOfWork,
-        **kwargs: Any,
-    ):
-        """Notify about a workflow change.
-
-        :param identity:                identity of the user who initiated the workflow change
-        :param record:                  record whose workflow changed
-        :param previous_workflow_id:    previous workflow of the record
-        :param new_workflow_id:         new workflow of the record
-        :param args:                    additional arguments
-        :param uow:                     unit of work
-        :param kwargs:                  additional keyword arguments
         """
         ...

@@ -14,6 +14,6 @@ from .workflow import WorkflowField
 
 __all__ = (
     "RecordStateField",
-    "WorkflowField",
     "RecordStateTimestampField",
+    "WorkflowField",
 )

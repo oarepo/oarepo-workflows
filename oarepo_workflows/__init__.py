@@ -17,6 +17,7 @@ from oarepo_workflows.services.permissions import (
 )
 
 from .base import Workflow
+from .proxies import current_oarepo_workflows
 from .requests import (
     AutoApprove,
     AutoRequest,
@@ -26,16 +27,21 @@ from .requests import (
     WorkflowTransitions,
 )
 
+__version__ = "2.0.0dev1"
+"""Version of the library."""
+
+
 __all__ = (
+    "AutoApprove",
+    "AutoRequest",
+    "FromRecordWorkflow",
     "IfInState",
     "Workflow",
     "WorkflowPermission",
     "WorkflowRecordPermissionPolicy",
-    "WorkflowRequestPolicy",
     "WorkflowRequest",
     "WorkflowRequestEscalation",
+    "WorkflowRequestPolicy",
     "WorkflowTransitions",
-    "FromRecordWorkflow",
-    "AutoApprove",
-    "AutoRequest",
+    "current_oarepo_workflows",
 )

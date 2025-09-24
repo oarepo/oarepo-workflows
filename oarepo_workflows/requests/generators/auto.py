@@ -9,14 +9,17 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Never, override
 
 from invenio_access import SystemRoleNeed
-from invenio_records_permissions.generators import Generator
+from oarepo_runtime.services.generators import Generator
 
+from ...resolvers.auto_approve import AutoApprove as AutoApproveEntity
 from .recipient_generator import RecipientGeneratorMixin
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
+
     from flask_principal import Need
     from invenio_records_resources.records import Record
     from invenio_requests.customizations import RequestType
@@ -32,7 +35,8 @@ class AutoRequest(Generator):
     when a record is moved to a specific state.
     """
 
-    def needs(self, **context: Any) -> list[Need]:
+    @override
+    def needs(self, **context: Any) -> Sequence[Need]:
         """Get needs that signal workflow to automatically create the request."""
         return [auto_request_need]
 
@@ -44,33 +48,37 @@ class AutoApprove(RecipientGeneratorMixin, Generator):
     the request will be automatically approved when the request is submitted.
     """
 
+    @override
     def reference_receivers(
         self,
-        record: Optional[Record] = None,
-        request_type: Optional[RequestType] = None,
+        record: Record | None = None,
+        request_type: RequestType | None = None,
         **kwargs: Any,
-    ) -> list[dict[str, str]]:
+    ) -> list[Mapping[str, str]]:
         """Return the reference receiver(s) of the auto-approve request.
 
         Returning "auto_approve" is a signal to the workflow that the request should be auto-approved.
         """
-        return [{"auto_approve": "true"}]
+        return [AutoApproveEntity.ref_dict]
 
-    def needs(self, **context: Any) -> list[Need]:
+    @override
+    def needs(self, **context: Any) -> Sequence[Need]:
         """Get needs that signal workflow to automatically approve the request."""
         raise ValueError(
             "Auto-approve generator can not create needs and "
             "should be used only in `recipient` section of WorkflowRequest."
         )
 
-    def excludes(self, **context: Any) -> list[Need]:
+    @override
+    def excludes(self, **context: Any) -> Sequence[Need]:
         """Get needs that signal workflow to automatically approve the request."""
         raise ValueError(
             "Auto-approve generator can not create needs and "
             "should be used only in `recipient` section of WorkflowRequest."
         )
 
-    def query_filter(self, **context: Any) -> list[dict]:
+    @override
+    def query_filter(self, **context: Any) -> Never:
         """Get needs that signal workflow to automatically approve the request."""
         raise ValueError(
             "Auto-approve generator can not create needs and "

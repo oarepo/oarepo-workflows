@@ -10,77 +10,39 @@
 from __future__ import annotations
 
 import dataclasses
-import json
-from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any, Optional, override
+from typing import TYPE_CHECKING, Any, override
 
-from invenio_records_permissions.generators import Generator
-
+from ...resolvers.multiple_entities import MultipleEntitiesEntity
+from ...services.permissions.generators import AggregateGenerator
 from .recipient_generator import RecipientGeneratorMixin
 
 if TYPE_CHECKING:
-    from flask_principal import Need
+    from collections.abc import Mapping, Sequence
+
+    from invenio_records_permissions.generators import Generator as InvenioGenerator
     from invenio_records_resources.records.api import Record
     from invenio_requests.customizations.request_types import RequestType
 
 
 @dataclasses.dataclass
-class MultipleEntitiesGenerator(RecipientGeneratorMixin, Generator):
+class MultipleEntitiesGenerator(RecipientGeneratorMixin, AggregateGenerator):
     """A generator that combines multiple generators with 'or' operation."""
 
-    generators: list[Generator] | tuple[Generator]
+    generators: Sequence[InvenioGenerator]
     """List of generators to be combined."""
 
     @override
-    def needs(self, **context: Any) -> set[Need]:
-        """Generate a set of needs from generators that a person needs to have.
-
-        :param context: Context.
-        :return: Set of needs.
-        """
-        return {
-            need for generator in self.generators for need in generator.needs(**context)
-        }
-
-    @override
-    def excludes(self, **context: Any) -> set[Need]:
-        """Generate a set of needs that person must not have.
-
-        :param context: Context.
-        :return: Set of needs.
-        """
-        return {
-            exclude
-            for generator in self.generators
-            for exclude in generator.excludes(**context)
-        }
-
-    @override
-    def query_filter(self, **context: Any) -> list[dict]:
-        """Generate a list of opensearch query filters.
-
-         These filters are used to filter objects. These objects are governed by a policy
-         containing this generator.
-
-        :param context: Context.
-        """
-        ret: list[dict] = []
-        for generator in self.generators:
-            query_filter = generator.query_filter(**context)
-            if query_filter:
-                if isinstance(query_filter, Iterable):
-                    ret.extend(query_filter)
-                else:
-                    ret.append(query_filter)
-        return ret
+    def _generators(self, **context: Any) -> Sequence[InvenioGenerator]:
+        """Return the generators."""
+        return self.generators
 
     @override
     def reference_receivers(
         self,
-        record: Optional[Record] = None,
-        request_type: Optional[RequestType] = None,
+        record: Record | None = None,
+        request_type: RequestType | None = None,
         **context: Any,
-    ) -> list[dict[str, str]]:  # pragma: no cover
+    ) -> list[Mapping[str, str]]:
         """Return the reference receiver(s) of the request.
 
         This call requires the context to contain at least "record" and "request_type"
@@ -94,19 +56,17 @@ class MultipleEntitiesGenerator(RecipientGeneratorMixin, Generator):
 
         for generator in self.generators:
             if not isinstance(generator, RecipientGeneratorMixin):
-                raise ValueError(
+                raise TypeError(
                     f"Generator {generator} is not a recipient generator and can not be used in "
                     f"MultipleGeneratorsGenerator."
                 )
 
-            reference = generator.reference_receivers(
-                record=record, request_type=request_type, **context
-            )
-            if reference:
-                references.extend(reference)
+            generator_references = generator.reference_receivers(record=record, request_type=request_type, **context)
+            if generator_references:
+                references.extend(generator_references)
         if not references:
             return []
         if len(references) == 1:
             return references
 
-        return [{"multiple": json.dumps(references)}]
+        return [{"multiple": MultipleEntitiesEntity.create_id(references)}]

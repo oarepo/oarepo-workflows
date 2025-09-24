@@ -9,64 +9,76 @@
 
 from __future__ import annotations
 
-import json
-from typing import TYPE_CHECKING, Any, override
+from typing import TYPE_CHECKING, Any, cast
 
 import marshmallow as ma
-from oarepo_runtime.services.entity.config import EntityServiceConfig
-from oarepo_runtime.services.entity.service import EntityService
+from invenio_records_resources.services.base.config import ServiceConfig
+from invenio_records_resources.services.base.service import Service
+from invenio_records_resources.services.records.schema import ServiceSchemaWrapper
+from invenio_requests.resolvers.registry import ResolverRegistry
+from oarepo_runtime.services.config import EveryonePermissionPolicy
+from oarepo_runtime.services.results import RecordItem
+
+from oarepo_workflows.resolvers.multiple_entities import MultipleEntitiesEntity
+from oarepo_workflows.services.results import InMemoryResultList
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Sequence
 
     from flask_principal import Identity
-    from invenio_records_resources.services.records.results import (
-        RecordItem,
-        RecordList,
-    )
+    from invenio_records_resources.references.entity_resolvers.base import EntityProxy
 
 
-class MultipleEntitiesEntitySchema(ma.Schema):
-    """Schema for multiple recipients entities."""
+class MultipleEntitiesSchema(ma.Schema):
+    """Schema for multiple entities."""
 
-    entities = ma.fields.List(
-        ma.fields.Dict(keys=ma.fields.String(), values=ma.fields.String())
-    )
+    id = ma.fields.String()
 
 
-class MultipleEntitiesEntityServiceConfig(EntityServiceConfig):
-    """Configuration for auto-approve entity service."""
+class MultipleEntitiesEntityServiceConfig(ServiceConfig):
+    # TODO: perhaps use a common superclass
+    """Service configuration."""
 
     service_id = "multiple"
-    schema = MultipleEntitiesEntitySchema
+    permission_policy_cls = EveryonePermissionPolicy
+
+    result_item_cls = RecordItem
+    result_list_cls = InMemoryResultList
+    record_cls = MultipleEntitiesEntity
+    schema = MultipleEntitiesSchema
 
 
-class MultipleEntitiesEntityService(EntityService):
-    """Service for reading auto-approve entities."""
+class MultipleEntitiesEntityService(Service):
+    """Service implementation for multiple entities."""
 
-    @override
-    def read(self, identity: Identity, id_: str, **kwargs: Any) -> RecordItem:
-        return self.result_item(
-            self,
-            identity,
-            record={"entities": json.loads(id_)},
-            links_tpl=self.links_item_tpl,
+    @property
+    def schema(self) -> ServiceSchemaWrapper:
+        """Returns the data schema instance."""
+        return ServiceSchemaWrapper(self, schema=self.config.schema)
+
+    def read(self, identity: Identity, id_: str, **kwargs: Any) -> RecordItem:  # noqa ARG002
+        """Return a service result item from multiple entity id."""
+        entity_proxy = cast(
+            "EntityProxy",
+            ResolverRegistry.resolve_entity_proxy({"multiple": id_}, raise_=True),
         )
+        return self.result_item(self, identity, entity_proxy.resolve(), schema=self.schema)
 
-    @override
     def read_many(
         self,
         identity: Identity,
-        ids: Iterable[str],
-        fields: list[str] | None = None,
-        **kwargs: Any,
-    ) -> RecordList:
-        results = []
-        if ids:
-            results = [{"entities": json.loads(id_)} for id_ in ids]
-        return self.result_list(
-            self,
-            identity,
-            results=results,
-            links_item_tpl=self.links_item_tpl,
-        )
+        ids: Sequence[str],
+        fields: Sequence[str] | None = None,  # noqa ARG002
+        **kwargs: Any,  # noqa ARG002
+    ) -> InMemoryResultList:
+        """Return a service result list from multiple entity ids."""
+        results = [
+            cast(
+                "EntityProxy",
+                ResolverRegistry.resolve_entity_proxy({"multiple": id_}, raise_=True),
+            ).resolve()
+            for id_ in ids
+        ]
+        # TODO: I would guess we need our own typed service superclass ig but why is it complaining
+        #  here and not in read or in AutoApproveService?
+        return self.result_list(identity, results, self.schema)  # type: ignore[no-any-return]

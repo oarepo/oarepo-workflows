@@ -11,21 +11,43 @@ from __future__ import annotations
 
 import dataclasses
 import json
-from typing import TYPE_CHECKING, Any
+from collections import defaultdict
+from typing import TYPE_CHECKING, Any, cast, override
 
 from invenio_records_resources.references.entity_resolvers import EntityProxy
 from invenio_records_resources.references.entity_resolvers.base import EntityResolver
+from invenio_records_resources.services.records.results import FieldsResolver
 from invenio_requests.resolvers.registry import ResolverRegistry
+from invenio_requests.services.results import EntityResolverExpandableField
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
+
     from flask_principal import Identity, Need
 
 
 @dataclasses.dataclass
 class MultipleEntitiesEntity:
-    """Entity representing multiple entities."""
+    """Entity representing multiple entities.
+
+    Implementation note: entities is intentionally list of EntityProxy and not list of resolved entities.
+    The reason is that these are used to be converted to entity references and having proxy here makes it easier.
+    """
 
     entities: list[EntityProxy]
+
+    @classmethod
+    def create_id(cls, entity_references: list[Mapping[str, str]]) -> str:
+        """Create id from entity references."""
+        entity_references.sort(key=lambda x: (next(iter(x.keys())), next(iter(x.values()))))
+        return json.dumps(entity_references, sort_keys=True)
+
+    @property
+    def id(self) -> str:
+        """Return id of the entity."""
+        ref_dict_list = [entity.reference_dict for entity in self.entities]
+        ref_dict_list.sort(key=lambda x: (next(iter(x.keys())), next(iter(x.values()))))
+        return json.dumps(ref_dict_list, sort_keys=True)
 
 
 class MultipleEntitiesProxy(EntityProxy):
@@ -36,47 +58,65 @@ class MultipleEntitiesProxy(EntityProxy):
         values = json.loads(self._parse_ref_dict_id())
         return MultipleEntitiesEntity(
             entities=[
-                ResolverRegistry.resolve_entity_proxy(ref, raise_=True)  # type: ignore
+                cast(
+                    "EntityProxy",
+                    ResolverRegistry.resolve_entity_proxy(ref, raise_=True),
+                )
                 for ref in values
             ]
         )
 
-    def get_needs(self, ctx: dict | None = None) -> list[Need]:
+    @override
+    def get_needs(self, ctx: dict | None = None) -> Sequence[Need]:
         """Get needs that the entity generate."""
-        ret = []
-        for entity in self._resolve().entities:
-            ret.extend(entity.get_needs(ctx) or [])
+        ret: list[Need] = []
+        entity = self._entity if self._entity else self._resolve()
+        for subentity_proxy in entity.entities:
+            ret.extend(subentity_proxy.get_needs(ctx) or [])
         return ret
 
-    def pick_resolved_fields(self, identity: Identity, resolved_dict: dict) -> dict:
+    @override
+    def pick_resolved_fields(self, identity: Identity, resolved_dict: dict[str, Any]) -> dict[str, Any]:
         """Pick resolved fields for serialization of the entity to json."""
-        return {"multiple": resolved_dict["id"]}
+        entity_refs = json.loads(resolved_dict["id"])
+        field_keys = []
+        hit: dict[str, dict[str, dict[str, str]]] = defaultdict(dict)
+        for entity_ref in entity_refs:
+            type_ = next(iter(entity_ref.keys()))
+            id_ = next(iter(entity_ref.values()))
+            field_keys.append(f"{type_}.{id_}")
+            hit[type_] |= {id_: {type_: id_}}
+        fr = FieldsResolver([EntityResolverExpandableField(field_key) for field_key in field_keys])
+        fr.resolve(identity, [hit])
+        return fr.expand(identity, hit)  # type: ignore[no-any-return]
 
 
 class MultipleEntitiesResolver(EntityResolver):
     """A resolver that resolves multiple entities entity."""
 
+    # TODO: move as constant to MultipleEntitiesEntity? Would be similar to AutoApprove
     type_id = "multiple"
 
     def __init__(self) -> None:
         """Initialize the resolver."""
         super().__init__("multiple")
 
+    @override
     def matches_reference_dict(self, ref_dict: dict) -> bool:
         """Check if the reference dictionary can be resolved by this resolver."""
-        return self._parse_ref_dict_type(ref_dict) == self.type_id
+        return cast("bool", self._parse_ref_dict_type(ref_dict) == self.type_id)
 
+    @override
     def _reference_entity(self, entity: MultipleEntitiesEntity) -> dict[str, str]:
         """Return a reference dictionary for the entity."""
-        print("!!!! multiple_entities/__init__.py _reference_entity", entity.entities)
-        return {
-            self.type_id: json.dumps([part.reference_dict for part in entity.entities])
-        }
+        return {self.type_id: entity.id}
 
+    @override
     def matches_entity(self, entity: Any) -> bool:
         """Check if the entity can be serialized to a reference by this resolver."""
         return isinstance(entity, MultipleEntitiesEntity)
 
+    @override
     def _get_entity_proxy(self, ref_dict: dict) -> MultipleEntitiesProxy:
         """Get the entity proxy for the reference dictionary.
 

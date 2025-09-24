@@ -14,19 +14,17 @@ from .policy import (
     WorkflowRequestPolicy,
 )
 from .requests import (
-    RecipientEntityReference,
     WorkflowRequest,
     WorkflowRequestEscalation,
     WorkflowTransitions,
 )
 
 __all__ = (
-    "WorkflowRequestPolicy",
-    "RecipientEntityReference",
-    "WorkflowRequest",
-    "WorkflowRequestEscalation",
-    "WorkflowTransitions",
     "AutoApprove",
     "AutoRequest",
     "RecipientGeneratorMixin",
+    "WorkflowRequest",
+    "WorkflowRequestEscalation",
+    "WorkflowRequestPolicy",
+    "WorkflowTransitions",
 )

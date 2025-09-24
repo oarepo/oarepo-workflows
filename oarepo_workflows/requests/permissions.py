@@ -16,11 +16,8 @@ from invenio_requests.services.permissions import (
     PermissionPolicy as InvenioRequestsPermissionPolicy,
 )
 
+from oarepo_workflows import FromRecordWorkflow
 from oarepo_workflows.requests.generators.conditionals import IfEventType
-from oarepo_workflows.requests.generators.workflow_based import (
-    EventCreatorsFromWorkflow,
-    RequestCreatorsFromWorkflow,
-)
 
 
 class CreatorsFromWorkflowRequestsPermissionPolicy(InvenioRequestsPermissionPolicy):
@@ -31,20 +28,22 @@ class CreatorsFromWorkflowRequestsPermissionPolicy(InvenioRequestsPermissionPoli
     creators defined on the WorkflowRequest.
     """
 
-    can_create = [
+    can_create = (
         SystemProcess(),
-        RequestCreatorsFromWorkflow(),
-    ]
+        FromRecordWorkflow(action=lambda *, request_type, **kwargs: f"{request_type.type_id}_create"),  # noqa ARG005
+    )
 
-    can_create_comment = [
+    can_create_comment = (
         SystemProcess(),
-        IfEventType(
-            [LogEventType.type_id, CommentEventType.type_id], [Creator(), Receiver()]
+        IfEventType(CommentEventType, [Creator(), Receiver()]),
+        IfEventType(LogEventType, [Creator(), Receiver()]),
+        FromRecordWorkflow(
+            action=lambda *, request, event_type, **kwargs: f"{request.type.type_id}_{event_type.type_id}_create",  # noqa ARG005
+            record_getter=lambda *, request, **kwargs: request.topic.resolve(),  # noqa ARG005
         ),
-        EventCreatorsFromWorkflow(),
-    ]
+    )
 
     # any user can search for requests, but non-authenticated will not get a hit
     # this is necessary to not have errors on a secret link page (edit/preview form)
     # where the user is not authenticated and search for available requests is performed
-    can_search = InvenioRequestsPermissionPolicy.can_search + [AnyUser()]
+    can_search = (*InvenioRequestsPermissionPolicy.can_search, AnyUser())

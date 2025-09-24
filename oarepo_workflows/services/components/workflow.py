@@ -9,20 +9,20 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, override
 
 from invenio_records_resources.services.records.components.base import ServiceComponent
+from oarepo_runtime.typing import require_kwargs
 
 from oarepo_workflows.errors import MissingWorkflowError
-from oarepo_workflows.proxies import current_oarepo_workflows
 
 if TYPE_CHECKING:
     from flask_principal import Identity
-    from invenio_records_resources.records import Record
+    from invenio_drafts_resources.records import Record
 
 
 class WorkflowSetupComponent(ServiceComponent):
-    pass
+    """Workflow component base."""
 
 
 class WorkflowComponent(ServiceComponent):
@@ -32,17 +32,19 @@ class WorkflowComponent(ServiceComponent):
     when record is created. If it is not present, it raises an error.
     """
 
-    depends_on = [WorkflowSetupComponent]
+    depends_on = (WorkflowSetupComponent,)
     affects = "*"
     # put it before metadata component to make sure that the workflow
     # is set at the beginning of the record creation process. This makes sure
     # that for example file checks are done with the correct workflow set.
 
+    @override
+    @require_kwargs("data", "record")
     def create(
         self,
         identity: Identity,
-        data: Optional[dict[str, Any]] = None,
-        record: Optional[Record] = None,
+        data: dict[str, Any],
+        record: Record,
         **kwargs: Any,
     ) -> None:
         """Implement record creation checks and set the workflow on the created record."""
@@ -62,7 +64,4 @@ class WorkflowComponent(ServiceComponent):
                 "make sure you are using workflow-enabled policy.",
                 record=data,
             ) from e
-
-        current_oarepo_workflows.set_workflow(
-            identity, record, workflow_id, uow=self.uow, **kwargs
-        )
+        record.parent.workflow = workflow_id  # type: ignore[reportAttributeAccessIssue, reportOptionalMemberAccess]

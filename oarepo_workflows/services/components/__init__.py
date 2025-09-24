@@ -5,4 +5,6 @@
 # modify it under the terms of the MIT License; see LICENSE file for more
 # details.
 #
-"""Service components for supporting workflows on Invenio records."""
+"""Service components."""
+
+from __future__ import annotations

@@ -9,10 +9,16 @@
 
 from __future__ import annotations
 
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from invenio_records.systemfields.model import ModelField
 from oarepo_runtime.records.systemfields import MappingSystemFieldMixin
+
+from oarepo_workflows import current_oarepo_workflows
+from oarepo_workflows.errors import InvalidWorkflowError
+
+if TYPE_CHECKING:
+    from invenio_records.models import RecordMetadataBase
 
 
 class WithWorkflow(Protocol):
@@ -35,7 +41,10 @@ class WorkflowField(MappingSystemFieldMixin, ModelField):
         self._workflow = None  # added in db
         super().__init__(model_field_name="workflow", key="workflow")
 
-    @property
-    def mapping(self) -> dict[str, dict[str, str]]:
-        """Elasticsearch mapping."""
-        return {self.attr_name: {"type": "keyword"}}
+    def _set(self, model: RecordMetadataBase, value: str) -> None:
+        """Set the workflow on the model's field."""
+        if value not in current_oarepo_workflows.workflow_by_code:
+            raise InvalidWorkflowError(
+                f"Workflow {value} does not exist in the configuration.",
+            )
+        super()._set(model, value)

@@ -1,7 +1,12 @@
 #
-# Copyright (C) 2024 CESNET z.s.p.o.
+# Copyright (c) 2025 CESNET z.s.p.o.
 #
-# oarepo-workflows is free software; you can redistribute it and/or
-# modify it under the terms of the MIT License; see LICENSE file for more
-# details.
+# This file is a part of oarepo-workflows (see http://github.com/oarepo/oarepo-workflows).
 #
+# oarepo-workflows is free software; you can redistribute it and/or modify it
+# under the terms of the MIT License; see LICENSE file for more details.
+#
+
+"""Needed for pytest-cov to generate coverage reports correctly."""
+
+from __future__ import annotations

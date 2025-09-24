@@ -9,15 +9,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import Any
 
+from invenio_records_resources.records import Record
 from marshmallow import ValidationError
 
-if TYPE_CHECKING:
-    from invenio_records_resources.records import Record
 
-
-def _get_id_from_record(record: Record | dict) -> str:
+def _get_id_from_record(record: Record | dict[str, Any]) -> str:
     """Get the id from a record.
 
     :param record: A record or a dict representing a record.
@@ -29,12 +27,12 @@ def _get_id_from_record(record: Record | dict) -> str:
             return str(record["id"])
     except TypeError:
         pass
-    if hasattr(record, "id"):
+    if isinstance(record, Record) and hasattr(record, "id"):
         return str(record.id)
     return str(record)
 
 
-def _format_record(record: Record | dict) -> str:
+def _format_record(record: Record | dict[str, Any]) -> str:
     """Format a record for error messages.
 
     :param record: A record or a dict representing a record.
@@ -62,7 +60,7 @@ class InvalidWorkflowError(ValidationError):
         self,
         message: str,
         record: Record | dict | None = None,
-        community_id: Optional[str] = None,
+        community_id: str | None = None,
     ) -> None:
         """Initialize the exception."""
         self.record = record
@@ -78,7 +76,7 @@ class InvalidConfigurationError(Exception):
     """Exception raised when a configuration is invalid."""
 
 
-class EventTypeNotInWorkflow(Exception):
+class EventTypeNotInWorkflowError(Exception):
     """Exception raised when user tries to create a request with a request type that is not defined in the workflow."""
 
     def __init__(self, request_type: str, event_type: str, workflow_code: str) -> None:
@@ -93,7 +91,7 @@ class EventTypeNotInWorkflow(Exception):
         return f"Event type {self.event_type} is not on request type {self.request_type} in workflow {self.workflow}."
 
 
-class RequestTypeNotInWorkflow(Exception):
+class RequestTypeNotInWorkflowError(Exception):
     """Exception raised when user tries to create a request with a request type that is not defined in the workflow."""
 
     def __init__(self, request_type: str, workflow_code: str) -> None:
@@ -105,3 +103,16 @@ class RequestTypeNotInWorkflow(Exception):
     def description(self) -> str:
         """Exception's description."""
         return f"Request type {self.request_type} not in workflow {self.workflow}."
+
+
+class UnregisteredRequestTypeError(Exception):
+    """Exception raised when a RequestType is not registered."""
+
+    def __init__(self, request_type: str) -> None:
+        """Initialize the exception."""
+        self.request_type = request_type
+
+    @property
+    def description(self) -> str:
+        """Exception's description."""
+        return f"Request type {self.request_type} is not registered."

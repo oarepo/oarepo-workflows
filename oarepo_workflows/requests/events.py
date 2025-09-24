@@ -18,17 +18,20 @@ from oarepo_workflows.requests.generators.multiple_entities import (
 )
 
 if TYPE_CHECKING:
-    from invenio_records_permissions.generators import Generator
+    from collections.abc import Sequence
+
+    from invenio_records_permissions.generators import Generator as InvenioGenerator
+    from oarepo_runtime.services.generators import Generator
 
 
 @dataclasses.dataclass
 class WorkflowEvent:
     """Class representing a workflow event."""
 
-    submitters: list[Generator] | tuple[Generator]
+    submitters: Sequence[InvenioGenerator]
     """List of submitters to be used for the event.
 
-       The generators supply needs. The user must have at least one of the needs 
+       The generators supply needs. The user must have at least one of the needs
        to be able to create a workflow event.
     """
 
