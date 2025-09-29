@@ -15,9 +15,9 @@ from invenio_records_resources.references.entity_resolvers import EntityProxy
 from invenio_records_resources.references.entity_resolvers.base import EntityResolver
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
+    from collections.abc import Mapping
 
-    from flask_principal import Identity, Need
+    from flask_principal import Identity, ItemNeed, Need
 
 
 class AutoApprove:
@@ -46,14 +46,14 @@ class AutoApproveProxy(EntityProxy):
         return AutoApprove()
 
     @override
-    def get_needs(self, ctx: dict | None = None) -> Sequence[Need]:
+    def get_needs(self, ctx: dict | None = None) -> list[Need | ItemNeed]:
         """Get needs that the entity generate."""
         return []  # grant_tokens calls this
 
     @override
-    def pick_resolved_fields(self, identity: Identity, resolved_dict: Mapping[str, str]) -> Mapping[str, str]:
+    def pick_resolved_fields(self, identity: Identity, resolved_dict: Mapping[str, str]) -> dict[str, str]:
         """Pick resolved fields for serialization of the entity to json."""
-        return AutoApprove.ref_dict
+        return {**AutoApprove.ref_dict}
 
 
 class AutoApproveResolver(EntityResolver):
@@ -71,9 +71,9 @@ class AutoApproveResolver(EntityResolver):
         return ref_dict == AutoApprove.ref_dict
 
     @override
-    def _reference_entity(self, entity: Any) -> Mapping[str, str]:
+    def _reference_entity(self, entity: Any) -> dict[str, str]:
         """Return a reference dictionary for the entity."""
-        return AutoApprove.ref_dict
+        return {**AutoApprove.ref_dict}
 
     @override
     def matches_entity(self, entity: Any) -> bool:

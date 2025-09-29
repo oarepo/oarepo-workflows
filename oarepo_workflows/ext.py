@@ -33,8 +33,8 @@ from oarepo_workflows.services.uow import StateChangeOperation
 if TYPE_CHECKING:
     from flask import Flask
     from flask_principal import Identity
+    from invenio_db.uow import UnitOfWork
     from invenio_drafts_resources.records import Record
-    from invenio_records_resources.services.uow import UnitOfWork
 
     from oarepo_workflows.base import (
         StateChangedNotifier,

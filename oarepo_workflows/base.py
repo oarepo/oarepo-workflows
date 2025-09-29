@@ -19,8 +19,8 @@ from .services.permissions import DefaultWorkflowPermissions
 if TYPE_CHECKING:
     from flask_babel import LazyString
     from flask_principal import Identity
+    from invenio_db.uow import UnitOfWork
     from invenio_records_resources.records import Record
-    from invenio_records_resources.services.uow import UnitOfWork
 
 
 @dataclasses.dataclass
