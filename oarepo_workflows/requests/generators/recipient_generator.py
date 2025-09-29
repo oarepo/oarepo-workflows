@@ -36,4 +36,4 @@ class RecipientGeneratorMixin:
         Might return empty list or None to indicate that the generator does not
         provide any receivers.
         """
-        raise NotImplementedError("Implement reference receiver in your code")
+        raise NotImplementedError("Implement reference receiver in your code")  # pragma: no cover

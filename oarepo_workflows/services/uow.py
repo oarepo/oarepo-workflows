@@ -14,7 +14,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, cast, override
 
-from invenio_records_resources.services.uow import Operation, RecordCommitOp, UnitOfWork
+from invenio_db.uow import Operation, UnitOfWork
+from invenio_records_resources.services.uow import RecordCommitOp
 from oarepo_runtime.proxies import current_runtime
 
 from oarepo_workflows.proxies import current_oarepo_workflows

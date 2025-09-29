@@ -45,7 +45,7 @@ class DefaultWorkflowPermissions(RecordPermissionPolicy):
 
     system_process = SystemProcess()
 
-    def __init__(self, action_name: str | None = None, **over: Any) -> None:
+    def __init__(self, action_name: str, **over: Any) -> None:
         """Initialize the workflow permissions."""
         if hasattr(
             self, f"can_{action_name}"

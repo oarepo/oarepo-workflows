@@ -21,9 +21,9 @@ from invenio_requests.resolvers.registry import ResolverRegistry
 from invenio_requests.services.results import EntityResolverExpandableField
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
+    from collections.abc import Mapping
 
-    from flask_principal import Identity, Need
+    from flask_principal import Identity, ItemNeed, Need
 
 
 @dataclasses.dataclass
@@ -67,9 +67,9 @@ class MultipleEntitiesProxy(EntityProxy):
         )
 
     @override
-    def get_needs(self, ctx: dict | None = None) -> Sequence[Need]:
+    def get_needs(self, ctx: dict | None = None) -> list[Need | ItemNeed]:
         """Get needs that the entity generate."""
-        ret: list[Need] = []
+        ret: list[Need | ItemNeed] = []
         entity = self._entity if self._entity else self._resolve()
         for subentity_proxy in entity.entities:
             ret.extend(subentity_proxy.get_needs(ctx) or [])
