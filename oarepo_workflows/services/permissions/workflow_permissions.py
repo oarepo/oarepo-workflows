@@ -12,13 +12,13 @@ from __future__ import annotations
 from typing import Any
 
 from invenio_rdm_records.services.generators import IfRecordDeleted, RecordOwners
-from invenio_rdm_records.services.permissions import UserManager
 from invenio_records_permissions import RecordPermissionPolicy
 from invenio_records_permissions.generators import (
     AuthenticatedUser,
     Disable,
     SystemProcess,
 )
+from invenio_users_resources.services.permissions import UserManager
 
 from .generators import IfInState, SameAs
 
