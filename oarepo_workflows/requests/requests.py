@@ -58,10 +58,10 @@ class WorkflowRequest:
     events: dict[str, WorkflowEvent] = dataclasses.field(default_factory=dict)
     """Events that can be submitted with the request."""
 
-    transitions: WorkflowTransitions | None = dataclasses.field(default_factory=lambda: WorkflowTransitions())
+    transitions: WorkflowTransitions = dataclasses.field(default_factory=lambda: WorkflowTransitions())
     """Transitions applied to the state of the topic of the request."""
 
-    escalations: list[WorkflowRequestEscalation] | None = None
+    escalations: list[WorkflowRequestEscalation] = dataclasses.field(default_factory=list)
     """Escalations applied to the request if not approved/declined in time."""
 
     @cached_property

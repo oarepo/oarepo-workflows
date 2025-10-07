@@ -30,7 +30,6 @@ from invenio_users_resources.proxies import (
     current_users_service,
 )
 from oarepo_model.customizations import AddFileToModule
-from oarepo_model.presets.records_resources import records_resources_preset
 from oarepo_runtime.services.records.mapping import update_all_records_mappings
 from sqlalchemy.exc import IntegrityError
 
@@ -258,8 +257,7 @@ def default_workflow_json():
 @pytest.fixture(scope="session")
 def workflow_model():
     from oarepo_model.api import model
-    from oarepo_model.presets.drafts import drafts_preset
-    from oarepo_rdm.model.presets import rdm_preset
+    from oarepo_rdm.model.presets import rdm_minimal_preset
 
     t1 = time.time()
 
@@ -267,9 +265,7 @@ def workflow_model():
         name="rdm_test",
         version="1.0.0",
         presets=[
-            records_resources_preset,
-            drafts_preset,
-            rdm_preset,
+            rdm_minimal_preset,
             workflows_preset,
         ],
         types=[model_types],
