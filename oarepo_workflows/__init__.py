@@ -27,7 +27,7 @@ from .requests import (
     WorkflowTransitions,
 )
 
-__version__ = "2.0.0dev3"
+__version__ = "2.0.0dev4"
 """Version of the library."""
 
 
