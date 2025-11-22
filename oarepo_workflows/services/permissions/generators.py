@@ -206,7 +206,9 @@ class IfInState(RecipientGeneratorMixin, ConditionalGenerator):
         request_type: RequestType | None = None,
         **context: Any,
     ) -> list[Mapping[str, str]]:
-        from oarepo_workflows.requests.generators.multiple_entities import MultipleEntitiesGenerator
+        from oarepo_workflows.requests.generators.multiple_entities import (
+            MultipleEntitiesGenerator,
+        )
 
         recipients = self.then_ if self._condition(record, **context) else self.else_  # type: ignore[reportArgumentType]
         generator = MultipleEntitiesGenerator(recipients)

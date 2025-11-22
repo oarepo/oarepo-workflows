@@ -18,7 +18,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, override
 
 from invenio_records_permissions.policies.records import RecordPermissionPolicy
-from oarepo_model.customizations import ChangeBase, Customization
+from oarepo_model.customizations import Customization, ReplaceBaseClass
 from oarepo_model.presets import Preset
 
 from oarepo_workflows.services.permissions.record_permission_policy import (
@@ -44,7 +44,7 @@ class WorkflowsPermissionPolicyPreset(Preset):
         model: InvenioModel,
         dependencies: dict[str, Any],
     ) -> Generator[Customization]:
-        yield ChangeBase(
+        yield ReplaceBaseClass(
             "PermissionPolicy",
             RecordPermissionPolicy,
             WorkflowRecordPermissionPolicy,

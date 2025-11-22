@@ -19,7 +19,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, override
 
 import marshmallow as ma
-from oarepo_model.customizations import AddMixins, Customization
+from oarepo_model.customizations import Customization, PrependMixin
 from oarepo_model.presets import Preset
 
 if TYPE_CHECKING:
@@ -44,4 +44,4 @@ class WorkflowsParentRecordSchemaPreset(Preset):
         class WorkflowSchemaMixin:
             workflow = ma.fields.String()
 
-        yield AddMixins("ParentRecordSchema", WorkflowSchemaMixin)
+        yield PrependMixin("ParentRecordSchema", WorkflowSchemaMixin)

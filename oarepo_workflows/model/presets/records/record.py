@@ -18,8 +18,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, override
 
 from oarepo_model.customizations import (
-    AddMixins,
     Customization,
+    PrependMixin,
 )
 from oarepo_model.presets import Preset
 
@@ -56,7 +56,7 @@ class WorkflowsRecordPreset(Preset):
             state = RecordStateField(initial="published")
             state_timestamp = RecordStateTimestampField()
 
-        yield AddMixins(
+        yield PrependMixin(
             "Record",
             WorkflowsRecordMixin,
         )
