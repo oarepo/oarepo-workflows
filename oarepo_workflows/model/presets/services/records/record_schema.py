@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any, override
 
 import marshmallow as ma
 from marshmallow_utils.fields import EDTFDateTimeString
-from oarepo_model.customizations import AddMixins, Customization
+from oarepo_model.customizations import Customization, PrependMixin
 from oarepo_model.presets import Preset
 
 if TYPE_CHECKING:
@@ -45,4 +45,4 @@ class WorkflowsRecordSchemaPreset(Preset):
             state = ma.fields.String(dump_only=True)
             state_timestamp = EDTFDateTimeString(dump_only=True)
 
-        yield AddMixins("RecordSchema", StateSchemaMixin)
+        yield PrependMixin("RecordSchema", StateSchemaMixin)

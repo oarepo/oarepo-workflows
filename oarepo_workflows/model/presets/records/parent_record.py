@@ -18,8 +18,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, override
 
 from oarepo_model.customizations import (
-    AddMixins,
     Customization,
+    PrependMixin,
 )
 from oarepo_model.presets import Preset
 
@@ -49,7 +49,7 @@ class WorkflowsParentRecordPreset(Preset):
 
             workflow = WorkflowField()
 
-        yield AddMixins(
+        yield PrependMixin(
             "ParentRecord",
             WorkflowsParentRecordMixin,
         )
