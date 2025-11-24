@@ -36,18 +36,27 @@ class MultipleEntitiesEntity:
 
     entities: list[EntityProxy]
 
+    @staticmethod
+    def _comparator(entity_reference: Mapping[str, str]) -> tuple[str, bool, str | int]:
+        id_ = next(iter(entity_reference.keys()))
+        value = next(iter(entity_reference.values()))
+        try:
+            int(value)
+        except ValueError:
+            return id_, True, value
+        return id_, False, int(value)
+
     @classmethod
     def create_id(cls, entity_references: list[Mapping[str, str]]) -> str:
         """Create id from entity references."""
-        entity_references.sort(key=lambda x: (next(iter(x.keys())), next(iter(x.values()))))
-        return json.dumps(entity_references, sort_keys=True)
+        entity_references.sort(key=cls._comparator)
+        return json.dumps(entity_references)
 
     @property
     def id(self) -> str:
         """Return id of the entity."""
         ref_dict_list = [entity.reference_dict for entity in self.entities]
-        ref_dict_list.sort(key=lambda x: (next(iter(x.keys())), next(iter(x.values()))))
-        return json.dumps(ref_dict_list, sort_keys=True)
+        return self.create_id(ref_dict_list)
 
 
 class MultipleEntitiesProxy(EntityProxy):
