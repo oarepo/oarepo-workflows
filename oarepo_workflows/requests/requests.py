@@ -58,7 +58,7 @@ class WorkflowRequest:
     events: dict[str, WorkflowEvent] = dataclasses.field(default_factory=dict)
     """Events that can be submitted with the request."""
 
-    transitions: WorkflowTransitions = dataclasses.field(default_factory=lambda: WorkflowTransitions())
+    transitions: WorkflowTransitions = dataclasses.field(default_factory=lambda: WorkflowTransitions())  # noqa PLW0108
     """Transitions applied to the state of the topic of the request."""
 
     escalations: list[WorkflowRequestEscalation] = dataclasses.field(default_factory=list)
@@ -113,12 +113,15 @@ class WorkflowRequest:
 
     def __set_name__(self, owner: type, name: str) -> None:
         """Set the name of the workflow request to the request type id."""
-        self._request_type = name
+        self._request_type = name.replace("_", "-")
 
     @property
     def request_type(self) -> RequestType:
         """Return the request type."""
-        return current_request_type_registry.lookup(self._request_type, quiet=False)
+        try:
+            return current_request_type_registry.lookup(self._request_type)
+        except KeyError:
+            return current_request_type_registry.lookup(self._request_type.replace("-", "_"))
 
 
 @dataclasses.dataclass
