@@ -194,4 +194,4 @@ def test_service(multiple_recipients_service, users, search_clear):
         {"id": '[{"user": "3"}]'},
     ]
 
-    assert sorted(read_list.hits, key=lambda x: str(x)) == sorted(expected_list, key=lambda x: str(x))
+    assert sorted(read_list.hits, key=str) == sorted(expected_list, key=str)
