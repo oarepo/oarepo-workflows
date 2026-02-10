@@ -29,6 +29,7 @@ from oarepo_workflows.services.multiple_entities import (
     MultipleEntitiesEntityServiceConfig,
 )
 from oarepo_workflows.services.uow import StateChangeOperation
+from oarepo_workflows import current_oarepo_workflows
 
 if TYPE_CHECKING:
     from flask import Flask
@@ -151,6 +152,11 @@ class OARepoWorkflows:
             self.app.config.get("DEFAULT_WORKFLOW_EVENTS", {}),
         )
 
+    @property
+    def default_workflow(self)->Workflow:
+        """Return the default workflow."""
+        return self.workflow_by_code[self.app.config["WORKFLOWS_DEFAULT_WORKFLOW"]]
+
     def get_workflow(self, record: Record | dict[str, Any]) -> Workflow:
         """Get the workflow for a record.
 
@@ -180,7 +186,7 @@ class OARepoWorkflows:
             except KeyError as e:
                 raise MissingWorkflowError("Parent record does not have a workflow attribute.", record=record) from e
         try:
-            workflow_id = workflow_id or self.app.config["WORKFLOWS_DEFAULT_WORKFLOW"]
+            workflow_id = workflow_id or current_oarepo_workflows.default_workflow.code
             return self.workflow_by_code[workflow_id]
         except KeyError as e:
             raise InvalidWorkflowError(
