@@ -24,6 +24,7 @@ from oarepo_runtime.services.generators import (
 from oarepo_workflows.errors import InvalidWorkflowError
 from oarepo_workflows.proxies import current_oarepo_workflows
 from oarepo_workflows.requests import RecipientGeneratorMixin
+from oarepo_workflows.proxies import current_oarepo_workflows
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping, Sequence

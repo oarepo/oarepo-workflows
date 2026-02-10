@@ -30,6 +30,7 @@ from oarepo_workflows.services.multiple_entities import (
     MultipleEntitiesEntityServiceConfig,
 )
 from oarepo_workflows.services.uow import StateChangeOperation
+from oarepo_workflows import current_oarepo_workflows
 
 if TYPE_CHECKING:
     from flask import Flask
