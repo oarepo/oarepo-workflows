@@ -20,3 +20,5 @@ WORKFLOWS: dict[str, Workflow] = {}
 """Configuration of workflows, must be provided by the user inside, for example, invenio.cfg."""
 
 WORKFLOWS_ALLOWED_REQUEST_RECEIVERS = ["multiple"]
+
+WORKFLOWS_DEFAULT_WORKFLOW = "individual"

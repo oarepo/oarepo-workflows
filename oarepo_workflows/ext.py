@@ -67,6 +67,7 @@ class OARepoWorkflows:
         from . import ext_config
 
         app.config.setdefault("WORKFLOWS", ext_config.WORKFLOWS)
+        app.config.setdefault("WORKFLOWS_DEFAULT_WORKFLOW", ext_config.WORKFLOWS_DEFAULT_WORKFLOW)
         app.config.setdefault("REQUESTS_ALLOWED_RECEIVERS", []).extend(ext_config.WORKFLOWS_ALLOWED_REQUEST_RECEIVERS)
 
     def init_app(self, app: Flask) -> None:
@@ -179,6 +180,7 @@ class OARepoWorkflows:
             except KeyError as e:
                 raise MissingWorkflowError("Parent record does not have a workflow attribute.", record=record) from e
         try:
+            workflow_id = workflow_id or self.app.config["WORKFLOWS_DEFAULT_WORKFLOW"]
             return self.workflow_by_code[workflow_id]
         except KeyError as e:
             raise InvalidWorkflowError(
