@@ -13,6 +13,7 @@ import operator
 from functools import reduce
 from typing import TYPE_CHECKING, Any, override
 
+from flask import current_app as app
 from invenio_search.engine import dsl
 from oarepo_runtime.services.generators import (
     AggregateGenerator,
