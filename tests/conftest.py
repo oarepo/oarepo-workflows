@@ -200,8 +200,14 @@ class RecordOwnersReadTestWorkflowPermissionPolicy(TestPermissionPolicy):
 
 WORKFLOWS = [
     Workflow(
-        code="my_workflow",
+        code="individual",
         label=_("Default workflow"),
+        permission_policy_cls=TestPermissionPolicy,
+        request_policy_cls=MyWorkflowRequests,
+    ),
+    Workflow(
+        code="my_workflow",
+        label=_("Default custom workflow"),
         permission_policy_cls=TestPermissionPolicy,
         request_policy_cls=MyWorkflowRequests,
     ),

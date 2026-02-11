@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 from invenio_records_resources.services.uow import unit_of_work
 
+from oarepo_workflows import current_oarepo_workflows
 from oarepo_workflows.errors import (
     InvalidWorkflowError,
     MissingWorkflowError,
@@ -29,7 +30,6 @@ from oarepo_workflows.services.multiple_entities import (
     MultipleEntitiesEntityServiceConfig,
 )
 from oarepo_workflows.services.uow import StateChangeOperation
-from oarepo_workflows import current_oarepo_workflows
 
 if TYPE_CHECKING:
     from flask import Flask
@@ -153,7 +153,7 @@ class OARepoWorkflows:
         )
 
     @property
-    def default_workflow(self)->Workflow:
+    def default_workflow(self) -> Workflow:
         """Return the default workflow."""
         return self.workflow_by_code[self.app.config["WORKFLOWS_DEFAULT_WORKFLOW"]]
 

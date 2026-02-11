@@ -12,13 +12,13 @@ import copy
 from oarepo_workflows.proxies import current_oarepo_workflows
 
 
-def test_create_without_workflow(workflow_model, users, logged_client, default_workflow_json, search_clear):
+def test_create_without_workflow(workflow_model, users, logged_client, default_workflow_json, location, search_clear):
     # create draft
     user_client1 = logged_client(users[0])
 
     create_response = user_client1.post(workflow_model.RecordResourceConfig.url_prefix, json={})
-    assert create_response.status_code == 400
-    assert create_response.json["errors"][0]["messages"] == ["Workflow not defined in input."]
+    assert create_response.status_code == 201
+    assert create_response.json["parent"]["workflow"] is None
 
 
 def test_workflow_read(workflow_model, users, logged_client, default_workflow_json, location, search_clear):
@@ -141,9 +141,6 @@ def test_invalid_workflow_input(workflow_model, users, logged_client, default_wo
         "{'enabled': False}, 'metadata': {'title': 'Test'}, 'parent': "
         "{'workflow': 'fregrthythj'}}]"
     ]
-    missing_wf_response = user_client1.post(resource_config.url_prefix, json={})
-    assert missing_wf_response.status_code == 400
-    assert missing_wf_response.json["errors"][0]["messages"] == ["Workflow not defined in input."]
 
 
 def test_state_change(
