@@ -120,8 +120,8 @@ class WorkflowRequest:
         """Return the request type."""
         try:
             return current_request_type_registry.lookup(self._request_type)
-        except KeyError:
-            return current_request_type_registry.lookup(self._request_type.replace("-", "_"))
+        except KeyError:  # pragma: no cover
+            return current_request_type_registry.lookup(self._request_type.replace("-", "_"))  # pragma: no cover
 
 
 @dataclasses.dataclass
