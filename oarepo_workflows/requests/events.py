@@ -33,7 +33,7 @@ class WorkflowEvents(dict):
     workflow: Workflow
     request: WorkflowRequest
 
-    def __missing__(self, key: str) -> Any:
+    def __missing__(self, key: str) -> EventTypeNotInWorkflowError:
         """Raise EventTypeNotInWorkflowError when a key is not found."""
         raise EventTypeNotInWorkflowError(self.request.request_type.type_id, key, self.workflow.code)
 
