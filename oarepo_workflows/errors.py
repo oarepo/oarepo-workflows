@@ -76,7 +76,7 @@ class InvalidConfigurationError(Exception):
     """Exception raised when a configuration is invalid."""
 
 
-class EventTypeNotInWorkflowError(Exception):
+class EventTypeNotInWorkflowError(KeyError):
     """Exception raised when user tries to create a request with a request type that is not defined in the workflow."""
 
     def __init__(self, request_type: str, event_type: str, workflow_code: str) -> None:
@@ -91,7 +91,7 @@ class EventTypeNotInWorkflowError(Exception):
         return f"Event type {self.event_type} is not on request type {self.request_type} in workflow {self.workflow}."
 
 
-class RequestTypeNotInWorkflowError(Exception):
+class RequestTypeNotInWorkflowError(KeyError):
     """Exception raised when user tries to create a request with a request type that is not defined in the workflow."""
 
     def __init__(self, request_type: str, workflow_code: str) -> None:

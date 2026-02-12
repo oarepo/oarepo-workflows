@@ -21,6 +21,7 @@ from invenio_requests.proxies import (
 
 from oarepo_workflows.errors import InvalidConfigurationError
 from oarepo_workflows.proxies import current_oarepo_workflows
+from oarepo_workflows.requests.events import WorkflowEvents
 from oarepo_workflows.requests.generators.multiple_entities import (
     MultipleEntitiesGenerator,
 )
@@ -55,7 +56,7 @@ class WorkflowRequest:
     recipients: Sequence[InvenioGenerator]
     """Generators that define who can approve the request."""
 
-    events: dict[str, WorkflowEvent] = dataclasses.field(default_factory=dict)
+    events: WorkflowEvents = dataclasses.field(default_factory=WorkflowEvents)
     """Events that can be submitted with the request."""
 
     transitions: WorkflowTransitions = dataclasses.field(default_factory=lambda: WorkflowTransitions())  # noqa PLW0108
