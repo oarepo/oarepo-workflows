@@ -9,7 +9,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from invenio_rdm_records.services.generators import IfRecordDeleted, RecordOwners
 from invenio_records_permissions import RecordPermissionPolicy
@@ -21,6 +21,9 @@ from invenio_records_permissions.generators import (
 from invenio_users_resources.services.permissions import UserManager
 
 from .generators import IfInState, SameAs
+
+if TYPE_CHECKING:
+    from ... import Workflow
 
 
 class DefaultWorkflowPermissions(RecordPermissionPolicy):
@@ -37,6 +40,8 @@ class DefaultWorkflowPermissions(RecordPermissionPolicy):
     }
 
     """
+
+    workflow: Workflow
 
     files_edit = (
         IfInState("draft", [RecordOwners()]),

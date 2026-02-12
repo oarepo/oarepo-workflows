@@ -24,6 +24,19 @@ if TYPE_CHECKING:
     from invenio_records_permissions.generators import Generator as InvenioGenerator
     from oarepo_runtime.services.generators import Generator
 
+    from .. import Workflow, WorkflowRequest
+
+
+class WorkflowEvents(dict):
+    """Class representing a collection of workflow events."""
+
+    workflow: Workflow
+    request: WorkflowRequest
+
+    def __missing__(self, key: str) -> Any:
+        """Raise EventTypeNotInWorkflowError when a key is not found."""
+        raise EventTypeNotInWorkflowError(self.request.request_type.type_id, key, self.workflow.code)
+
 
 @dataclasses.dataclass
 class WorkflowEvent:
