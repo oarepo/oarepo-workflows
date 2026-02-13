@@ -56,7 +56,7 @@ class WorkflowRequest:
     recipients: Sequence[InvenioGenerator]
     """Generators that define who can approve the request."""
 
-    events: WorkflowEvents | dict = dataclasses.field(default_factory=WorkflowEvents)
+    events: WorkflowEvents = dataclasses.field(default_factory=WorkflowEvents)
     """Events that can be submitted with the request."""
 
     transitions: WorkflowTransitions = dataclasses.field(default_factory=lambda: WorkflowTransitions())  # noqa PLW0108
@@ -123,11 +123,6 @@ class WorkflowRequest:
             return current_request_type_registry.lookup(self._request_type)
         except KeyError:  # pragma: no cover
             return current_request_type_registry.lookup(self._request_type.replace("-", "_"))  # pragma: no cover
-
-    def __post_init__(self):
-        """Convert dict to WorkflowEvents if needed."""
-        if isinstance(self.events, dict):
-            self.events = WorkflowEvents(self.events)
 
 
 @dataclasses.dataclass
