@@ -68,6 +68,8 @@ class WorkflowRequestPolicy:
                 continue
             possible_request = getattr(self, attr, None)
             if isinstance(possible_request, WorkflowRequest):
+                possible_request.events.workflow = self.workflow
+                possible_request.events.request = possible_request
                 ret.append(possible_request)
         return ret
 

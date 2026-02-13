@@ -82,12 +82,15 @@ class Workflow:
             raise TypeError(
                 f"Workflow request permission policy {self.request_policy_cls} is a subclass of WorkflowRequestPolicy."
             )
+
+        """
         self.permission_policy_cls.workflow = self
         self.request_policy_cls.workflow = self
 
         for request in self.request_policy_cls().requests:
             request.events.workflow = self
             request.events.request = request
+        """
 
 
 class StateChangedNotifier(Protocol):
