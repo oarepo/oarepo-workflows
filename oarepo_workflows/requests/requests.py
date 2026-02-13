@@ -130,6 +130,11 @@ class WorkflowRequest:
         except KeyError:  # pragma: no cover
             return current_request_type_registry.lookup(self._request_type.replace("-", "_"))  # pragma: no cover
 
+    def __post_init__(self):
+        """Convert dict to WorkflowEvents if needed."""
+        if isinstance(self.events, dict):
+            self.events = WorkflowEvents(self.events)
+
 
 @dataclasses.dataclass
 class WorkflowTransitions:
