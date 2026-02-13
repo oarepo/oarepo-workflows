@@ -51,7 +51,9 @@ class WorkflowRequestPolicy:
 
     """
 
-    workflow: Workflow
+    def __init__(self, workflow: Workflow) -> None:
+        """Create the policy."""
+        self.workflow = workflow
 
     @cached_property
     def requests(self) -> list[WorkflowRequest]:
@@ -66,6 +68,8 @@ class WorkflowRequestPolicy:
                 continue
             possible_request = getattr(self, attr, None)
             if isinstance(possible_request, WorkflowRequest):
+                possible_request.events.workflow = self.workflow
+                possible_request.events.request = possible_request
                 ret.append(possible_request)
         return ret
 

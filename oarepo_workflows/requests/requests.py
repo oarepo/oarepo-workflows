@@ -38,6 +38,7 @@ if TYPE_CHECKING:
 
     from oarepo_workflows.requests.events import WorkflowEvent
 
+
 log = getLogger(__name__)
 
 
