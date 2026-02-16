@@ -12,7 +12,7 @@ from __future__ import annotations
 import dataclasses
 from typing import TYPE_CHECKING, Any, Protocol
 
-from . import WorkflowRecordPermissionPolicy
+from . import WorkflowRecordPermissionPolicyMixin
 from .requests import WorkflowRequestPolicy
 from .services.permissions import DefaultWorkflowPermissions
 
@@ -69,7 +69,7 @@ class Workflow:
 
         This is just a sanity check to raise an error as soon as possible.
         """
-        if issubclass(self.permission_policy_cls, WorkflowRecordPermissionPolicy):
+        if issubclass(self.permission_policy_cls, WorkflowRecordPermissionPolicyMixin):
             raise TypeError(
                 f"Workflow permission policy {self.permission_policy_cls} is not a "
                 f"subclass of WorkflowRecordPermissionPolicy."

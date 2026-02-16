@@ -37,6 +37,34 @@ if TYPE_CHECKING:
     from oarepo_workflows.services.permissions import DefaultWorkflowPermissions
 
 
+class InAnyWorkflow(Generator):
+    """"""
+
+    def __init__(self, action) -> None:
+        self._action = action
+
+    @override
+    def needs(self, **context: Any) -> Sequence[Need]:
+        ret = set()
+        for workflow in current_oarepo_workflows.record_workflows:
+            ret |= set(workflow.permissions(self._action, **context).needs)
+        return list(ret)
+
+    @override
+    def excludes(self, **context: Any) -> Sequence[Need]:
+        ret = set()
+        for workflow in current_oarepo_workflows.record_workflows:
+            ret |= set(workflow.permissions(self._action, **context).excludes)
+        return list(ret)
+
+    @override
+    def query_filter(self, **context: Any) -> dsl.query.Query:
+        base = dsl.Q("match_none")
+        for workflow in current_oarepo_workflows.record_workflows:
+            queries = workflow.permissions(self._action, **context).query_filters
+            base = reduce(operator.or_, queries) if queries else base
+        return base
+
 class FromRecordWorkflow(Generator):
     """Permission delegating check to workflow.
 

@@ -17,14 +17,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, override
 
-from invenio_records_permissions.policies.records import RecordPermissionPolicy
-from oarepo_model.customizations import Customization, ReplaceBaseClass
+from oarepo_model.customizations import Customization
 from oarepo_model.presets import Preset
-
-from oarepo_workflows.services.permissions.record_permission_policy import (
-    WorkflowRecordPermissionPolicy,
-)
-
+from oarepo_model.customizations.prepend_mixin import PrependMixin
+from oarepo_workflows.services.permissions import WorkflowRecordPermissionPolicyMixin
 if TYPE_CHECKING:
     from collections.abc import Generator
 
@@ -44,9 +40,7 @@ class WorkflowsPermissionPolicyPreset(Preset):
         model: InvenioModel,
         dependencies: dict[str, Any],
     ) -> Generator[Customization]:
-        yield ReplaceBaseClass(
+        yield PrependMixin(
             "PermissionPolicy",
-            RecordPermissionPolicy,
-            WorkflowRecordPermissionPolicy,
-            subclass=True,
+            WorkflowRecordPermissionPolicyMixin
         )

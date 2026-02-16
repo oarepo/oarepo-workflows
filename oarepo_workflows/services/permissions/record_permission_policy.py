@@ -12,7 +12,7 @@ from __future__ import annotations
 from functools import reduce
 from typing import TYPE_CHECKING
 
-from invenio_records_permissions import RecordPermissionPolicy
+
 from invenio_records_permissions.generators import (
     AnyUser,
     SystemProcess,
@@ -20,20 +20,23 @@ from invenio_records_permissions.generators import (
 from invenio_search.engine import dsl
 
 from ...proxies import current_oarepo_workflows
-from .generators import FromRecordWorkflow
+from .generators import FromRecordWorkflow, InAnyWorkflow, SameAs
 
 if TYPE_CHECKING:
     from opensearch_dsl.query import Query
+    from invenio_records_permissions import RecordPermissionPolicy as InvenioRecordPermissionPolicy
+else:
+    InvenioRecordPermissionPolicy = object
 
 
-class WorkflowRecordPermissionPolicy(RecordPermissionPolicy):
+class WorkflowRecordPermissionPolicyMixin(InvenioRecordPermissionPolicy):
     """Permission policy to be used in permission presets directly on RecordServiceConfig.permission_policy_cls.
 
     Do not use this class in Workflow constructor.
     """
 
     can_commit_files = (FromRecordWorkflow("commit_files"),)
-    can_create = (FromRecordWorkflow("create"),)
+    can_create = (InAnyWorkflow("create"),)
     can_create_files = (FromRecordWorkflow("create_files"),)
     can_delete = (FromRecordWorkflow("delete"),)
     can_delete_draft = (FromRecordWorkflow("delete_draft"),)
@@ -116,6 +119,7 @@ class WorkflowRecordPermissionPolicy(RecordPermissionPolicy):
     can_remove_record = (FromRecordWorkflow("remove_record"),)
     can_review = (FromRecordWorkflow("review"),)
     can_view = (FromRecordWorkflow("view"),)
+    can_view_deposit_page = (SameAs("can_create"),)
 
     @property
     def query_filters(self) -> list[Query]:

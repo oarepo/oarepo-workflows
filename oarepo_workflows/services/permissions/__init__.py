@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 from .generators import FromRecordWorkflow, IfInState, WorkflowPermission
-from .record_permission_policy import WorkflowRecordPermissionPolicy
+from .record_permission_policy import WorkflowRecordPermissionPolicyMixin
 from .workflow_permissions import DefaultWorkflowPermissions
 
 __all__ = (
@@ -18,5 +18,5 @@ __all__ = (
     "FromRecordWorkflow",
     "IfInState",
     "WorkflowPermission",
-    "WorkflowRecordPermissionPolicy",
+    "WorkflowRecordPermissionPolicyMixin",
 )
