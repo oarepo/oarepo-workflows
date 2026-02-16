@@ -111,15 +111,7 @@ class WorkflowRequest:
 
     def __get__(self, instance: Any, owner: Any) -> WorkflowRequest:
         """Get the workflow request."""
-        if instance is None:
-            return self
-        # return a copy keyed to this instance
-        attr = f"_wr_{self._request_type}"
-        if not hasattr(instance, attr):
-            import copy
-
-            setattr(instance, attr, copy.deepcopy(self))
-        return cast("WorkflowRequest", getattr(instance, attr))
+        return self
 
     def __set_name__(self, owner: type, name: str) -> None:
         """Set the name of the workflow request to the request type id."""
