@@ -14,6 +14,7 @@ from flask_principal import Identity, UserNeed
 from invenio_rdm_records.services.generators import RecordOwners
 from opensearch_dsl.query import Terms
 
+from oarepo_workflows.errors import EventTypeNotInWorkflowError, RequestTypeNotInWorkflowError
 from oarepo_workflows.proxies import current_oarepo_workflows
 from oarepo_workflows.requests import WorkflowRequest
 from tests.conftest import NullRecipient, TestRecipient, TestRecipient2
@@ -133,3 +134,24 @@ def test_requestor_filter(users, logged_client, search_clear, record_service):
 
     generator = requests.requests_by_id["req"].requester_generator
     assert generator.query_filter(identity=id1, record=sample_record) == Terms(parent__access__owned_by__user=[1])
+
+
+def test_nonexistent_request_raises_error(app, search_clear):
+    request_policy = current_oarepo_workflows.workflow_by_code["is_applicable_workflow"].requests()
+    with pytest.raises(RequestTypeNotInWorkflowError) as exc_info:
+        request_policy["nonexistent_request"]
+    assert exc_info.value.request_type == "nonexistent_request"
+    assert exc_info.value.workflow == "is_applicable_workflow"
+    assert exc_info.value.description == "Request type nonexistent_request not in workflow is_applicable_workflow."
+
+
+def test_get_event(app, search_clear):
+    events_policy = current_oarepo_workflows.workflow_by_code["is_applicable_workflow"].requests()["req"].events
+    assert "T" in events_policy
+
+
+def test_nonexistent_event_raises_error(app, search_clear):
+    events_policy = current_oarepo_workflows.workflow_by_code["is_applicable_workflow"].requests()["req"].events
+    with pytest.raises(EventTypeNotInWorkflowError) as exc_info:
+        events_policy["nonexistent_event"]
+    assert exc_info.value.description == "Event type nonexistent_event is not set in a workflow."

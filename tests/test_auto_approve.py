@@ -55,7 +55,7 @@ def test_auto_approve_service(auto_approve_service):
     expected_list = [
         {"id": "true", "type": "auto_approve"},
     ]
-    assert sorted(read_list.hits, key=lambda x: str(x)) == sorted(expected_list, key=lambda x: str(x))
+    assert sorted(read_list.hits, key=str) == sorted(expected_list, key=str)
 
 
 def test_auto_approve_resolver(app, search_clear):

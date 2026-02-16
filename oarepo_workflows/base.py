@@ -48,7 +48,7 @@ class Workflow:
 
     def requests(self) -> WorkflowRequestPolicy:
         """Return instance of request policy for this workflow."""
-        return self.request_policy_cls()
+        return self.request_policy_cls(self)
 
     @property
     def permission_policy_with_requests_cls(self) -> type[DefaultWorkflowPermissions]:

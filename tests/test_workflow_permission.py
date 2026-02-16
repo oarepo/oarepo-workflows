@@ -11,20 +11,10 @@ from types import SimpleNamespace
 
 import pytest
 from flask_principal import Identity, UserNeed
+from invenio_search.engine import dsl
 
 from oarepo_workflows import FromRecordWorkflow, current_oarepo_workflows
-from oarepo_workflows.errors import InvalidWorkflowError, MissingWorkflowError
-
-
-def test_get_workflow_id(users, workflow_model, logged_client, record_service, location, search_clear):
-    record = workflow_model.Draft.create({})
-    wp = FromRecordWorkflow("read")
-    with pytest.raises(InvalidWorkflowError):
-        wp._get_workflow(record=record)  # noqa SLF001
-
-    fake_record = SimpleNamespace(parent=SimpleNamespace(workflow=""))
-    with pytest.raises(InvalidWorkflowError):
-        assert wp._get_workflow(record=fake_record)  # noqa SLF001
+from oarepo_workflows.errors import MissingWorkflowError
 
 
 def test_get_workflow_errors(users, workflow_model, logged_client, record_service, location, search_clear):
@@ -39,11 +29,21 @@ def test_get_workflow_errors(users, workflow_model, logged_client, record_servic
         assert current_oarepo_workflows.get_workflow(bad_data)
 
 
+# TODO: is the FromRecordWorkflow query filter actually used somewhere?
+# the docstring is incorrect, it's not called from WorkflowRecordPermissionPolicy.query_filters but from query filters
+# from query filters of the policies associated with workflows
+# (eg. oarepo_workflows.services.permissions.workflow_permissions.DefaultWorkflowPermissions) noqa: ERA001
 def test_query_filter_missing(users, logged_client, search_clear, record_service):
     wp = FromRecordWorkflow("read")
 
     id1 = Identity(id=1)
     id1.provides.add(UserNeed(1))
 
-    with pytest.raises(MissingWorkflowError):
-        assert wp.query_filter(identity=id1) == {}
+    assert wp.query_filter(identity=id1) == dsl.query.Bool(
+        should=[
+            dsl.query.Bool(
+                must=[dsl.query.Terms(state=["draft"]), dsl.query.Terms(parent__access__owned_by__user=[1])]
+            ),
+            dsl.query.Terms(state=["published"]),
+        ]
+    )

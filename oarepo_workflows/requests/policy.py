@@ -12,6 +12,7 @@ from __future__ import annotations
 from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
+from ..errors import RequestTypeNotInWorkflowError
 from .requests import (
     WorkflowRequest,
 )
@@ -19,6 +20,8 @@ from .requests import (
 if TYPE_CHECKING:
     from flask_principal import Identity
     from invenio_records_resources.records.api import Record
+
+    from .. import Workflow
 
 
 class WorkflowRequestPolicy:
@@ -48,6 +51,10 @@ class WorkflowRequestPolicy:
 
     """
 
+    def __init__(self, workflow: Workflow) -> None:
+        """Create the policy."""
+        self.workflow = workflow
+
     @cached_property
     def requests(self) -> list[WorkflowRequest]:
         """Return the list of request types and their instances.
@@ -71,7 +78,10 @@ class WorkflowRequestPolicy:
 
     def __getitem__(self, request_type_id: str) -> WorkflowRequest:
         """Get the workflow request type by its id."""
-        return self.requests_by_id[request_type_id]
+        try:
+            return self.requests_by_id[request_type_id]
+        except KeyError as exc:
+            raise RequestTypeNotInWorkflowError(request_type_id, self.workflow.code) from exc
 
     def applicable_workflow_requests(
         self, identity: Identity, *, record: Record, **context: Any

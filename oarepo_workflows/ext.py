@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 from invenio_records_resources.services.uow import unit_of_work
 
+from oarepo_workflows import current_oarepo_workflows
 from oarepo_workflows.errors import (
     InvalidWorkflowError,
     MissingWorkflowError,
@@ -67,6 +68,7 @@ class OARepoWorkflows:
         from . import ext_config
 
         app.config.setdefault("WORKFLOWS", ext_config.WORKFLOWS)
+        app.config.setdefault("WORKFLOWS_DEFAULT_WORKFLOW", ext_config.WORKFLOWS_DEFAULT_WORKFLOW)
         app.config.setdefault("REQUESTS_ALLOWED_RECEIVERS", []).extend(ext_config.WORKFLOWS_ALLOWED_REQUEST_RECEIVERS)
 
     def init_app(self, app: Flask) -> None:
@@ -150,6 +152,18 @@ class OARepoWorkflows:
             self.app.config.get("DEFAULT_WORKFLOW_EVENTS", {}),
         )
 
+    @property
+    def default_workflow(self) -> Workflow:
+        """Return the default workflow."""
+        try:
+            return self.workflow_by_code[self.app.config["WORKFLOWS_DEFAULT_WORKFLOW"]]
+        except KeyError as exc:
+            raise MissingWorkflowError(
+                f"Default workflow is needed to run but there is no {self.app.config['WORKFLOWS_DEFAULT_WORKFLOW']} "
+                f"defined. Please define this workflow or change WORKFLOWS_DEFAULT_WORKFLOW to point "
+                f"to the default workflow."
+            ) from exc
+
     def get_workflow(self, record: Record | dict[str, Any]) -> Workflow:
         """Get the workflow for a record.
 
@@ -179,6 +193,7 @@ class OARepoWorkflows:
             except KeyError as e:
                 raise MissingWorkflowError("Parent record does not have a workflow attribute.", record=record) from e
         try:
+            workflow_id = workflow_id or current_oarepo_workflows.default_workflow.code
             return self.workflow_by_code[workflow_id]
         except KeyError as e:
             raise InvalidWorkflowError(

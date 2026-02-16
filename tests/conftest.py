@@ -23,7 +23,11 @@ from invenio_accounts.testutils import login_user_via_session
 from invenio_i18n import lazy_gettext as _
 from invenio_rdm_records.services.generators import RecordOwners
 from invenio_records_permissions.generators import AuthenticatedUser, Generator
+from invenio_requests.customizations.event_types import CommentEventType
 from invenio_requests.customizations.request_types import RequestType
+from invenio_requests.services.permissions import (
+    PermissionPolicy as InvenioRequestsPermissionPolicy,
+)
 from invenio_search.engine import dsl
 from invenio_users_resources.proxies import (
     current_groups_service,
@@ -38,6 +42,7 @@ from oarepo_workflows.base import Workflow
 from oarepo_workflows.model.presets import workflows_preset
 from oarepo_workflows.proxies import current_oarepo_workflows
 from oarepo_workflows.requests import WorkflowRequest
+from oarepo_workflows.requests.events import WorkflowEvent
 from oarepo_workflows.requests.generators import RecipientGeneratorMixin
 from oarepo_workflows.services.permissions import DefaultWorkflowPermissions, IfInState
 
@@ -55,6 +60,12 @@ def request_types():
         type("Req2", (RequestType,), {"type_id": "req2"})(),
         type("Req3", (RequestType,), {"type_id": "req3"})(),
     ]
+
+
+class TestEventType(CommentEventType):
+    """Custom EventType."""
+
+    type_id = "T"
 
 
 class TestRecipient(RecipientGeneratorMixin, Generator):
@@ -136,7 +147,11 @@ class IsApplicableTestRequestPolicy(WorkflowRequestPolicy):
             accepted="accepted",
             declined="declined",
         ),
+        events={
+            TestEventType.type_id: WorkflowEvent(submitters=InvenioRequestsPermissionPolicy.can_create_comment),
+        },
     )
+
     req1 = WorkflowRequest(
         requesters=[],
         recipients=[NullRecipient(), TestRecipient()],
@@ -200,8 +215,14 @@ class RecordOwnersReadTestWorkflowPermissionPolicy(TestPermissionPolicy):
 
 WORKFLOWS = [
     Workflow(
-        code="my_workflow",
+        code="individual",
         label=_("Default workflow"),
+        permission_policy_cls=TestPermissionPolicy,
+        request_policy_cls=MyWorkflowRequests,
+    ),
+    Workflow(
+        code="my_workflow",
+        label=_("Default custom workflow"),
         permission_policy_cls=TestPermissionPolicy,
         request_policy_cls=MyWorkflowRequests,
     ),

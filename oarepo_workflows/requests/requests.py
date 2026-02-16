@@ -21,6 +21,7 @@ from invenio_requests.proxies import (
 
 from oarepo_workflows.errors import InvalidConfigurationError
 from oarepo_workflows.proxies import current_oarepo_workflows
+from oarepo_workflows.requests.events import WorkflowEvents
 from oarepo_workflows.requests.generators.multiple_entities import (
     MultipleEntitiesGenerator,
 )
@@ -36,6 +37,7 @@ if TYPE_CHECKING:
     from oarepo_runtime.services.generators import Generator
 
     from oarepo_workflows.requests.events import WorkflowEvent
+
 
 log = getLogger(__name__)
 
@@ -55,10 +57,10 @@ class WorkflowRequest:
     recipients: Sequence[InvenioGenerator]
     """Generators that define who can approve the request."""
 
-    events: dict[str, WorkflowEvent] = dataclasses.field(default_factory=dict)
+    events: dict[str, WorkflowEvent] = dataclasses.field(default_factory=WorkflowEvents)
     """Events that can be submitted with the request."""
 
-    transitions: WorkflowTransitions = dataclasses.field(default_factory=lambda: WorkflowTransitions())
+    transitions: WorkflowTransitions = dataclasses.field(default_factory=lambda: WorkflowTransitions())  # noqa PLW0108
     """Transitions applied to the state of the topic of the request."""
 
     escalations: list[WorkflowRequestEscalation] = dataclasses.field(default_factory=list)
@@ -113,12 +115,20 @@ class WorkflowRequest:
 
     def __set_name__(self, owner: type, name: str) -> None:
         """Set the name of the workflow request to the request type id."""
-        self._request_type = name
+        self._request_type = name.replace("_", "-")
+
+    def __post_init__(self):
+        """Post init to convert events dictionary to WorkflowEvents."""
+        if self.events:
+            self.events = WorkflowEvents(self.events)
 
     @property
     def request_type(self) -> RequestType:
         """Return the request type."""
-        return current_request_type_registry.lookup(self._request_type, quiet=False)
+        try:
+            return current_request_type_registry.lookup(self._request_type)
+        except KeyError:  # pragma: no cover
+            return current_request_type_registry.lookup(self._request_type.replace("-", "_"))  # pragma: no cover
 
 
 @dataclasses.dataclass

@@ -20,7 +20,7 @@ from oarepo_runtime.services.generators import (
     Generator,
 )
 
-from oarepo_workflows.errors import InvalidWorkflowError, MissingWorkflowError
+from oarepo_workflows.errors import InvalidWorkflowError
 from oarepo_workflows.proxies import current_oarepo_workflows
 from oarepo_workflows.requests import RecipientGeneratorMixin
 
@@ -84,7 +84,7 @@ class FromRecordWorkflow(Generator):
             data = context.get("data", {})
             workflow_code = data.get("parent", {}).get("workflow", {})
             if not workflow_code:
-                raise MissingWorkflowError("Workflow not defined in input.", record=data)
+                return current_oarepo_workflows.default_workflow
             if workflow_code not in current_oarepo_workflows.workflow_by_code:
                 raise InvalidWorkflowError(
                     f"Workflow {workflow_code} does not exist in the configuration.",

@@ -70,7 +70,7 @@ class MultipleEntitiesProxy(EntityProxy):
     def get_needs(self, ctx: dict | None = None) -> list[Need | ItemNeed]:
         """Get needs that the entity generate."""
         ret: list[Need | ItemNeed] = []
-        entity = self._entity if self._entity else self._resolve()
+        entity = self._entity or self._resolve()
         for subentity_proxy in entity.entities:
             ret.extend(subentity_proxy.get_needs(ctx) or [])
         return ret
