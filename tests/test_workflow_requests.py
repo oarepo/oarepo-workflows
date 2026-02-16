@@ -154,41 +154,4 @@ def test_nonexistent_event_raises_error(app, search_clear):
     events_policy = current_oarepo_workflows.workflow_by_code["is_applicable_workflow"].requests()["req"].events
     with pytest.raises(EventTypeNotInWorkflowError) as exc_info:
         events_policy["nonexistent_event"]
-    assert exc_info.value.request_type == "req"
-    assert exc_info.value.event_type == "nonexistent_event"
-    assert exc_info.value.workflow == "is_applicable_workflow"
-    assert (
-        exc_info.value.description
-        == "Event type nonexistent_event is not on request type req in workflow is_applicable_workflow."
-    )
-
-
-def test_workflow_request_attribute_propagation(app, search_clear):
-    for workflow_id, workflow in current_oarepo_workflows.workflow_by_code.items():
-        requests = workflow.requests()
-        assert requests.workflow.code == workflow_id
-        for request in requests.requests_by_id.values():
-            assert request.events.workflow.code == workflow_id
-            assert request.events.request == request
-
-
-def test_shared_policy_events_workflow_is_overwritten(app, search_clear):
-    """Two workflows sharing MyWorkflowRequests get the wrong workflow on events."""
-    # "individual" and "my_workflow" both use MyWorkflowRequests
-    wf_individual = current_oarepo_workflows.workflow_by_code["individual"]
-    wf_my = current_oarepo_workflows.workflow_by_code["my_workflow"]
-
-    policy_individual = wf_individual.requests()
-    policy_my = wf_my.requests()
-
-    # Force both cached_properties to evaluate — order matters.
-    # The second access overwrites events.workflow on the shared WorkflowRequest objects.
-    _ = policy_individual.requests  # sets events.workflow = individual
-    _ = policy_my.requests  # overwrites events.workflow = my_workflow
-
-    for req in policy_individual.requests:
-        # This SHOULD be "individual" but will be "my_workflow"
-        assert req.events.workflow.code == "individual", (
-            f"Expected 'individual' but got '{req.events.workflow.code}' — "
-            f"last workflow to call requests() overwrote the shared WorkflowRequest"
-        )
+    assert exc_info.value.description == "Event type nonexistent_event is not set in a workflow."

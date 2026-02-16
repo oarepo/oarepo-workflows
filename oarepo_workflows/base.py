@@ -65,7 +65,7 @@ class Workflow:
         )
 
     def __post_init__(self) -> None:
-        """Check that the classes are subclasses of the expected classes. Propagate workflow properties upwards.
+        """Check that the classes are subclasses of the expected classes.
 
         This is just a sanity check to raise an error as soon as possible.
         """

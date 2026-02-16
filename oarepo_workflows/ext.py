@@ -155,7 +155,14 @@ class OARepoWorkflows:
     @property
     def default_workflow(self) -> Workflow:
         """Return the default workflow."""
-        return self.workflow_by_code[self.app.config["WORKFLOWS_DEFAULT_WORKFLOW"]]
+        try:
+            return self.workflow_by_code[self.app.config["WORKFLOWS_DEFAULT_WORKFLOW"]]
+        except KeyError as exc:
+            raise MissingWorkflowError(
+                f"Default workflow is needed to run but there is no {self.app.config['WORKFLOWS_DEFAULT_WORKFLOW']} "
+                f"defined. Please define this workflow or change WORKFLOWS_DEFAULT_WORKFLOW to point "
+                f"to the default workflow."
+            ) from exc
 
     def get_workflow(self, record: Record | dict[str, Any]) -> Workflow:
         """Get the workflow for a record.

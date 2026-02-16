@@ -48,6 +48,6 @@ class WorkflowComponent(ServiceComponent):
         """Implement record creation checks and set the workflow on the created record."""
         try:
             workflow_id = data["parent"]["workflow"]
-        except KeyError:  # pragma: no cover
+        except KeyError:  # pragma: no cover # TODO: test
             return
         record.parent.workflow = workflow_id  # type: ignore[reportAttributeAccessIssue, reportOptionalMemberAccess]
