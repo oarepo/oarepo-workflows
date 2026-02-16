@@ -57,7 +57,7 @@ class WorkflowRequest:
     recipients: Sequence[InvenioGenerator]
     """Generators that define who can approve the request."""
 
-    events: WorkflowEvents = dataclasses.field(default_factory=WorkflowEvents)
+    events: dict[str, WorkflowEvent] = dataclasses.field(default_factory=WorkflowEvents)
     """Events that can be submitted with the request."""
 
     transitions: WorkflowTransitions = dataclasses.field(default_factory=lambda: WorkflowTransitions())  # noqa PLW0108
@@ -116,6 +116,11 @@ class WorkflowRequest:
     def __set_name__(self, owner: type, name: str) -> None:
         """Set the name of the workflow request to the request type id."""
         self._request_type = name.replace("_", "-")
+
+    def __post_init__(self):
+        """Post init to convert events dictionary to WorkflowEvents."""
+        if self.events:
+            self.events = WorkflowEvents(self.events)
 
     @property
     def request_type(self) -> RequestType:

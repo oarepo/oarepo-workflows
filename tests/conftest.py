@@ -42,7 +42,7 @@ from oarepo_workflows.base import Workflow
 from oarepo_workflows.model.presets import workflows_preset
 from oarepo_workflows.proxies import current_oarepo_workflows
 from oarepo_workflows.requests import WorkflowRequest
-from oarepo_workflows.requests.events import WorkflowEvent, WorkflowEvents
+from oarepo_workflows.requests.events import WorkflowEvent
 from oarepo_workflows.requests.generators import RecipientGeneratorMixin
 from oarepo_workflows.services.permissions import DefaultWorkflowPermissions, IfInState
 
@@ -147,11 +147,9 @@ class IsApplicableTestRequestPolicy(WorkflowRequestPolicy):
             accepted="accepted",
             declined="declined",
         ),
-        events=WorkflowEvents(
-            {
-                TestEventType.type_id: WorkflowEvent(submitters=InvenioRequestsPermissionPolicy.can_create_comment),
-            }
-        ),
+        events={
+            TestEventType.type_id: WorkflowEvent(submitters=InvenioRequestsPermissionPolicy.can_create_comment),
+        },
     )
 
     req1 = WorkflowRequest(
