@@ -46,8 +46,6 @@ class WorkflowComponent(ServiceComponent):
         **kwargs: Any,
     ) -> None:
         """Implement record creation checks and set the workflow on the created record."""
-        if not data:
-            return
         try:
             workflow_id = data["parent"]["workflow"]
         except KeyError:  # pragma: no cover
