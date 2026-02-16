@@ -25,14 +25,6 @@ if TYPE_CHECKING:
     from oarepo_runtime.services.generators import Generator
 
 
-class WorkflowEvents(dict):
-    """Class representing a collection of workflow events."""
-
-    def __missing__(self, key: str) -> NoReturn:
-        """Raise EventTypeNotInWorkflowError when a key is not found."""
-        raise EventTypeNotInWorkflowError(key)
-
-
 @dataclasses.dataclass
 class WorkflowEvent:
     """Class representing a workflow event."""
