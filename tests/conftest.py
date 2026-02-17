@@ -63,6 +63,7 @@ def request_types():
     ]
 
 
+# --- this is copied from pytest-oarepo, import once refactoring
 class UserGenerator(RecipientGeneratorMixin, Generator):
     """Generator primarily used to define specific user as recipient of a request."""
 
@@ -106,28 +107,13 @@ class UserExcluded(Generator):
         return [UserNeed(self._user_id)]
 
 
-class OwnedByFilter(Generator):
-    """Allows record owners."""
-
-    @override
-    def __init__(self, user_email: str) -> None:
-        self.user_email = user_email
-
-    @property
-    def _user_id(self) -> int:
-        # id is Integer column
-        return cast("int", User.query.filter_by(email=self.user_email).one().id)
-
-    @override
-    def query_filter(self, **kwargs: Any) -> Collection[Need]:
-        """Filter for current identity as owner."""
-        return dsl.Q("term", **{"parent.access.owned_by.user": self._user_id})
-
-
 class TestEventType(CommentEventType):
     """Custom EventType."""
 
     type_id = "T"
+
+
+# ---
 
 
 class TestRecipient(RecipientGeneratorMixin, Generator):
@@ -281,7 +267,7 @@ class DifferentReadTestWorkflowPermissionPolicy(TestPermissionPolicy):
     can_read = (
         UserGenerator("user1@example.org"),
         UserExcluded("user3@example.org"),
-        OwnedByFilter("user1@example.org"),
+        RecordOwners(),
     )
 
 
@@ -291,7 +277,7 @@ class DifferentReadTestTwoWorkflowPermissionPolicy(TestPermissionPolicy):
     can_read = (
         UserGenerator("user3@example.org"),
         UserExcluded("user4@example.org"),
-        OwnedByFilter("user3@example.org"),
+        RecordOwners(),
     )
 
 

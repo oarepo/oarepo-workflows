@@ -9,17 +9,14 @@
 
 from __future__ import annotations
 
-from functools import reduce
 from typing import TYPE_CHECKING
 
 from invenio_records_permissions.generators import (
     AnyUser,
     SystemProcess,
 )
-from invenio_search.engine import dsl
 
-from ...proxies import current_oarepo_workflows
-from .generators import FromRecordWorkflow, InAnyWorkflow, SameAs
+from .generators import FromRecordWorkflow, InAnyWorkflow, SameAs, query_filters_from_all_workflows
 
 if TYPE_CHECKING:
     from invenio_records_permissions import RecordPermissionPolicy as InvenioRecordPermissionPolicy
@@ -130,13 +127,4 @@ class WorkflowRecordPermissionPolicyMixin(InvenioRecordPermissionPolicy):
             "read_all_records",
         ):
             return super().query_filters  # type: ignore[no-any-return]
-        workflows = current_oarepo_workflows.record_workflows
-        queries = []
-        for workflow in workflows:
-            q_in_workflow = dsl.Q("term", **{"parent.workflow": workflow.code})
-            workflow_filters = workflow.permissions(self.action, **self.over).query_filters
-            if not workflow_filters:
-                workflow_filters = [dsl.Q("match_none")]
-            query = reduce(lambda f1, f2: f1 | f2, workflow_filters) & q_in_workflow
-            queries.append(query)
-        return [q for q in queries if q]
+        return query_filters_from_all_workflows(self.action, **self.over)

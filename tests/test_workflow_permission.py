@@ -53,8 +53,9 @@ def test_query_filter_missing(users, logged_client, search_clear, record_service
 def test_in_any_workflow_query_filter(app, users, search_clear):
     gen = InAnyWorkflow("read")
 
-    id1 = Identity(id=1)
-    id1.provides.add(UserNeed(1))
+    user_id = users[2].user.id
+    id1 = Identity(id=user_id)
+    id1.provides.add(UserNeed(user_id))
 
     result = gen.query_filter(identity=id1)
 
@@ -64,8 +65,22 @@ def test_in_any_workflow_query_filter(app, users, search_clear):
     assert "bool" in result_dict
     assert "should" in result_dict["bool"]
 
-    assert {"term": {"parent.access.owned_by.user": users[0].user.id}} in result_dict["bool"]["should"]
-    assert {"term": {"parent.access.owned_by.user": users[2].user.id}} in result_dict["bool"]["should"]
+    assert {
+        "bool": {
+            "must": [
+                {"terms": {"parent.access.owned_by.user": [user_id]}},
+                {"term": {"parent.workflow": "different_read_1"}},
+            ]
+        }
+    } in result_dict["bool"]["should"]
+    assert {
+        "bool": {
+            "must": [
+                {"terms": {"parent.access.owned_by.user": [user_id]}},
+                {"term": {"parent.workflow": "different_read_2"}},
+            ]
+        }
+    } in result_dict["bool"]["should"]
 
 
 def test_in_any_workflow_needs(app, users, search_clear):
