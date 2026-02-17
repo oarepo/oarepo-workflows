@@ -13,11 +13,12 @@ import json
 import os
 import sys
 import time
-from typing import TYPE_CHECKING, Any, override, cast
+from typing import TYPE_CHECKING, Any, cast, override
 
 import pytest
 from flask_principal import ActionNeed, Identity, Need, UserNeed
 from flask_security import login_user
+from invenio_accounts.models import Role, User
 from invenio_accounts.proxies import current_datastore
 from invenio_accounts.testutils import login_user_via_session
 from invenio_i18n import lazy_gettext as _
@@ -33,7 +34,6 @@ from invenio_users_resources.proxies import (
     current_groups_service,
     current_users_service,
 )
-from invenio_users_resources.services.generators import PreventSelf
 from oarepo_model.customizations import AddFileToModule
 from oarepo_runtime.services.records.mapping import update_all_records_mappings
 from sqlalchemy.exc import IntegrityError
@@ -46,12 +46,11 @@ from oarepo_workflows.requests import WorkflowRequest
 from oarepo_workflows.requests.events import WorkflowEvent
 from oarepo_workflows.requests.generators import RecipientGeneratorMixin
 from oarepo_workflows.services.permissions import DefaultWorkflowPermissions, IfInState
-from invenio_accounts.models import Role, User
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Mapping
-    from invenio_records_resources.records.api import Record
 
+    from invenio_records_resources.records.api import Record
 
 
 @pytest.fixture(scope="module")
@@ -62,6 +61,7 @@ def request_types():
         type("Req2", (RequestType,), {"type_id": "req2"})(),
         type("Req3", (RequestType,), {"type_id": "req3"})(),
     ]
+
 
 class UserGenerator(RecipientGeneratorMixin, Generator):
     """Generator primarily used to define specific user as recipient of a request."""
@@ -88,6 +88,7 @@ class UserGenerator(RecipientGeneratorMixin, Generator):
     ) -> list[Mapping[str, str]]:
         return [{"user": str(self._user_id)}]
 
+
 class UserExcluded(Generator):
     """Allows record owners."""
 
@@ -104,6 +105,7 @@ class UserExcluded(Generator):
     def excludes(self, **kwargs: Any) -> Collection[Need]:
         return [UserNeed(self._user_id)]
 
+
 class OwnedByFilter(Generator):
     """Allows record owners."""
 
@@ -118,8 +120,9 @@ class OwnedByFilter(Generator):
 
     @override
     def query_filter(self, **kwargs: Any) -> Collection[Need]:
-        """Filters for current identity as owner."""
+        """Filter for current identity as owner."""
         return dsl.Q("term", **{"parent.access.owned_by.user": self._user_id})
+
 
 class TestEventType(CommentEventType):
     """Custom EventType."""
@@ -271,15 +274,25 @@ class RecordOwnersReadTestWorkflowPermissionPolicy(TestPermissionPolicy):
 
     can_read = (RecordOwners(),)
 
+
 class DifferentReadTestWorkflowPermissionPolicy(TestPermissionPolicy):
     """Test permission policy."""
 
-    can_read = (UserGenerator("user1@example.org"), UserExcluded("user3@example.org"), OwnedByFilter("user1@example.org"))
+    can_read = (
+        UserGenerator("user1@example.org"),
+        UserExcluded("user3@example.org"),
+        OwnedByFilter("user1@example.org"),
+    )
+
 
 class DifferentReadTestTwoWorkflowPermissionPolicy(TestPermissionPolicy):
     """Test permission policy."""
 
-    can_read = (UserGenerator("user3@example.org"), UserExcluded("user4@example.org"), OwnedByFilter("user3@example.org"))
+    can_read = (
+        UserGenerator("user3@example.org"),
+        UserExcluded("user4@example.org"),
+        OwnedByFilter("user3@example.org"),
+    )
 
 
 WORKFLOWS = [

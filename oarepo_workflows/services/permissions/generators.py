@@ -38,9 +38,18 @@ if TYPE_CHECKING:
 
 
 class InAnyWorkflow(Generator):
-    """"""
+    """InAnyWorkflow generator.
 
-    def __init__(self, action) -> None:
+    Warning: if some workflow uses generators with excludes, they can clash with needs in different workflows leading
+    to the generator excluding users even though they are allowed in the workflow without the excludes generator.
+    This is due to how flask allows() is implemented.
+
+    Eg. If workflow 1 defines provides need for User 1 and Workflow 2 excludes User 1,
+    the generator will treat user 1 as excluded despite being allowed in the first workflow.
+    """
+
+    def __init__(self, action: str) -> None:
+        """Construct the generator."""
         self._action = action
 
     @override
@@ -59,11 +68,11 @@ class InAnyWorkflow(Generator):
 
     @override
     def query_filter(self, **context: Any) -> dsl.query.Query:
-        base = dsl.Q("match_none")
+        queries = []
         for workflow in current_oarepo_workflows.record_workflows:
-            queries = workflow.permissions(self._action, **context).query_filters
-            base = reduce(operator.or_, queries) if queries else base
-        return base
+            queries += workflow.permissions(self._action, **context).query_filters
+        return reduce(operator.or_, queries)
+
 
 class FromRecordWorkflow(Generator):
     """Permission delegating check to workflow.

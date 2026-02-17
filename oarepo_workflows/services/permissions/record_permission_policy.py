@@ -12,7 +12,6 @@ from __future__ import annotations
 from functools import reduce
 from typing import TYPE_CHECKING
 
-
 from invenio_records_permissions.generators import (
     AnyUser,
     SystemProcess,
@@ -23,8 +22,8 @@ from ...proxies import current_oarepo_workflows
 from .generators import FromRecordWorkflow, InAnyWorkflow, SameAs
 
 if TYPE_CHECKING:
-    from opensearch_dsl.query import Query
     from invenio_records_permissions import RecordPermissionPolicy as InvenioRecordPermissionPolicy
+    from opensearch_dsl.query import Query
 else:
     InvenioRecordPermissionPolicy = object
 

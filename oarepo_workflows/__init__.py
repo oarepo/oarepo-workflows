@@ -12,7 +12,8 @@ from __future__ import annotations
 from oarepo_workflows.services.permissions import (
     FromRecordWorkflow,
     IfInState,
-    WorkflowPermission, WorkflowRecordPermissionPolicyMixin
+    WorkflowPermission,
+    WorkflowRecordPermissionPolicyMixin,
 )
 
 from .base import Workflow
