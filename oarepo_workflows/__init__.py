@@ -13,7 +13,7 @@ from oarepo_workflows.services.permissions import (
     FromRecordWorkflow,
     IfInState,
     WorkflowPermission,
-    WorkflowRecordPermissionPolicy,
+    WorkflowRecordPermissionPolicyMixin,
 )
 
 from .base import Workflow
@@ -38,7 +38,7 @@ __all__ = (
     "IfInState",
     "Workflow",
     "WorkflowPermission",
-    "WorkflowRecordPermissionPolicy",
+    "WorkflowRecordPermissionPolicyMixin",
     "WorkflowRequest",
     "WorkflowRequestEscalation",
     "WorkflowRequestPolicy",

@@ -13,11 +13,12 @@ import json
 import os
 import sys
 import time
-from typing import TYPE_CHECKING, Any, override
+from typing import TYPE_CHECKING, Any, cast, override
 
 import pytest
 from flask_principal import ActionNeed, Identity, Need, UserNeed
 from flask_security import login_user
+from invenio_accounts.models import Role, User
 from invenio_accounts.proxies import current_datastore
 from invenio_accounts.testutils import login_user_via_session
 from invenio_i18n import lazy_gettext as _
@@ -47,9 +48,9 @@ from oarepo_workflows.requests.generators import RecipientGeneratorMixin
 from oarepo_workflows.services.permissions import DefaultWorkflowPermissions, IfInState
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Collection, Mapping
 
-    from invenio_accounts.models import Role, User
+    from invenio_records_resources.records.api import Record
 
 
 @pytest.fixture(scope="module")
@@ -62,10 +63,57 @@ def request_types():
     ]
 
 
+# --- this is copied from pytest-oarepo, import once refactoring
+class UserGenerator(RecipientGeneratorMixin, Generator):
+    """Generator primarily used to define specific user as recipient of a request."""
+
+    @override
+    def __init__(self, user_email: str) -> None:
+        self.user_email = user_email
+
+    @property
+    def _user_id(self) -> int:
+        # id is Integer column
+        return cast("int", User.query.filter_by(email=self.user_email).one().id)
+
+    @override
+    def needs(self, **kwargs: Any) -> Collection[Need]:
+        return [UserNeed(self._user_id)]
+
+    @override
+    def reference_receivers(
+        self,
+        record: Record | None = None,
+        request_type: RequestType | None = None,
+        **context: Any,
+    ) -> list[Mapping[str, str]]:
+        return [{"user": str(self._user_id)}]
+
+
+class UserExcluded(Generator):
+    """Allows record owners."""
+
+    @override
+    def __init__(self, user_email: str) -> None:
+        self.user_email = user_email
+
+    @property
+    def _user_id(self) -> int:
+        # id is Integer column
+        return cast("int", User.query.filter_by(email=self.user_email).one().id)
+
+    @override
+    def excludes(self, **kwargs: Any) -> Collection[Need]:
+        return [UserNeed(self._user_id)]
+
+
 class TestEventType(CommentEventType):
     """Custom EventType."""
 
     type_id = "T"
+
+
+# ---
 
 
 class TestRecipient(RecipientGeneratorMixin, Generator):
@@ -213,6 +261,26 @@ class RecordOwnersReadTestWorkflowPermissionPolicy(TestPermissionPolicy):
     can_read = (RecordOwners(),)
 
 
+class DifferentReadTestWorkflowPermissionPolicy(TestPermissionPolicy):
+    """Test permission policy."""
+
+    can_read = (
+        UserGenerator("user1@example.org"),
+        UserExcluded("user3@example.org"),
+        RecordOwners(),
+    )
+
+
+class DifferentReadTestTwoWorkflowPermissionPolicy(TestPermissionPolicy):
+    """Test permission policy."""
+
+    can_read = (
+        UserGenerator("user3@example.org"),
+        UserExcluded("user4@example.org"),
+        RecordOwners(),
+    )
+
+
 WORKFLOWS = [
     Workflow(
         code="individual",
@@ -237,6 +305,18 @@ WORKFLOWS = [
         label=_("For testing is_applicable"),
         permission_policy_cls=TestPermissionPolicy,
         request_policy_cls=IsApplicableTestRequestPolicy,
+    ),
+    Workflow(
+        code="different_read_1",
+        label=_("For testing permissions from multiple workflows"),
+        permission_policy_cls=DifferentReadTestWorkflowPermissionPolicy,
+        request_policy_cls=MyWorkflowRequests,
+    ),
+    Workflow(
+        code="different_read_2",
+        label=_("For testing permissions from multiple workflows"),
+        permission_policy_cls=DifferentReadTestTwoWorkflowPermissionPolicy,
+        request_policy_cls=MyWorkflowRequests,
     ),
 ]
 

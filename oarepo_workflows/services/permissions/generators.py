@@ -37,6 +37,55 @@ if TYPE_CHECKING:
     from oarepo_workflows.services.permissions import DefaultWorkflowPermissions
 
 
+def query_filters_from_all_workflows(action: str, **context: Any) -> list[dsl.query.Query]:
+    """Get query filters to match records depending on the records' workflow."""
+    workflows = current_oarepo_workflows.record_workflows
+    queries = []
+    for workflow in workflows:
+        q_in_workflow = dsl.Q("term", **{"parent.workflow": workflow.code})
+        workflow_filters = workflow.permissions(action, **context).query_filters
+        if not workflow_filters:
+            workflow_filters = [dsl.Q("match_none")]
+        query = reduce(lambda f1, f2: f1 | f2, workflow_filters) & q_in_workflow
+        queries.append(query)
+    return [q for q in queries if q]
+
+
+class InAnyWorkflow(Generator):
+    """InAnyWorkflow generator.
+
+    Warning: if some workflow uses generators with excludes, they can clash with needs in different workflows leading
+    to the generator excluding users even though they are allowed in the workflow without the excludes generator.
+    This is due to how flask allows() is implemented.
+
+    Eg. If workflow 1 defines provides need for User 1 and Workflow 2 excludes User 1,
+    the generator will treat user 1 as excluded despite being allowed in the first workflow.
+    """
+
+    def __init__(self, action: str) -> None:
+        """Construct the generator."""
+        self._action = action
+
+    @override
+    def needs(self, **context: Any) -> Sequence[Need]:
+        ret = set()
+        for workflow in current_oarepo_workflows.record_workflows:
+            ret |= set(workflow.permissions(self._action, **context).needs)
+        return list(ret)
+
+    @override
+    def excludes(self, **context: Any) -> Sequence[Need]:
+        ret = set()
+        for workflow in current_oarepo_workflows.record_workflows:
+            ret |= set(workflow.permissions(self._action, **context).excludes)
+        return list(ret)
+
+    @override
+    def query_filter(self, **context: Any) -> dsl.query.Query:
+        queries = query_filters_from_all_workflows(self._action, **context)
+        return reduce(operator.or_, queries)
+
+
 class FromRecordWorkflow(Generator):
     """Permission delegating check to workflow.
 
