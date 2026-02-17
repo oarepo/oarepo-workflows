@@ -64,23 +64,23 @@ def test_in_any_workflow_query_filter(app, users, search_clear):
     assert "bool" in result_dict
     assert "should" in result_dict["bool"]
 
-    assert {"term": {"parent.access.owned_by.user": 1}} in result_dict["bool"]["should"]
-    assert {"term": {"parent.access.owned_by.user": 3}} in result_dict["bool"]["should"]
+    assert {"term": {"parent.access.owned_by.user": users[0].user.id}} in result_dict["bool"]["should"]
+    assert {"term": {"parent.access.owned_by.user": users[2].user.id}} in result_dict["bool"]["should"]
 
 
 def test_in_any_workflow_needs(app, users, search_clear):
     gen = InAnyWorkflow("read")
     result = gen.needs()
-    assert Need(method="id", value=1) in result
-    assert Need(method="id", value=3) in result
+    assert Need(method="id", value=users[0].user.id) in result
+    assert Need(method="id", value=users[2].user.id) in result
 
 
 def test_in_any_workflow_excludes(app, users, search_clear):
     """Test that InAnyWorkflow.query_filter OR-combines query_filters from all workflows."""
     gen = InAnyWorkflow("read")
     result = gen.excludes()
-    assert Need(method="id", value=3) in result
-    assert Need(method="id", value=4) in result
+    assert Need(method="id", value=users[2].user.id) in result
+    assert Need(method="id", value=users[3].user.id) in result
 
 
 def test_in_any_workflow_allows_with_excludes(
