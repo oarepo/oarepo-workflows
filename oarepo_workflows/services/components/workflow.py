@@ -14,6 +14,9 @@ from typing import TYPE_CHECKING, Any, override
 from invenio_records_resources.services.records.components.base import ServiceComponent
 from oarepo_runtime.typing import require_kwargs
 
+from oarepo_workflows import current_oarepo_workflows
+from oarepo_workflows.errors import InvalidWorkflowError
+
 if TYPE_CHECKING:
     from flask_principal import Identity
     from invenio_drafts_resources.records import Record
@@ -50,4 +53,9 @@ class WorkflowComponent(ServiceComponent):
             workflow_id = data["parent"]["workflow"]
         except KeyError:
             return
+        if workflow_id not in current_oarepo_workflows.workflow_by_code:
+            raise InvalidWorkflowError(
+                f"Workflow {workflow_id} does not exist in the configuration.",
+                record=data or record,
+            )
         record.parent.workflow = workflow_id  # type: ignore[reportAttributeAccessIssue, reportOptionalMemberAccess]

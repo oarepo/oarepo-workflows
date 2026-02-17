@@ -78,7 +78,7 @@ def test_in_any_workflow_needs(app, users, search_clear):
 def test_in_any_workflow_excludes(app, users, search_clear):
     """Test that InAnyWorkflow.query_filter OR-combines query_filters from all workflows."""
     gen = InAnyWorkflow("read")
-    result = gen.needs()
+    result = gen.excludes()
     assert Need(method="id", value=3) in result
     assert Need(method="id", value=4) in result
 
