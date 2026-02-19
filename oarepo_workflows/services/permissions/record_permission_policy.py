@@ -33,7 +33,10 @@ class WorkflowRecordPermissionPolicyMixin(InvenioRecordPermissionPolicy):
     """
 
     can_commit_files = (FromRecordWorkflow("commit_files"),)
-    can_create = (AuthenticatedUser(),)
+    can_create = (
+        SystemProcess(),
+        AuthenticatedUser(),
+    )
     can_create_files = (FromRecordWorkflow("create_files"),)
     can_delete = (FromRecordWorkflow("delete"),)
     can_delete_draft = (FromRecordWorkflow("delete_draft"),)
