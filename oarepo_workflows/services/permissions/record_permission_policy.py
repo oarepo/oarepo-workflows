@@ -13,10 +13,11 @@ from typing import TYPE_CHECKING
 
 from invenio_records_permissions.generators import (
     AnyUser,
+    AuthenticatedUser,
     SystemProcess,
 )
 
-from .generators import FromRecordWorkflow, InAnyWorkflow, SameAs, query_filters_from_all_workflows
+from .generators import FromRecordWorkflow, SameAs, query_filters_from_all_workflows
 
 if TYPE_CHECKING:
     from invenio_records_permissions import RecordPermissionPolicy as InvenioRecordPermissionPolicy
@@ -32,7 +33,10 @@ class WorkflowRecordPermissionPolicyMixin(InvenioRecordPermissionPolicy):
     """
 
     can_commit_files = (FromRecordWorkflow("commit_files"),)
-    can_create = (InAnyWorkflow("create"),)
+    can_create = (
+        SystemProcess(),
+        AuthenticatedUser(),
+    )
     can_create_files = (FromRecordWorkflow("create_files"),)
     can_delete = (FromRecordWorkflow("delete"),)
     can_delete_draft = (FromRecordWorkflow("delete_draft"),)
