@@ -43,6 +43,8 @@ def query_filters_from_all_workflows(action: str, **context: Any) -> list[dsl.qu
     queries = []
     for workflow in workflows:
         q_in_workflow = dsl.Q("term", **{"parent.workflow": workflow.code})
+        if workflow.code == current_oarepo_workflows.default_workflow.code:
+            q_in_workflow = q_in_workflow | ~dsl.Q("exists", field="parent.workflow")
         workflow_filters = workflow.permissions(action, **context).query_filters
         if not workflow_filters:
             workflow_filters = [dsl.Q("match_none")]
