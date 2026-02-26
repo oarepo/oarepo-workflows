@@ -81,6 +81,7 @@ def test_workflow_publish(workflow_model, users, logged_client, default_workflow
     assert other_response.json["state_timestamp"] == published_json["state_timestamp"]
     assert other_response.json["state"] == published_json["state"]
 
+
 def test_query_filter(
     workflow_model,
     users,
@@ -122,6 +123,7 @@ def test_query_filter(
     assert len(search_u1["hits"]["hits"]) == 2
     assert len(search_u2["hits"]["hits"]) == 1
 
+
 def test_listing_on_draft_without_workflow(
     workflow_model,
     users,
@@ -132,23 +134,19 @@ def test_listing_on_draft_without_workflow(
     search_clear,
 ):
     user_client1 = logged_client(users[0])
-    user_client2 = logged_client(users[1])
-    user_client3 = logged_client(users[2])
     resource_config = workflow_model.RecordResourceConfig
 
     no_workflow_input = copy.deepcopy(default_workflow_json)
     no_workflow_input.pop("parent")
 
     record_w1 = user_client1.post(resource_config.url_prefix, json=no_workflow_input)
-    record_w2 = user_client1.post(
+    user_client1.post(
         resource_config.url_prefix,
         json=default_workflow_json,
     )
     assert record_w1.json["parent"]["workflow"] is None
     workflow_model.Draft.index.refresh()
     search_u1 = user_client1.get(f"/user{resource_config.url_prefix}").json
-    search_u2 = user_client2.get(f"/user{resource_config.url_prefix}").json
-    search_u3 = user_client3.get(f"/user{resource_config.url_prefix}").json
 
     assert len(search_u1["hits"]["hits"]) == 2
 
