@@ -124,6 +124,33 @@ def test_query_filter(
     assert len(search_u2["hits"]["hits"]) == 1
 
 
+def test_listing_on_draft_without_workflow(
+    workflow_model,
+    users,
+    logged_client,
+    default_workflow_json,
+    search_with_field_mapping,
+    location,
+    search_clear,
+):
+    user_client1 = logged_client(users[0])
+    resource_config = workflow_model.RecordResourceConfig
+
+    no_workflow_input = copy.deepcopy(default_workflow_json)
+    no_workflow_input.pop("parent")
+
+    record_w1 = user_client1.post(resource_config.url_prefix, json=no_workflow_input)
+    user_client1.post(
+        resource_config.url_prefix,
+        json=default_workflow_json,
+    )
+    assert record_w1.json["parent"]["workflow"] is None
+    workflow_model.Draft.index.refresh()
+    search_u1 = user_client1.get(f"/user{resource_config.url_prefix}").json
+
+    assert len(search_u1["hits"]["hits"]) == 2
+
+
 def test_invalid_workflow_input(workflow_model, users, logged_client, default_workflow_json, location, search_clear):
     user_client1 = logged_client(users[0])
     resource_config = workflow_model.RecordResourceConfig
