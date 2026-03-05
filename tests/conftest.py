@@ -8,19 +8,14 @@
 #
 from __future__ import annotations
 
-import base64
 import json
-import os
 import sys
 import time
 from typing import TYPE_CHECKING, Any, cast, override
 
 import pytest
-from flask_principal import ActionNeed, Identity, Need, UserNeed
-from flask_security import login_user
-from invenio_accounts.models import Role, User
-from invenio_accounts.proxies import current_datastore
-from invenio_accounts.testutils import login_user_via_session
+from flask_principal import Need, UserNeed
+from invenio_accounts.models import User
 from invenio_i18n import lazy_gettext as _
 from invenio_rdm_records.services.generators import RecordOwners
 from invenio_records_permissions.generators import AuthenticatedUser, Generator
@@ -29,14 +24,9 @@ from invenio_requests.customizations.request_types import RequestType
 from invenio_requests.services.permissions import (
     PermissionPolicy as InvenioRequestsPermissionPolicy,
 )
-from invenio_search.engine import dsl
-from invenio_users_resources.proxies import (
-    current_groups_service,
-    current_users_service,
-)
 from oarepo_model.customizations import AddFileToModule
 from oarepo_runtime.services.records.mapping import update_all_records_mappings
-from sqlalchemy.exc import IntegrityError
+from pytest_oarepo.permission_generators import Administration, UserGenerator
 
 from oarepo_workflows import WorkflowRequestPolicy, WorkflowTransitions
 from oarepo_workflows.base import Workflow
@@ -48,9 +38,14 @@ from oarepo_workflows.requests.generators import RecipientGeneratorMixin
 from oarepo_workflows.services.permissions import DefaultWorkflowPermissions, IfInState
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Collection, Mapping
+    from collections.abc import Collection
 
-    from invenio_records_resources.records.api import Record
+
+pytest_plugins = [
+    "pytest_oarepo.fixtures",
+    "pytest_oarepo.users",
+    "pytest_oarepo.roles",
+]
 
 
 @pytest.fixture(scope="module")
@@ -61,33 +56,6 @@ def request_types():
         type("Req2", (RequestType,), {"type_id": "req2"})(),
         type("Req3", (RequestType,), {"type_id": "req3"})(),
     ]
-
-
-# --- this is copied from pytest-oarepo, import once refactoring
-class UserGenerator(RecipientGeneratorMixin, Generator):
-    """Generator primarily used to define specific user as recipient of a request."""
-
-    @override
-    def __init__(self, user_email: str) -> None:
-        self.user_email = user_email
-
-    @property
-    def _user_id(self) -> int:
-        # id is Integer column
-        return cast("int", User.query.filter_by(email=self.user_email).one().id)
-
-    @override
-    def needs(self, **kwargs: Any) -> Collection[Need]:
-        return [UserNeed(self._user_id)]
-
-    @override
-    def reference_receivers(
-        self,
-        record: Record | None = None,
-        request_type: RequestType | None = None,
-        **context: Any,
-    ) -> list[Mapping[str, str]]:
-        return [{"user": str(self._user_id)}]
 
 
 class UserExcluded(Generator):
@@ -156,18 +124,6 @@ class FailingGenerator(Generator):
     @override
     def query_filter(self, **context: Any):
         raise ValueError("Failing generator")
-
-
-class Administration(Generator):
-    """Administration permission generator."""
-
-    @override
-    def needs(self, **kwargs: Any):
-        return [ActionNeed("administration")]
-
-    @override
-    def query_filter(self, **kwargs: Any):
-        return dsl.Q("match_all")
 
 
 class MyWorkflowRequests(WorkflowRequestPolicy):
@@ -439,186 +395,11 @@ def app_config(app_config, workflow_model, request_types):
 
 
 @pytest.fixture(scope="module")
-def identity_simple():
-    """Provide simple identity fixture."""
-    i = Identity(1)
-    i.provides.add(UserNeed(1))
-    i.provides.add(Need(method="system_role", value="any_user"))
-    i.provides.add(Need(method="system_role", value="authenticated_user"))
-    return i
-
-
-@pytest.fixture(scope="module")
 def create_app(instance_path, entry_points):
     """Application factory fixture."""
     from invenio_app.factory import create_api as _create_api
 
     return _create_api
-
-
-#
-#
-#
-#
-#
-# TODO: use pytest-oarepo instead of this
-@pytest.fixture
-def password():
-    """Password fixture."""
-    return base64.b64encode(os.urandom(16)).decode("utf-8")
-
-
-def _create_role(id_, name, description, is_managed, database) -> Role:
-    """Create a Role/Group."""
-    r = current_datastore.create_role(id=id_, name=name, description=description, is_managed=is_managed)
-    current_datastore.commit()
-
-    current_groups_service.indexer.process_bulk_queue()
-    current_groups_service.indexer.refresh()
-
-    return r
-
-
-@pytest.fixture
-def role(db):
-    """Create a single group."""
-    return _create_role(
-        id_="it-dep",
-        name="it-dep",
-        description="IT Department",
-        is_managed=False,
-        database=db,
-    )
-
-
-def _create_user(user_fixture, app, db) -> None:
-    """Create users, reusing it if it already exists."""
-    try:
-        user_fixture.create(app, db)
-    except IntegrityError:
-        datastore = app.extensions["security"].datastore
-        user_fixture._user = datastore.get_user_by_email(  # noqa: SLF001
-            user_fixture.email
-        )
-        user_fixture._app = app  # noqa: SLF001
-        app.logger.info("skipping creation of %s, already existing", user_fixture.email)
-
-
-@pytest.fixture
-def users(app, db, UserFixture, password):  # noqa: N803 # as it is a fixture name
-    """Predefined user fixtures."""
-    user1 = UserFixture(
-        email="user1@example.org",
-        password=password,
-        active=True,
-        confirmed=True,
-        user_profile={
-            "affiliations": "CERN",
-        },
-    )
-    _create_user(user1, app, db)
-
-    user2 = UserFixture(
-        email="user2@example.org",
-        password=password,
-        username="beetlesmasher",
-        active=True,
-        confirmed=True,
-        user_profile={
-            "affiliations": "CERN",
-        },
-    )
-    _create_user(user2, app, db)
-
-    user3 = UserFixture(
-        email="user3@example.org",
-        password=password,
-        username="beetlesmasherXXL",
-        user_profile={
-            "full_name": "Maxipes Fik",
-            "affiliations": "CERN",
-        },
-        active=True,
-        confirmed=True,
-    )
-    _create_user(user3, app, db)
-
-    user4 = UserFixture(
-        email="user4@example.org",
-        password=password,
-        username="african",
-        preferences={
-            "timezone": "Africa/Dakar",  # something without daylight saving time; +0.0
-        },
-        user_profile={
-            "affiliations": "CERN",
-        },
-        active=True,
-        confirmed=True,
-    )
-    _create_user(user4, app, db)
-
-    user5 = UserFixture(
-        email="user5@example.org",
-        password=password,
-        username="mexican",
-        preferences={
-            "timezone": "America/Mexico_City",  # something without daylight saving time
-        },
-        user_profile={
-            "affiliations": "CERN",
-        },
-        active=True,
-        confirmed=True,
-    )
-    _create_user(user5, app, db)
-
-    current_users_service.indexer.process_bulk_queue()
-    current_users_service.indexer.refresh()
-
-    return [user1, user2, user3, user4, user5]
-
-
-class LoggedClient:
-    """Logged client for testing."""
-
-    def __init__(self, client, user_fixture):
-        """Initialize the logged client."""
-        self.client = client
-        self.user_fixture = user_fixture
-
-    def _login(self) -> None:
-        """Perform login."""
-        login_user(self.user_fixture.user, remember=True)
-        login_user_via_session(self.client, email=self.user_fixture.email)
-
-    def post(self, *args: Any, **kwargs: Any) -> Any:
-        """Send a POST request with authentication."""
-        self._login()
-        return self.client.post(*args, **kwargs)
-
-    def get(self, *args: Any, **kwargs: Any) -> Any:
-        """Send a GET request with authentication."""
-        self._login()
-        return self.client.get(*args, **kwargs)
-
-    def put(self, *args: Any, **kwargs: Any) -> Any:
-        """Send a PUT request with authentication."""
-        self._login()
-        return self.client.put(*args, **kwargs)
-
-    def delete(self, *args: Any, **kwargs: Any) -> Any:
-        """Send a DELETE request with authentication."""
-        self._login()
-        return self.client.delete(*args, **kwargs)
-
-
-@pytest.fixture
-def logged_client(client) -> Callable[[User], LoggedClient]:
-    def _logged_client(user) -> LoggedClient:
-        return LoggedClient(client, user)
-
-    return _logged_client
 
 
 @pytest.fixture(scope="module")
