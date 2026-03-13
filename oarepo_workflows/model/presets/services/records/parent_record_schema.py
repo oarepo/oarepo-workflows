@@ -42,6 +42,6 @@ class WorkflowsParentRecordSchemaPreset(Preset):
         dependencies: dict[str, Any],
     ) -> Generator[Customization]:
         class WorkflowSchemaMixin:
-            workflow = ma.fields.String()
+            workflow = ma.fields.String(allow_none=True)
 
         yield PrependMixin("ParentRecordSchema", WorkflowSchemaMixin)
