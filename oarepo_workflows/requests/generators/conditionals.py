@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING, Any, override
 
 from invenio_search.engine import dsl
 from oarepo_runtime.services.generators import ConditionalGenerator
-from oarepo_runtime.typing import require_kwargs
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -37,8 +36,9 @@ class IfEventType(ConditionalGenerator):
         self.event_type = event_type
 
     @override
-    @require_kwargs("event_type")
-    def _condition(self, *, event_type: type[EventType], **kwargs: Any) -> bool:
+    def _condition(self, *, event_type: type[EventType] | None = None, **kwargs: Any) -> bool:
+        if event_type is None:
+            return False
         return event_type == self.event_type
 
     @override

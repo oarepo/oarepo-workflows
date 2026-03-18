@@ -30,7 +30,9 @@ class CreatorsFromWorkflowRequestsPermissionPolicy(InvenioRequestsPermissionPoli
 
     can_create = (
         SystemProcess(),
-        FromRecordWorkflow(action=lambda *, request_type, **kwargs: f"{request_type.type_id}_create"),  # noqa ARG005
+        FromRecordWorkflow(
+            action=lambda *, request_type, **kwargs: f"{request_type.type_id}_create"  # noqa: ARG005
+        ),
     )
 
     can_create_comment = (
@@ -38,8 +40,10 @@ class CreatorsFromWorkflowRequestsPermissionPolicy(InvenioRequestsPermissionPoli
         IfEventType(CommentEventType, [Creator(), Receiver()]),
         IfEventType(LogEventType, [Creator(), Receiver()]),
         FromRecordWorkflow(
-            action=lambda *, request, event_type, **kwargs: f"{request.type.type_id}_{event_type.type_id}_create",  # noqa ARG005
-            record_getter=lambda *, request, **kwargs: request.topic.resolve(),  # noqa ARG005
+            action=lambda *, request, event_type=CommentEventType, **kwargs: (  # noqa: ARG005
+                f"{request.type.type_id}_{event_type.type_id}_create"
+            ),
+            record_getter=lambda *, request, **kwargs: request.topic.resolve(),  # noqa: ARG005
         ),
     )
 
