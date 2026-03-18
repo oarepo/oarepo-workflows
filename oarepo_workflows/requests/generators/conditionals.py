@@ -43,4 +43,4 @@ class IfEventType(ConditionalGenerator):
 
     @override
     def _query_instate(self, **context: Any) -> dsl.query.Query:
-        return dsl.Q("term", type_id=self.event_type)
+        return dsl.Q("term", type_id=self.event_type.type_id)
