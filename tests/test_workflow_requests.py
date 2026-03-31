@@ -14,7 +14,10 @@ from flask_principal import Identity, UserNeed
 from invenio_rdm_records.services.generators import RecordOwners
 from opensearch_dsl.query import Terms
 
-from oarepo_workflows.errors import EventTypeNotInWorkflowError, RequestTypeNotInWorkflowError
+from oarepo_workflows.errors import (
+    EventTypeNotInWorkflowError,
+    RequestTypeNotInWorkflowError,
+)
 from oarepo_workflows.proxies import current_oarepo_workflows
 from oarepo_workflows.requests import WorkflowRequest
 from tests.conftest import NullRecipient, TestRecipient, TestRecipient2

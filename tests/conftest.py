@@ -363,15 +363,6 @@ def app_config(app_config, workflow_model, request_types):
 
     Needed to set the fields on the custom fields schema.
     """
-    app_config["FILES_REST_STORAGE_CLASS_LIST"] = {
-        "L": "Local",
-    }
-
-    app_config["FILES_REST_DEFAULT_STORAGE_CLASS"] = "L"
-
-    app_config["RECORDS_REFRESOLVER_CLS"] = "invenio_records.resolver.InvenioRefResolver"
-    app_config["RECORDS_REFRESOLVER_STORE"] = "invenio_jsonschemas.proxies.current_refresolver_store"
-
     app_config["THEME_FRONTPAGE"] = False
 
     app_config["SQLALCHEMY_ENGINE_OPTIONS"] = {  # hackk to avoid pool_timeout set in invenio_app_rdm
@@ -397,9 +388,9 @@ def app_config(app_config, workflow_model, request_types):
 @pytest.fixture(scope="module")
 def create_app(instance_path, entry_points):
     """Application factory fixture."""
-    from invenio_app.factory import create_api as _create_api
+    from invenio_app.factory import create_api
 
-    return _create_api
+    return create_api
 
 
 @pytest.fixture(scope="module")

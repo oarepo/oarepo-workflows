@@ -8,7 +8,7 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from flask_principal import UserNeed
 from invenio_requests.resolvers.registry import ResolverRegistry
@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 from invenio_access.permissions import system_identity
 
 
-def _multi_ref(*refs):
+def _multi_ref(*refs: Any) -> str:
     """Build a JSON string for multiple entity references."""
     return json.dumps(list(refs), separators=(", ", ": "))
 
@@ -186,9 +186,7 @@ def test_service(multiple_recipients_service, users, search_clear):
     assert {"user": uid1} in refdicts
     assert {"user": uid2} in refdicts
 
-    read_list = multiple_recipients_service.read_many(
-        system_identity, [multi_ref_12, multi_ref_3]
-    )
+    read_list = multiple_recipients_service.read_many(system_identity, [multi_ref_12, multi_ref_3])
     expected_list = [
         {"id": multi_ref_12},
         {"id": multi_ref_3},

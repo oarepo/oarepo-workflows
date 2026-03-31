@@ -43,7 +43,10 @@ def test_query_filter_missing(users, logged_client, search_clear, record_service
     assert wp.query_filter(identity=id1) == dsl.query.Bool(
         should=[
             dsl.query.Bool(
-                must=[dsl.query.Terms(state=["draft"]), dsl.query.Terms(parent__access__owned_by__user=[1])]
+                must=[
+                    dsl.query.Terms(state=["draft"]),
+                    dsl.query.Terms(parent__access__owned_by__user=[1]),
+                ]
             ),
             dsl.query.Terms(state=["published"]),
         ]
@@ -111,7 +114,9 @@ def test_in_any_workflow_allows_with_excludes(
     """
     from invenio_records_permissions import RecordPermissionPolicy
 
-    from oarepo_workflows.services.permissions.record_permission_policy import WorkflowRecordPermissionPolicyMixin
+    from oarepo_workflows.services.permissions.record_permission_policy import (
+        WorkflowRecordPermissionPolicyMixin,
+    )
 
     class _TestPolicy(WorkflowRecordPermissionPolicyMixin, RecordPermissionPolicy):
         can_read = (InAnyWorkflow("read"),)

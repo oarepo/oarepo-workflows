@@ -20,7 +20,9 @@ from invenio_records_permissions.generators import (
 from .generators import FromRecordWorkflow, SameAs, query_filters_from_all_workflows
 
 if TYPE_CHECKING:
-    from invenio_records_permissions import RecordPermissionPolicy as InvenioRecordPermissionPolicy
+    from invenio_records_permissions import (
+        RecordPermissionPolicy as InvenioRecordPermissionPolicy,
+    )
     from opensearch_dsl.query import Query
 else:
     InvenioRecordPermissionPolicy = object
