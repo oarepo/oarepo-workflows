@@ -11,9 +11,11 @@ from __future__ import annotations
 import base64
 import json
 import os
+import re
 import sys
 import time
-from typing import TYPE_CHECKING, Any, cast, override
+from typing import TYPE_CHECKING, Any, Protocol, cast, override
+from urllib import parse
 
 import pytest
 from flask_principal import ActionNeed, Identity, Need, UserNeed
@@ -36,6 +38,7 @@ from invenio_users_resources.proxies import (
 )
 from oarepo_model.customizations import AddFileToModule
 from oarepo_runtime.services.records.mapping import update_all_records_mappings
+from pydash.arrays import remove
 from sqlalchemy.exc import IntegrityError
 
 from oarepo_workflows import WorkflowRequestPolicy, WorkflowTransitions
@@ -196,7 +199,9 @@ class IsApplicableTestRequestPolicy(WorkflowRequestPolicy):
             declined="declined",
         ),
         events={
-            TestEventType.type_id: WorkflowEvent(submitters=InvenioRequestsPermissionPolicy.can_create_comment),
+            TestEventType.type_id: WorkflowEvent(
+                submitters=InvenioRequestsPermissionPolicy.can_create_comment
+            ),
         },
     )
 
@@ -413,12 +418,18 @@ def app_config(app_config, workflow_model, request_types):
 
     app_config["FILES_REST_DEFAULT_STORAGE_CLASS"] = "L"
 
-    app_config["RECORDS_REFRESOLVER_CLS"] = "invenio_records.resolver.InvenioRefResolver"
-    app_config["RECORDS_REFRESOLVER_STORE"] = "invenio_jsonschemas.proxies.current_refresolver_store"
+    app_config["RECORDS_REFRESOLVER_CLS"] = (
+        "invenio_records.resolver.InvenioRefResolver"
+    )
+    app_config["RECORDS_REFRESOLVER_STORE"] = (
+        "invenio_jsonschemas.proxies.current_refresolver_store"
+    )
 
     app_config["THEME_FRONTPAGE"] = False
 
-    app_config["SQLALCHEMY_ENGINE_OPTIONS"] = {  # hackk to avoid pool_timeout set in invenio_app_rdm
+    app_config[
+        "SQLALCHEMY_ENGINE_OPTIONS"
+    ] = {  # hackk to avoid pool_timeout set in invenio_app_rdm
         "pool_pre_ping": False,
         "pool_recycle": 3600,
     }
@@ -431,7 +442,9 @@ def app_config(app_config, workflow_model, request_types):
 
     app_config["RDM_PERSISTENT_IDENTIFIERS"] = {}
 
-    app_config["RDM_OPTIONAL_DOI_VALIDATOR"] = lambda _draft, _previous_published, **_kwargs: True
+    app_config["RDM_OPTIONAL_DOI_VALIDATOR"] = (
+        lambda _draft, _previous_published, **_kwargs: True
+    )
 
     app_config["REQUESTS_REGISTERED_TYPES"] = request_types
     # app_confi
@@ -470,7 +483,9 @@ def password():
 
 def _create_role(id_, name, description, is_managed, database) -> Role:
     """Create a Role/Group."""
-    r = current_datastore.create_role(id=id_, name=name, description=description, is_managed=is_managed)
+    r = current_datastore.create_role(
+        id=id_, name=name, description=description, is_managed=is_managed
+    )
     current_datastore.commit()
 
     current_groups_service.indexer.process_bulk_queue()
@@ -627,3 +642,81 @@ def search_with_field_mapping(app, search):
     # Ensure all record mappings are updated
     update_all_records_mappings()
     return search
+
+
+class URLNormalizer[T](Protocol):
+    def __call__(
+        self,
+        data: T,
+        *,
+        remove_api_prefix: bool = True,
+        replacements: dict[str, str] | None = None,
+    ) -> T: ...
+
+
+@pytest.fixture
+def normalize_urls[T]() -> URLNormalizer[T]:
+    """
+    Normalizes URLs in the data structure, optionally removing the `/api/` prefix.
+
+    Normalization:
+        1. Remove protocol, server and port from the URL.
+        2. Optionally remove the `/api/` prefix from the path.
+        3. For query parameters, sort by parameter name
+        4. Optionally replace string values in the URL from the replacements table. Key is a regex pattern, value is the replacement string.
+    """
+
+    def _replace_in_string(
+        s: str,
+        remove_api_prefix: bool = True,
+        replacements: dict[str, str] | None = None,
+    ) -> str:
+        if s.startswith("http://"):
+            s = s[7:]
+        elif s.startswith("https://"):
+            s = s[8:]
+        else:
+            return s
+
+        if replacements is not None:
+            for k, v in replacements.items():
+                s = re.sub(k, v, s)
+
+        url_parts = parse.urlparse(s)
+        path = url_parts.path
+        query = url_parts.query
+
+        if remove_api_prefix and path.startswith("/api"):
+            path = path[4:]
+
+        if query:
+            query_list = sorted(parse.parse_qsl(query))
+            query = "&".join(f"{k}={v}" for k, v in query_list)
+            s = f"{parse.quote(path)}?{parse.quote(query)}"
+
+        return s
+
+    def _normalize_urls(
+        d: Any,
+        *,
+        remove_api_prefix: bool = True,
+        replacements: dict[str, str] | None = None,
+    ) -> Any:
+
+        if isinstance(d, dict):
+            for k, v in list(d.items()):
+                d[k] = _normalize_urls(
+                    v, remove_api_prefix=remove_api_prefix, replacements=replacements
+                )
+        elif isinstance(d, list):
+            for idx, v in enumerate(d):
+                d[idx] = _normalize_urls(
+                    v, remove_api_prefix=remove_api_prefix, replacements=replacements
+                )
+        elif isinstance(d, str):
+            return _replace_in_string(
+                d, remove_api_prefix=remove_api_prefix, replacements=replacements
+            )
+        return d
+
+    return cast(URLNormalizer[T], _normalize_urls)
