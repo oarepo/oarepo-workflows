@@ -21,7 +21,7 @@ pip install oarepo-workflows
 
 ### Requirements
 
-- Python 3.13+
+- Python 3.14+
 - Invenio 14.x (RDM)
 - oarepo-runtime >= 2.0.0
 

@@ -87,7 +87,7 @@ def test_multiple_recipients_resolver(app: Flask, search_clear) -> None:
     assert entity_reference == {"multiple": '[{"user": "1"}, {"user": "2"}]'}
 
 
-def test_multiple_entities_entity_proxy(users, role, workflow_model, location, search_clear):
+def test_multiple_entities_entity_proxy(users, role, workflow_model, location, search_clear, normalize_urls):
     proxy = MultipleEntitiesProxy(MultipleEntitiesResolver(), {"multiple": '[{"user": "1"}, {"user": "2"}]'})
     needs = proxy.get_needs()
     assert set(needs) == {UserNeed(1), UserNeed(2)}
@@ -103,43 +103,47 @@ def test_multiple_entities_entity_proxy(users, role, workflow_model, location, s
     first.pop("confirmed_at")
     second.pop("confirmed_at")
 
-    assert first == {
-        "active": True,
-        "blocked_at": None,
-        "email": "user1@example.org",
-        "id": "1",
-        "is_current_user": False,
-        "links": {
-            "admin_drafts_html": "https://127.0.0.1:5000/administration/drafts?q=parent.access.owned_by.user:1&f=allversions",
-            "admin_moderation_html": "https://127.0.0.1:5000/administration/moderation?q=topic.user:1",
-            "admin_records_html": "https://127.0.0.1:5000/administration/records?q=parent.access.owned_by.user:1&f=allversions",
-            "avatar": "https://127.0.0.1:5000/api/users/1/avatar.svg",
-            "records_html": "https://127.0.0.1:5000/search/records?q=parent.access.owned_by.user:1",
-            "self": "https://127.0.0.1:5000/api/users/1",
-        },
-        "profile": {"affiliations": "CERN", "full_name": ""},
-        "username": None,
-        "verified_at": None,
-    }
+    assert normalize_urls(first) == normalize_urls(
+        {
+            "active": True,
+            "blocked_at": None,
+            "email": "user1@example.org",
+            "id": "1",
+            "is_current_user": False,
+            "links": {
+                "admin_drafts_html": "https://127.0.0.1:5000/administration/drafts?q=parent.access.owned_by.user:1&f=allversions",
+                "admin_moderation_html": "https://127.0.0.1:5000/administration/moderation?q=topic.user:1",
+                "admin_records_html": "https://127.0.0.1:5000/administration/records?q=parent.access.owned_by.user:1&f=allversions",
+                "avatar": "https://127.0.0.1:5000/api/users/1/avatar.svg",
+                "records_html": "https://127.0.0.1:5000/search?q=parent.access.owned_by.user:1",
+                "self": "https://127.0.0.1:5000/api/users/1",
+            },
+            "profile": {"affiliations": "CERN", "full_name": ""},
+            "username": None,
+            "verified_at": None,
+        }
+    )
 
-    assert second == {
-        "active": True,
-        "blocked_at": None,
-        "email": "user2@example.org",
-        "id": "2",
-        "is_current_user": False,
-        "links": {
-            "admin_drafts_html": "https://127.0.0.1:5000/administration/drafts?q=parent.access.owned_by.user:2&f=allversions",
-            "admin_moderation_html": "https://127.0.0.1:5000/administration/moderation?q=topic.user:2",
-            "admin_records_html": "https://127.0.0.1:5000/administration/records?q=parent.access.owned_by.user:2&f=allversions",
-            "avatar": "https://127.0.0.1:5000/api/users/2/avatar.svg",
-            "records_html": "https://127.0.0.1:5000/search/records?q=parent.access.owned_by.user:2",
-            "self": "https://127.0.0.1:5000/api/users/2",
-        },
-        "profile": {"affiliations": "CERN", "full_name": ""},
-        "username": "beetlesmasher",
-        "verified_at": None,
-    }
+    assert normalize_urls(second) == normalize_urls(
+        {
+            "active": True,
+            "blocked_at": None,
+            "email": "user2@example.org",
+            "id": "2",
+            "is_current_user": False,
+            "links": {
+                "admin_drafts_html": "https://127.0.0.1:5000/administration/drafts?q=parent.access.owned_by.user:2&f=allversions",
+                "admin_moderation_html": "https://127.0.0.1:5000/administration/moderation?q=topic.user:2",
+                "admin_records_html": "https://127.0.0.1:5000/administration/records?q=parent.access.owned_by.user:2&f=allversions",
+                "avatar": "https://127.0.0.1:5000/api/users/2/avatar.svg",
+                "records_html": "https://127.0.0.1:5000/search?q=parent.access.owned_by.user:2",
+                "self": "https://127.0.0.1:5000/api/users/2",
+            },
+            "profile": {"affiliations": "CERN", "full_name": ""},
+            "username": "beetlesmasher",
+            "verified_at": None,
+        }
+    )
 
     # must be in the same test due to db issues causing search to not reindex users
     proxy = MultipleEntitiesProxy(MultipleEntitiesResolver(), {"multiple": '[{"user": "1"}, {"group": "it-dep"}]'})
@@ -154,24 +158,26 @@ def test_multiple_entities_entity_proxy(users, role, workflow_model, location, s
 
     first.pop("confirmed_at")
 
-    assert first == {
-        "active": True,
-        "blocked_at": None,
-        "email": "user1@example.org",
-        "id": "1",
-        "is_current_user": False,
-        "links": {
-            "admin_drafts_html": "https://127.0.0.1:5000/administration/drafts?q=parent.access.owned_by.user:1&f=allversions",
-            "admin_moderation_html": "https://127.0.0.1:5000/administration/moderation?q=topic.user:1",
-            "admin_records_html": "https://127.0.0.1:5000/administration/records?q=parent.access.owned_by.user:1&f=allversions",
-            "avatar": "https://127.0.0.1:5000/api/users/1/avatar.svg",
-            "records_html": "https://127.0.0.1:5000/search/records?q=parent.access.owned_by.user:1",
-            "self": "https://127.0.0.1:5000/api/users/1",
-        },
-        "profile": {"affiliations": "CERN", "full_name": ""},
-        "username": None,
-        "verified_at": None,
-    }
+    assert normalize_urls(first) == normalize_urls(
+        {
+            "active": True,
+            "blocked_at": None,
+            "email": "user1@example.org",
+            "id": "1",
+            "is_current_user": False,
+            "links": {
+                "admin_drafts_html": "https://127.0.0.1:5000/administration/drafts?q=parent.access.owned_by.user:1&f=allversions",
+                "admin_moderation_html": "https://127.0.0.1:5000/administration/moderation?q=topic.user:1",
+                "admin_records_html": "https://127.0.0.1:5000/administration/records?q=parent.access.owned_by.user:1&f=allversions",
+                "avatar": "https://127.0.0.1:5000/api/users/1/avatar.svg",
+                "records_html": "https://127.0.0.1:5000/search?q=parent.access.owned_by.user:1",
+                "self": "https://127.0.0.1:5000/api/users/1",
+            },
+            "profile": {"affiliations": "CERN", "full_name": ""},
+            "username": None,
+            "verified_at": None,
+        }
+    )
 
     assert second == {"id": "it-dep", "name": "it-dep"}
 
