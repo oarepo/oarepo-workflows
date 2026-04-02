@@ -9,6 +9,8 @@
 
 from __future__ import annotations
 
+from importlib.metadata import PackageNotFoundError, version
+
 from oarepo_workflows.services.permissions import (
     FromRecordWorkflow,
     IfInState,
@@ -27,8 +29,10 @@ from .requests import (
     WorkflowTransitions,
 )
 
-__version__ = "2.0.0dev10"
-"""Version of the library."""
+try:
+    __version__ = version("oarepo-workflows")
+except PackageNotFoundError:
+    __version__ = "0.0.0dev0+unknown"
 
 
 __all__ = (

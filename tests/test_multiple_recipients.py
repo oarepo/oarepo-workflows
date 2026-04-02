@@ -77,9 +77,7 @@ def test_multiple_recipients_generator(app, search_clear) -> None:
 
 def test_multiple_recipients_resolver(app: Flask, search_clear) -> None:
     """Test multiple recipients resolver."""
-    resolved = ResolverRegistry.resolve_entity(
-        {"multiple": '[{"user": "1"}, {"user": "2"}]'}
-    )
+    resolved = ResolverRegistry.resolve_entity({"multiple": '[{"user": "1"}, {"user": "2"}]'})
     assert isinstance(resolved, MultipleEntitiesEntity)
     assert {x.get_needs()[0] for x in resolved.entities} == {
         UserNeed(1),
@@ -89,12 +87,8 @@ def test_multiple_recipients_resolver(app: Flask, search_clear) -> None:
     assert entity_reference == {"multiple": '[{"user": "1"}, {"user": "2"}]'}
 
 
-def test_multiple_entities_entity_proxy(
-    users, role, workflow_model, location, search_clear, normalize_urls
-):
-    proxy = MultipleEntitiesProxy(
-        MultipleEntitiesResolver(), {"multiple": '[{"user": "1"}, {"user": "2"}]'}
-    )
+def test_multiple_entities_entity_proxy(users, role, workflow_model, location, search_clear, normalize_urls):
+    proxy = MultipleEntitiesProxy(MultipleEntitiesResolver(), {"multiple": '[{"user": "1"}, {"user": "2"}]'})
     needs = proxy.get_needs()
     assert set(needs) == {UserNeed(1), UserNeed(2)}
     entity = proxy.resolve()
@@ -152,9 +146,7 @@ def test_multiple_entities_entity_proxy(
     )
 
     # must be in the same test due to db issues causing search to not reindex users
-    proxy = MultipleEntitiesProxy(
-        MultipleEntitiesResolver(), {"multiple": '[{"user": "1"}, {"group": "it-dep"}]'}
-    )
+    proxy = MultipleEntitiesProxy(MultipleEntitiesResolver(), {"multiple": '[{"user": "1"}, {"group": "it-dep"}]'})
     entity = proxy.resolve()
     assert isinstance(entity, MultipleEntitiesEntity)
     serialization = MultipleEntitiesSchema().dump(entity)
@@ -191,9 +183,7 @@ def test_multiple_entities_entity_proxy(
 
 
 def test_service(multiple_recipients_service, users, search_clear):
-    read_item = multiple_recipients_service.read(
-        system_identity, '[{"user": "1"}, {"user": "2"}]'
-    )
+    read_item = multiple_recipients_service.read(system_identity, '[{"user": "1"}, {"user": "2"}]')
     assert {"id": '[{"user": "1"}, {"user": "2"}]'}.items() <= read_item.data.items()
     assert isinstance(read_item._record, MultipleEntitiesEntity)  # noqa SLF001
 
