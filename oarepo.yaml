@@ -1,10 +1,10 @@
 i18n:
-  babel_output_translations: oarepo_requests/translations
+  babel_output_translations: oarepo_workflows/translations
   babel_source_paths:
-    - oarepo_requests/
-  i18next_output_translations: oarepo_requests/ui/theme/assets/semantic-ui/translations/oarepo_requests_ui
+    - oarepo_workflows/
+  i18next_output_translations: oarepo_workflows/ui/theme/assets/semantic-ui/translations/oarepo_workflows_ui
   i18next_source_paths:
-    - oarepo_requests/ui/theme/assets/semantic-ui/js
+    - oarepo_workflows/ui/theme/assets/semantic-ui/js
   languages:
     - cs
     - en
