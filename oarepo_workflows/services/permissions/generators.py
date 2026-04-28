@@ -285,7 +285,7 @@ class SameAs(AggregateGenerator):
         .. code-block:: python
             class Perms:
                 can_create_files = [
-                    SameAs("edit_files")
+                    SameAs("can_edit_files")
                 ]
                 can_edit_files = [RecordOwners()]
 
