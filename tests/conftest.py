@@ -255,6 +255,7 @@ class TestPermissionPolicy(DefaultWorkflowPermissions):
     """Test permission policy."""
 
     can_manage_files = (AuthenticatedUser(),)
+    can_create = (AuthenticatedUser(),)
 
 
 class RecordOwnersReadTestWorkflowPermissionPolicy(TestPermissionPolicy):
