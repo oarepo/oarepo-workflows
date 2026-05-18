@@ -23,8 +23,12 @@ from invenio_users_resources.services.permissions import UserManager
 from .generators import IfInState, SameAs
 
 
-class DefaultWorkflowPermissions(RecordPermissionPolicy):
-    """Base class for workflow permissions, subclass from it and put the result to Workflow constructor.
+class BaseWorkflowPermissionPolicy(RecordPermissionPolicy):
+    pass
+
+
+class DefaultWorkflowPermissions(BaseWorkflowPermissionPolicy):
+    """Default class for workflow permissions, subclass from it and put the result to Workflow constructor.
 
     Example:
         class MyWorkflowPermissions(DefaultWorkflowPermissions):
@@ -63,7 +67,11 @@ class DefaultWorkflowPermissions(RecordPermissionPolicy):
     )
 
     # from RDM
-    can_read_deleted = (IfRecordDeleted(then_=[UserManager, SystemProcess()], else_=[SameAs("can_read")]),)
+    can_read_deleted = (
+        IfRecordDeleted(
+            then_=[UserManager, SystemProcess()], else_=[SameAs("can_read")]
+        ),
+    )
     can_update = (IfInState("draft", [RecordOwners()]),)
     can_delete = (IfInState("draft", [RecordOwners()]),)
     can_create = (AuthenticatedUser(),)
