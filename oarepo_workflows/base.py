@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any, Protocol
 
 from . import WorkflowRecordPermissionPolicyMixin
 from .requests import WorkflowRequestPolicy
-from .services.permissions import DefaultWorkflowPermissions
+from .services.permissions import BaseWorkflowPermissionPolicy
 
 if TYPE_CHECKING:
     from flask_babel import LazyString
@@ -33,13 +33,13 @@ class Workflow:
     label: str | LazyString
     """A human-readable label for the workflow."""
 
-    permission_policy_cls: type[DefaultWorkflowPermissions]
+    permission_policy_cls: type[BaseWorkflowPermissionPolicy]
     """A permission policy class that handles permissions on records that are governed by this workflow."""
 
     request_policy_cls: type[WorkflowRequestPolicy] = WorkflowRequestPolicy
     """A request policy class that defines which requests can be applied to records governed by this workflow."""
 
-    def permissions(self, action: str, **over: Any) -> DefaultWorkflowPermissions:
+    def permissions(self, action: str, **over: Any) -> BaseWorkflowPermissionPolicy:
         """Return permission policy for this workflow applicable to the given action.
 
         :param  action:      action for which permission is asked
@@ -51,13 +51,17 @@ class Workflow:
         return self.request_policy_cls(self)
 
     @property
-    def permission_policy_with_requests_cls(self) -> type[DefaultWorkflowPermissions]:
+    def permission_policy_with_requests_cls(self) -> type[BaseWorkflowPermissionPolicy]:
         """Return a permission policy class merged with permissions for creating requests and events."""
         extra_permissions = {}
         for r in self.requests().requests:
-            extra_permissions[f"can_{r.request_type.type_id}_create"] = (r.requester_generator,)
+            extra_permissions[f"can_{r.request_type.type_id}_create"] = (
+                r.requester_generator,
+            )
             for event_id, e in r.events.items():
-                extra_permissions[f"can_{r.request_type.type_id}_{event_id}_create"] = (e.submitter_generator,)
+                extra_permissions[f"can_{r.request_type.type_id}_{event_id}_create"] = (
+                    e.submitter_generator,
+                )
         return type(
             f"{self.permission_policy_cls.__name__}WithRequests",
             (self.permission_policy_cls,),
@@ -71,16 +75,16 @@ class Workflow:
         """
         if issubclass(self.permission_policy_cls, WorkflowRecordPermissionPolicyMixin):
             raise TypeError(
-                f"Workflow permission policy {self.permission_policy_cls} is not a "
+                f"Workflow permission policy {self.permission_policy_cls} should not be a "
                 f"subclass of WorkflowRecordPermissionPolicy."
             )
-        if not issubclass(self.permission_policy_cls, DefaultWorkflowPermissions):
+        if not issubclass(self.permission_policy_cls, BaseWorkflowPermissionPolicy):
             raise TypeError(
-                f"Workflow permission policy {self.permission_policy_cls} is a subclass of DefaultWorkflowPermissions."
+                f"Workflow permission policy {self.permission_policy_cls} is not a subclass of DefaultWorkflowPermissions."
             )
         if not issubclass(self.request_policy_cls, WorkflowRequestPolicy):
             raise TypeError(
-                f"Workflow request permission policy {self.request_policy_cls} is a subclass of WorkflowRequestPolicy."
+                f"Workflow request permission policy {self.request_policy_cls} is not a subclass of WorkflowRequestPolicy."
             )
 
 
