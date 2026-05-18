@@ -13,6 +13,9 @@ import operator
 from functools import reduce
 from typing import TYPE_CHECKING, Any, override
 
+from flask import current_app
+from flask_principal import RoleNeed
+from invenio_access import ActionNeed
 from invenio_search.engine import dsl
 from oarepo_runtime.services.generators import (
     AggregateGenerator,
@@ -37,7 +40,9 @@ if TYPE_CHECKING:
     from oarepo_workflows.services.permissions import DefaultWorkflowPermissions
 
 
-def query_filters_from_all_workflows(action: str, **context: Any) -> list[dsl.query.Query]:
+def query_filters_from_all_workflows(
+    action: str, **context: Any
+) -> list[dsl.query.Query]:
     """Get query filters to match records depending on the records' workflow."""
     workflows = current_oarepo_workflows.record_workflows
     queries = []
@@ -162,7 +167,9 @@ class FromRecordWorkflow(Generator):
             if not record:
                 return None
         action_name = self._action_name(**context)
-        policy = self._get_workflow(record, **context).permissions(action_name, **context | {"record": record})
+        policy = self._get_workflow(record, **context).permissions(
+            action_name, **context | {"record": record}
+        )
         return policy if hasattr(policy, f"can_{action_name}") else None
 
     @override
@@ -235,7 +242,9 @@ class IfInState(RecipientGeneratorMixin, ConditionalGenerator):
         if isinstance(state, str):
             state = [state]
         if not isinstance(state, list | tuple):
-            raise TypeError(f"State must be a string, list or tuple. Got {type(state)}.")
+            raise TypeError(
+                f"State must be a string, list or tuple. Got {type(state)}."
+            )
         self.state = state
         super().__init__(then_, else_ or [])
 
@@ -263,7 +272,9 @@ class IfInState(RecipientGeneratorMixin, ConditionalGenerator):
 
         recipients = self.then_ if self._condition(record, **context) else self.else_  # type: ignore[reportArgumentType]
         generator = MultipleEntitiesGenerator(recipients)
-        return generator.reference_receivers(record=record, request_type=request_type, **context)
+        return generator.reference_receivers(
+            record=record, request_type=request_type, **context
+        )
 
     @override
     def _query_instate(self, **context: Any) -> dsl.query.Query:
@@ -304,12 +315,16 @@ class SameAs(AggregateGenerator):
         self.delegated_permission_name = permission_name
 
     @override
-    def _generators(self, policy: RecordPermissionPolicy, **context: Any) -> Sequence[Generator]:  # type: ignore[override]
+    def _generators(
+        self, policy: RecordPermissionPolicy, **context: Any
+    ) -> Sequence[Generator]:  # type: ignore[override]
         """Get the generators from the policy."""
         return getattr(policy, self.delegated_permission_name)  # type: ignore[no-any-return]
 
     @override
-    def needs(self, policy: RecordPermissionPolicy | None = None, **context: Any) -> Sequence[Need]:  # type: ignore[reportIncompatibleMethodOverride]
+    def needs(
+        self, policy: RecordPermissionPolicy | None = None, **context: Any
+    ) -> Sequence[Need]:  # type: ignore[reportIncompatibleMethodOverride]
         """Get the needs from the policy."""
         if policy is None:
             raise ValueError(
@@ -319,7 +334,9 @@ class SameAs(AggregateGenerator):
         return super().needs(**context | {"policy": policy})  # type: ignore[no-any-return]
 
     @override
-    def excludes(self, policy: RecordPermissionPolicy | None = None, **context: Any) -> Sequence[Need]:  # type: ignore[reportIncompatibleMethodOverride]
+    def excludes(
+        self, policy: RecordPermissionPolicy | None = None, **context: Any
+    ) -> Sequence[Need]:  # type: ignore[reportIncompatibleMethodOverride]
         """Get the excludes from the policy."""
         if policy is None:
             raise ValueError(
@@ -328,7 +345,9 @@ class SameAs(AggregateGenerator):
         return super().excludes(**context | {"policy": policy})  # type: ignore[no-any-return]
 
     @override
-    def query_filter(self, policy: RecordPermissionPolicy | None = None, **context: Any) -> dsl.query.Query:  # type: ignore[reportIncompatibleMethodOverride]
+    def query_filter(
+        self, policy: RecordPermissionPolicy | None = None, **context: Any
+    ) -> dsl.query.Query:  # type: ignore[reportIncompatibleMethodOverride]
         """Get the query_filter from the policy."""
         if policy is None:
             raise ValueError(
@@ -339,6 +358,56 @@ class SameAs(AggregateGenerator):
     def __repr__(self) -> str:
         """Return representation of the generator."""
         return f"SameAs({self.delegated_permission_name})"
+
+    def __str__(self) -> str:
+        """Return String representation of the generator."""
+        return repr(self)
+
+
+class UserWithRole(Generator):
+    """Generator that checks if the user has a specific role."""
+
+    def __init__(self, role_name: str):
+        self.role_name = role_name
+
+    def needs(self, **context: Any) -> Sequence[Need]:
+        return [
+            RoleNeed(
+                current_app.extensions["security"]
+                .datastore.find_role(self.role_name)
+                .id
+            )
+        ]
+
+    def query_filter(self, identity=None, **kwargs) -> dsl.query.Query:
+        if not identity:
+            return dsl.Q("match_none")
+        for provide in identity.provides:
+            if provide.method == "role" and provide.value in self.roles:
+                return dsl.Q("match_all")
+        return dsl.Q("match_none")
+
+    def __repr__(self) -> str:
+        """Return representation of the generator."""
+        return f"UserWithRole({self.role_name})"
+
+    def __str__(self) -> str:
+        """Return String representation of the generator."""
+        return repr(self)
+
+
+class HasActionNeed(Generator):
+    """Generator that checks if the user has a specific action."""
+
+    def __init__(self, action: str):
+        self.action = action
+
+    def needs(self, **context: Any) -> Sequence[Need]:
+        return [ActionNeed(self.action)]
+
+    def __repr__(self) -> str:
+        """Return representation of the generator."""
+        return f"HasActionNeed({self.action})"
 
     def __str__(self) -> str:
         """Return String representation of the generator."""
