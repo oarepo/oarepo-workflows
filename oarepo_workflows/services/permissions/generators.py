@@ -391,8 +391,10 @@ class UserWithRole(RecipientGeneratorMixin, Generator):
         request_type: RequestType | None = None,
         **context: Any,
     ) -> list[Mapping[str, str]]:  # pragma: no cover
-        role_id = current_app.extensions["security"].datastore.find_role(self.role_name).id
-        return [{"group": role_id}]
+        role = current_app.extensions["security"].datastore.find_role(self.role_name)
+        if role is None:
+            return []
+        return [{"group": role.id}]
 
 
 class HasActionNeed(RecipientGeneratorMixin, Generator):
