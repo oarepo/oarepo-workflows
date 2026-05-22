@@ -222,6 +222,11 @@ class CompositePermissionPolicyMixin(RecordPermissionPolicy):
         if ret:
             return True
 
+        if self.excludes and set(self.excludes).intersection(identity.provides):
+            # Regular explicit excludes must remain authoritative and must not
+            # be bypassed by a matching composite alternative.
+            return False
+
         for need in self.needs:
             if need.method != "composite":
                 continue
@@ -230,15 +235,15 @@ class CompositePermissionPolicyMixin(RecordPermissionPolicy):
                 generator_needs = set(generator.needs(**self.over))
                 generator_excludes = set(generator.excludes(**self.over))
 
-                if not generator_needs or not generator_needs.intersection(identity.provides):
-                    # This inner generator's needs are not met — the whole
-                    # composite is unsatisfied; move on to the next composite.
-                    break
-
                 if generator_excludes and generator_excludes.intersection(identity.provides):
                     # An explicit exclusion applies.  Deny immediately and
                     # conservatively — do not check further composites.
                     return False
+
+                if not generator_needs or not generator_needs.intersection(identity.provides):
+                    # This inner generator's needs are not met — the whole
+                    # composite is unsatisfied; move on to the next composite.
+                    break
             else:
                 # The for-loop completed without a break, meaning every inner
                 # generator matched.  The composite as a whole is satisfied.
