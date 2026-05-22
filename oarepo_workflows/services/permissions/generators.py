@@ -366,7 +366,11 @@ class UserWithRole(RecipientGeneratorMixin, Generator):
     def query_filter(self, identity: Identity | None = None, **kwargs: Any) -> dsl.query.Query:
         if not identity:
             return dsl.Q("match_none")
-        role_id = current_app.extensions["security"].datastore.find_role(self.role_name).id
+        role = current_app.extensions["security"].datastore.find_role(self.role_name)
+        if role is None:
+            return dsl.Q("match_none")
+
+        role_id = role.id
         for provide in identity.provides:
             if provide.method == "role" and provide.value == role_id:
                 return dsl.Q("match_all")

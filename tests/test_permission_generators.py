@@ -176,7 +176,7 @@ def test_user_with_role_needs_returns_empty_when_role_not_found(app, db):
 # ===========================================================================
 
 
-def test_user_with_role_query_filter_match_all_when_identity_has_role(app, db):
+def test_user_with_role_query_filter_match_all_when_identity_has_role(app, db, role):
     """query_filter returns match_all when the identity provides the role."""
     gen = UserWithRole("it-dep")
     i = _identity(1, RoleNeed("it-dep"))
@@ -202,7 +202,7 @@ def test_user_with_role_query_filter_match_none_for_different_role(app, db):
     assert gen.query_filter(identity=i) == dsl.Q("match_none")
 
 
-def test_user_with_role_query_filter_checks_role_name_not_id(app, db):
+def test_user_with_role_query_filter_checks_role_name_not_id(app, db, role):
     """query_filter compares against the role name passed to __init__."""
     gen_a = UserWithRole("it-dep")
     gen_b = UserWithRole("finance")
