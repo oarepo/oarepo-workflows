@@ -48,6 +48,12 @@ class WorkflowRequestPolicy:
                         rejected = 'published'
                     )
                 )
+            # or:
+            DeleteRequestType.name = WorkflowRequest(
+                request_type = DeleteRequestType,
+                ...
+            )
+            ...
 
     """
 

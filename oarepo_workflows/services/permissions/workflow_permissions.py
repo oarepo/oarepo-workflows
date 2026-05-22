@@ -14,6 +14,7 @@ from typing import Any
 from invenio_rdm_records.services.generators import IfRecordDeleted, RecordOwners
 from invenio_records_permissions import RecordPermissionPolicy
 from invenio_records_permissions.generators import (
+    AnyUser,
     AuthenticatedUser,
     Disable,
     SystemProcess,
@@ -23,8 +24,12 @@ from invenio_users_resources.services.permissions import UserManager
 from .generators import IfInState, SameAs
 
 
-class DefaultWorkflowPermissions(RecordPermissionPolicy):
-    """Base class for workflow permissions, subclass from it and put the result to Workflow constructor.
+class BaseWorkflowPermissionPolicy(RecordPermissionPolicy):
+    """Base class for workflow permissions (non-rdm and rdm)."""
+
+
+class DefaultWorkflowPermissions(BaseWorkflowPermissionPolicy):
+    """Default class for workflow permissions, subclass from it and put the result to Workflow constructor.
 
     Example:
         class MyWorkflowPermissions(DefaultWorkflowPermissions):
@@ -59,7 +64,7 @@ class DefaultWorkflowPermissions(RecordPermissionPolicy):
 
     can_read = (
         IfInState("draft", [RecordOwners()]),
-        IfInState("published", [AuthenticatedUser()]),
+        IfInState("published", [AnyUser()]),
     )
 
     # from RDM

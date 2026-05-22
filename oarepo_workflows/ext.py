@@ -21,6 +21,10 @@ from oarepo_workflows.errors import (
     MissingWorkflowError,
     UnregisteredRequestTypeError,
 )
+from oarepo_workflows.services.action import (
+    ActionNeedService,
+    ActionNeedServiceConfig,
+)
 from oarepo_workflows.services.auto_approve import (
     AutoApproveService,
     AutoApproveServiceConfig,
@@ -70,6 +74,9 @@ class OARepoWorkflows:
         app.config.setdefault("WORKFLOWS", ext_config.WORKFLOWS)
         app.config.setdefault("WORKFLOWS_DEFAULT_WORKFLOW", ext_config.WORKFLOWS_DEFAULT_WORKFLOW)
         app.config.setdefault("REQUESTS_ALLOWED_RECEIVERS", []).extend(ext_config.WORKFLOWS_ALLOWED_REQUEST_RECEIVERS)
+        app.config.setdefault("NOTIFICATION_RECIPIENTS_RESOLVERS", {}).update(
+            ext_config.NOTIFICATION_RECIPIENTS_RESOLVERS
+        )
 
     def init_app(self, app: Flask) -> None:
         """Flask application initialization."""
@@ -82,6 +89,7 @@ class OARepoWorkflows:
         # noinspection PyAttributeOutsideInit
         self.auto_approve_service = AutoApproveService(AutoApproveServiceConfig())
         self.multiple_recipients_service = MultipleEntitiesEntityService(MultipleEntitiesEntityServiceConfig())
+        self.action_need_service = ActionNeedService(ActionNeedServiceConfig())
 
     @cached_property
     def workflow_by_code(self) -> dict[str, Workflow]:
@@ -222,6 +230,11 @@ def finalize_app(app: Flask) -> None:
     records_resources.registry.register(
         ext.multiple_recipients_service,
         service_id=ext.multiple_recipients_service.config.service_id,
+    )
+
+    records_resources.registry.register(
+        ext.action_need_service,
+        service_id=ext.action_need_service.config.service_id,
     )
 
     for workflow in ext.record_workflows:

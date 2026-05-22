@@ -13,6 +13,9 @@ import operator
 from functools import reduce
 from typing import TYPE_CHECKING, Any, override
 
+from flask import current_app
+from flask_principal import Identity, RoleNeed
+from invenio_access import ActionNeed
 from invenio_search.engine import dsl
 from oarepo_runtime.services.generators import (
     AggregateGenerator,
@@ -34,7 +37,7 @@ if TYPE_CHECKING:
     from invenio_requests.customizations.request_types import RequestType
 
     from oarepo_workflows import Workflow
-    from oarepo_workflows.services.permissions import DefaultWorkflowPermissions
+    from oarepo_workflows.services.permissions import BaseWorkflowPermissionPolicy
 
 
 def query_filters_from_all_workflows(action: str, **context: Any) -> list[dsl.query.Query]:
@@ -148,7 +151,7 @@ class FromRecordWorkflow(Generator):
         self,
         record: Record | None = None,
         **context: Any,
-    ) -> DefaultWorkflowPermissions | None:
+    ) -> BaseWorkflowPermissionPolicy | None:
         """Get the permissions policy from the workflow.
 
         At first the workflow id is determined from the context.
@@ -163,7 +166,7 @@ class FromRecordWorkflow(Generator):
                 return None
         action_name = self._action_name(**context)
         policy = self._get_workflow(record, **context).permissions(action_name, **context | {"record": record})
-        return policy if hasattr(policy, f"can_{action_name}") else None
+        return policy if policy is not None and hasattr(policy, f"can_{action_name}") else None
 
     @override
     def needs(self, **context: Any) -> Sequence[Need]:
@@ -343,3 +346,81 @@ class SameAs(AggregateGenerator):
     def __str__(self) -> str:
         """Return String representation of the generator."""
         return repr(self)
+
+
+class UserWithRole(RecipientGeneratorMixin, Generator):
+    """Generator that checks if the user has a specific role."""
+
+    def __init__(self, role_name: str):
+        """Initialize with the role name to check."""
+        self.role_name = role_name
+
+    @override
+    def needs(self, **context: Any) -> Sequence[Need]:
+        role = current_app.extensions["security"].datastore.find_role(self.role_name)
+        if role is None:
+            return []
+        return [RoleNeed(role.id)]
+
+    @override
+    def query_filter(self, identity: Identity | None = None, **kwargs: Any) -> dsl.query.Query:
+        if not identity:
+            return dsl.Q("match_none")
+        role = current_app.extensions["security"].datastore.find_role(self.role_name)
+        if role is None:
+            return dsl.Q("match_none")
+
+        role_id = role.id
+        for provide in identity.provides:
+            if provide.method == "role" and provide.value == role_id:
+                return dsl.Q("match_all")
+        return dsl.Q("match_none")
+
+    def __repr__(self) -> str:
+        """Return representation of the generator."""
+        return f"UserWithRole({self.role_name})"
+
+    def __str__(self) -> str:
+        """Return String representation of the generator."""
+        return repr(self)
+
+    @override
+    def reference_receivers(
+        self,
+        record: Record | None = None,
+        request_type: RequestType | None = None,
+        **context: Any,
+    ) -> list[Mapping[str, str]]:  # pragma: no cover
+        role = current_app.extensions["security"].datastore.find_role(self.role_name)
+        if role is None:
+            return []
+        return [{"group": role.id}]
+
+
+class HasActionNeed(RecipientGeneratorMixin, Generator):
+    """Generator that checks if the user has a specific action."""
+
+    def __init__(self, action: str):
+        """Initialize with the action to check."""
+        self.action = action
+
+    @override
+    def needs(self, **context: Any) -> Sequence[Need]:
+        return [ActionNeed(self.action)]
+
+    def __repr__(self) -> str:
+        """Return representation of the generator."""
+        return f"HasActionNeed({self.action})"
+
+    def __str__(self) -> str:
+        """Return String representation of the generator."""
+        return repr(self)
+
+    @override
+    def reference_receivers(
+        self,
+        record: Record | None = None,
+        request_type: RequestType | None = None,
+        **context: Any,
+    ) -> list[Mapping[str, str]]:  # pragma: no cover
+        return [{"action_need": self.action}]
