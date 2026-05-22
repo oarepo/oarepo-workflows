@@ -16,7 +16,7 @@ from invenio_records_resources.references.entity_resolvers import (
 
 
 def action_resolver() -> ServiceResultResolver:
-    """Return group notification resolver."""
+    """Return action need notification resolver."""
     return ServiceResultResolver(service_id="action_need", type_key="action_need")
 
 

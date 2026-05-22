@@ -29,7 +29,7 @@ class ActionRecipient(RecipientGenerator):
         self.key = key
 
     @override
-    def __call__(self, notification: Notification, recipients: list[Recipient]):
+    def __call__(self, notification: Notification, recipients: dict[str, Recipient]):
         """Update required recipient information and add backend id."""
         action_need = dict_lookup(notification.context, self.key)
         action_name = action_need["id"]

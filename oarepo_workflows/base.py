@@ -72,12 +72,12 @@ class Workflow:
         if issubclass(self.permission_policy_cls, WorkflowRecordPermissionPolicyMixin):
             raise TypeError(
                 f"Workflow permission policy {self.permission_policy_cls} should not be a "
-                f"subclass of WorkflowRecordPermissionPolicy."
+                f"subclass of WorkflowRecordPermissionPolicyMixin."
             )
         if not issubclass(self.permission_policy_cls, BaseWorkflowPermissionPolicy):
             raise TypeError(
                 f"Workflow permission policy {self.permission_policy_cls} "
-                "is not a subclass of DefaultWorkflowPermissions."
+                "is not a subclass of BaseWorkflowPermissionPolicy."
             )
         if not issubclass(self.request_policy_cls, WorkflowRequestPolicy):
             raise TypeError(

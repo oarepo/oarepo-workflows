@@ -50,7 +50,7 @@ class ActionNeedResolver(EntityResolver):
     @override
     def matches_reference_dict(self, ref_dict: dict) -> bool:
         """Check if the reference dictionary can be resolved by this resolver."""
-        return next(iter(ref_dict.keys())) == self.type_id  # type: ignore[no-any-return]
+        return len(ref_dict) == 1 and self.type_id in ref_dict
 
     @override
     def _reference_entity(self, entity: Any) -> dict[str, str]:

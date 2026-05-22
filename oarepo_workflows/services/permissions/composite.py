@@ -21,9 +21,9 @@ from invenio_records_permissions.generators import (
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from invenio_records_permissions import RecordPermissionPolicy
+    from invenio_records_permissions import RecordPermissionPolicy as RecordPermissionPolicyTypeCheckingBase
 else:
-    RecordPermissionPolicy = object
+    RecordPermissionPolicyTypeCheckingBase = object
 
 
 class HashableList(list):
@@ -154,7 +154,7 @@ class CompositeAndGenerator(Generator):
         return repr(self)
 
 
-class CompositePermissionPolicyMixin(RecordPermissionPolicy):
+class CompositePermissionPolicyMixin(RecordPermissionPolicyTypeCheckingBase):
     """Permission-policy mixin that evaluates :class:`CompositeAndGenerator` needs.
 
     Invenio's built-in ``Permission.allows()`` collects all needs into a flat
@@ -254,19 +254,19 @@ class CompositePermissionPolicyMixin(RecordPermissionPolicy):
         return False
 
     @cached_property
-    def needs(self) -> set[Need]:  # type: ignore[reportIncompatibleMethodOverride]
+    def needs(self) -> frozenset[Need]:  # type: ignore[reportIncompatibleMethodOverride]
         """Return the set of needs for this permission policy.
 
         Note: over and action are frozen in constructor, so we can safely
         cache the results of needs and excludes.
         """
-        return cast("set[Need]", super().needs)
+        return cast("frozenset[Need]", super().needs)
 
     @cached_property
-    def excludes(self) -> set[Need]:  # type: ignore[reportIncompatibleMethodOverride]
+    def excludes(self) -> frozenset[Need]:  # type: ignore[reportIncompatibleMethodOverride]
         """Return the set of excludes for this permission policy.
 
         Note: over and action are frozen in constructor, so we can safely
         cache the results of needs and excludes.
         """
-        return cast("set[Need]", super().excludes)
+        return cast("frozenset[Need]", super().excludes)
