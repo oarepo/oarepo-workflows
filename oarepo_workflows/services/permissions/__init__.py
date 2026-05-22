@@ -17,10 +17,10 @@ from .workflow_permissions import (
 )
 
 __all__ = (
+    "BaseWorkflowPermissionPolicy",
     "DefaultWorkflowPermissions",
     "FromRecordWorkflow",
     "IfInState",
     "WorkflowPermission",
     "WorkflowRecordPermissionPolicyMixin",
-    "BaseWorkflowPermissionPolicy",
 )

@@ -24,7 +24,7 @@ from .generators import IfInState, SameAs
 
 
 class BaseWorkflowPermissionPolicy(RecordPermissionPolicy):
-    pass
+    """Base class for workflow permissions (non-rdm and rdm)."""
 
 
 class DefaultWorkflowPermissions(BaseWorkflowPermissionPolicy):
@@ -67,11 +67,7 @@ class DefaultWorkflowPermissions(BaseWorkflowPermissionPolicy):
     )
 
     # from RDM
-    can_read_deleted = (
-        IfRecordDeleted(
-            then_=[UserManager, SystemProcess()], else_=[SameAs("can_read")]
-        ),
-    )
+    can_read_deleted = (IfRecordDeleted(then_=[UserManager, SystemProcess()], else_=[SameAs("can_read")]),)
     can_update = (IfInState("draft", [RecordOwners()]),)
     can_delete = (IfInState("draft", [RecordOwners()]),)
     can_create = (AuthenticatedUser(),)

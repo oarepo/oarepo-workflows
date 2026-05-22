@@ -234,6 +234,12 @@ def multiple_recipients_service(app):
     return current_oarepo_workflows.multiple_recipients_service
 
 
+@pytest.fixture(scope="module")
+def action_need_service(app):
+    """Service instance."""
+    return current_oarepo_workflows.action_need_service
+
+
 @pytest.fixture
 def input_data_with_files_disabled(input_data):
     """Input data with files disabled."""

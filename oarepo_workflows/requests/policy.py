@@ -87,9 +87,7 @@ class WorkflowRequestPolicy:
         try:
             return self.requests_by_id[request_type_id]
         except KeyError as exc:
-            raise RequestTypeNotInWorkflowError(
-                request_type_id, self.workflow.code
-            ) from exc
+            raise RequestTypeNotInWorkflowError(request_type_id, self.workflow.code) from exc
 
     def applicable_workflow_requests(
         self, identity: Identity, *, record: Record, **context: Any

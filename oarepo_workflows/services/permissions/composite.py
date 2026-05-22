@@ -1,4 +1,17 @@
-from typing import TYPE_CHECKING, Any
+#
+# Copyright (c) 2026 CESNET z.s.p.o.
+#
+# This file is a part of oarepo-workflows (see https://github.com/oarepo/oarepo-workflows).
+#
+# oarepo-workflows is free software; you can redistribute it and/or modify it
+# under the terms of the MIT License; see LICENSE file for more details.
+#
+"""Composite generator that combines multiple generators using AND logic."""
+
+from __future__ import annotations
+
+from functools import cached_property
+from typing import TYPE_CHECKING, Any, cast
 
 from flask_principal import Identity, Need
 from invenio_records_permissions.generators import (
@@ -34,15 +47,15 @@ class HashableList(list):
         ``==``.  Both operators are therefore overridden together.
     """
 
-    def __hash__(self) -> int:
+    def __hash__(self) -> int:  # type: ignore[override]
         """Return a hash based on object identity, not contents."""
         return hash(id(self))
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         """Return ``True`` only when *other* is the exact same object."""
         return self is other
 
-    def __ne__(self, other: Any) -> bool:
+    def __ne__(self, other: object) -> bool:
         """Return ``True`` unless *other* is the exact same object."""
         return self is not other
 
@@ -69,10 +82,16 @@ class CompositeAndGenerator(Generator):
 
     Example usage::
 
-        class MyPolicy(CompositePermissionPolicyMixin, RecordPermissionPolicy):
+        class MyPolicy(
+            CompositePermissionPolicyMixin,
+            RecordPermissionPolicy,
+        ):
             # User must be owner *and* hold the "reviewer" role.
             can_review = [
-                CompositeAndGenerator(RecordOwners(), ReviewerRole()),
+                CompositeAndGenerator(
+                    RecordOwners(),
+                    ReviewerRole(),
+                ),
             ]
 
     .. important::
@@ -93,7 +112,7 @@ class CompositeAndGenerator(Generator):
         """
         self.generators = generators
 
-    def needs(self, **context: Any) -> "Sequence[Need]":
+    def needs(self, **context: Any) -> Sequence[Need]:
         """Return a single composite ``Need`` wrapping the inner generators.
 
         The AND evaluation cannot be expressed as a flat set of needs (which
@@ -120,9 +139,7 @@ class CompositeAndGenerator(Generator):
         if "policy" not in context:
             raise ValueError("Permission policy class is not set up in context")
         if not isinstance(context["policy"], CompositePermissionPolicyMixin):
-            raise TypeError(
-                "Permission policy class is not a CompositePermissionPolicyMixin"
-            )
+            raise TypeError("Permission policy class is not a CompositePermissionPolicyMixin")
         # Wrap the generator tuple in a HashableList so the resulting Need is
         # hashable and can live inside the frozenset returned by
         # BasePermissionPolicy.needs.
@@ -177,7 +194,10 @@ class CompositePermissionPolicyMixin(RecordPermissionPolicy):
     ``"policy"`` key pointing to the policy instance itself *before* ``needs``
     is first accessed.  Concrete subclasses should set this in ``__init__``::
 
-        class MyPolicy(CompositePermissionPolicyMixin, RecordPermissionPolicy):
+        class MyPolicy(
+            CompositePermissionPolicyMixin,
+            RecordPermissionPolicy,
+        ):
             def __init__(self, action, **over):
                 super().__init__(action, **over)
                 self.over["policy"] = self
@@ -210,16 +230,12 @@ class CompositePermissionPolicyMixin(RecordPermissionPolicy):
                 generator_needs = set(generator.needs(**self.over))
                 generator_excludes = set(generator.excludes(**self.over))
 
-                if not generator_needs or not generator_needs.intersection(
-                    identity.provides
-                ):
+                if not generator_needs or not generator_needs.intersection(identity.provides):
                     # This inner generator's needs are not met — the whole
                     # composite is unsatisfied; move on to the next composite.
                     break
 
-                if generator_excludes and generator_excludes.intersection(
-                    identity.provides
-                ):
+                if generator_excludes and generator_excludes.intersection(identity.provides):
                     # An explicit exclusion applies.  Deny immediately and
                     # conservatively — do not check further composites.
                     return False
@@ -231,3 +247,21 @@ class CompositePermissionPolicyMixin(RecordPermissionPolicy):
         # Either there were no composite generators, or none of them were
         # fully satisfied by this identity.
         return False
+
+    @cached_property
+    def needs(self) -> set[Need]:  # type: ignore[reportIncompatibleMethodOverride]
+        """Return the set of needs for this permission policy.
+
+        Note: over and action are frozen in constructor, so we can safely
+        cache the results of needs and excludes.
+        """
+        return cast("set[Need]", super().needs)
+
+    @cached_property
+    def excludes(self) -> set[Need]:  # type: ignore[reportIncompatibleMethodOverride]
+        """Return the set of excludes for this permission policy.
+
+        Note: over and action are frozen in constructor, so we can safely
+        cache the results of needs and excludes.
+        """
+        return cast("set[Need]", super().excludes)

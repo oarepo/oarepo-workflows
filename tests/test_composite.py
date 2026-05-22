@@ -9,6 +9,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 from flask_principal import Identity, Need, UserNeed
 from invenio_records_permissions import RecordPermissionPolicy
@@ -29,12 +31,15 @@ class FixedNeedsGenerator(Generator):
     """Generator that always returns a fixed list of needs."""
 
     def __init__(self, *needs: Need) -> None:
+        """Initialize with the fixed list of needs."""
         self._needs = list(needs)
 
-    def needs(self, **kwargs):
+    def needs(self, **_kwargs: Any):
+        """Return the fixed list of needs."""
         return list(self._needs)
 
-    def excludes(self, **kwargs):
+    def excludes(self, **_kwargs: Any):
+        """Return no excludes."""
         return []
 
 
@@ -42,23 +47,28 @@ class FixedExcludesGenerator(Generator):
     """Generator with configurable needs *and* excludes."""
 
     def __init__(self, needs=(), excludes=()):
+        """Initialize with the fixed list of needs and excludes."""
         self._needs = list(needs)
         self._excludes = list(excludes)
 
-    def needs(self, **kwargs):
+    def needs(self, **_kwargs: Any):
+        """Return the fixed list of needs."""
         return list(self._needs)
 
-    def excludes(self, **kwargs):
+    def excludes(self, **_kwargs: Any):
+        """Return the fixed list of excludes."""
         return list(self._excludes)
 
 
 class EmptyGenerator(Generator):
     """Generator that returns no needs and no excludes."""
 
-    def needs(self, **kwargs):
+    def needs(self, **_kwargs: Any):
+        """Return no needs."""
         return []
 
-    def excludes(self, **kwargs):
+    def excludes(self, **_kwargs: Any):
+        """Return no excludes."""
         return []
 
 
@@ -74,7 +84,7 @@ class _CompositeTestPolicy(CompositePermissionPolicyMixin, RecordPermissionPolic
     can verify the policy type at needs-collection time.
     """
 
-    def __init__(self, action, **over):
+    def __init__(self, action, **over: Any):
         super().__init__(action, **over)
         self.over["policy"] = self
 
@@ -157,25 +167,21 @@ def test_hashable_list_can_wrap_need_objects():
 
 
 # ===========================================================================
-# CompositeAndGenerator – error paths (no Flask context required)
+# CompositeAndGenerator - error paths (no Flask context required)
 # ===========================================================================
 
 
 def test_composite_and_generator_raises_value_error_without_policy():
     """needs() must raise ValueError when no policy key is present in context."""
     gen = CompositeAndGenerator(FixedNeedsGenerator(UserNeed(1)))
-    with pytest.raises(
-        ValueError, match="Permission policy class is not set up in context"
-    ):
+    with pytest.raises(ValueError, match="Permission policy class is not set up in context"):
         gen.needs()
 
 
 def test_composite_and_generator_raises_value_error_with_other_context_keys():
     """needs() must raise ValueError even when other keys are present but not 'policy'."""
     gen = CompositeAndGenerator(FixedNeedsGenerator(UserNeed(1)))
-    with pytest.raises(
-        ValueError, match="Permission policy class is not set up in context"
-    ):
+    with pytest.raises(ValueError, match="Permission policy class is not set up in context"):
         gen.needs(record={}, identity=None)
 
 
@@ -191,14 +197,14 @@ def test_composite_and_generator_raises_type_error_for_plain_policy():
 
 
 # ===========================================================================
-# CompositeAndGenerator – repr / str (no Flask context required)
+# CompositeAndGenerator - repr / str (no Flask context required)
 # ===========================================================================
 
 
 def test_composite_and_generator_repr_single_inner_generator():
     g = FixedNeedsGenerator(UserNeed(1))
     gen = CompositeAndGenerator(g)
-    expected = f"CompositeAndGenerator({repr(g)})"
+    expected = f"CompositeAndGenerator({g!r})"
     assert repr(gen) == expected
 
 
@@ -212,12 +218,12 @@ def test_composite_and_generator_repr_multiple_inner_generators():
     g1 = FixedNeedsGenerator(UserNeed(1))
     g2 = FixedNeedsGenerator(UserNeed(2))
     gen = CompositeAndGenerator(g1, g2)
-    expected = f"CompositeAndGenerator({repr(g1)}, {repr(g2)})"
+    expected = f"CompositeAndGenerator({g1!r}, {g2!r})"
     assert repr(gen) == expected
 
 
 # ===========================================================================
-# CompositeAndGenerator – needs() with valid policy (no Flask context needed
+# CompositeAndGenerator - needs() with valid policy (no Flask context needed
 # because we only call gen.needs() directly, not policy.needs)
 # ===========================================================================
 
@@ -228,7 +234,7 @@ def test_composite_and_generator_needs_returns_single_composite_need():
     gen = CompositeAndGenerator(g1)
 
     class MyPolicy(_CompositeTestPolicy):
-        can_test = [gen]
+        can_test = (gen,)
 
     policy = MyPolicy("test")
     result = gen.needs(policy=policy)
@@ -243,7 +249,7 @@ def test_composite_and_generator_needs_value_is_hashable_list():
     gen = CompositeAndGenerator(g1)
 
     class MyPolicy(_CompositeTestPolicy):
-        can_test = [gen]
+        can_test = (gen,)
 
     policy = MyPolicy("test")
     need = gen.needs(policy=policy)[0]
@@ -257,7 +263,7 @@ def test_composite_and_generator_needs_value_contains_inner_generators():
     gen = CompositeAndGenerator(g1, g2)
 
     class MyPolicy(_CompositeTestPolicy):
-        can_test = [gen]
+        can_test = (gen,)
 
     policy = MyPolicy("test")
     need = gen.needs(policy=policy)[0]
@@ -270,13 +276,13 @@ def test_composite_and_generator_composite_need_is_hashable():
     gen = CompositeAndGenerator(g1)
 
     class MyPolicy(_CompositeTestPolicy):
-        can_test = [gen]
+        can_test = (gen,)
 
     policy = MyPolicy("test")
     need = gen.needs(policy=policy)[0]
     # Must not raise
     assert isinstance(hash(need), int)
-    assert need in frozenset([need])
+    assert need in frozenset([need])  # noqa FURB171
 
 
 def test_composite_and_generator_each_call_creates_new_hashable_list():
@@ -285,7 +291,7 @@ def test_composite_and_generator_each_call_creates_new_hashable_list():
     gen = CompositeAndGenerator(g1)
 
     class MyPolicy(_CompositeTestPolicy):
-        can_test = [gen]
+        can_test = (gen,)
 
     policy = MyPolicy("test")
     hl1 = gen.needs(policy=policy)[0].value
@@ -296,7 +302,7 @@ def test_composite_and_generator_each_call_creates_new_hashable_list():
 
 
 # ===========================================================================
-# CompositePermissionPolicyMixin.allows() – requires Flask + DB
+# CompositePermissionPolicyMixin.allows() - requires Flask + DB
 # ===========================================================================
 
 
@@ -305,7 +311,7 @@ def test_composite_mixin_allows_when_regular_needs_match(app, db):
     g = FixedNeedsGenerator(UserNeed(1))
 
     class MyPolicy(_CompositeTestPolicy):
-        can_test = [g]
+        can_test = (g,)
 
     policy = MyPolicy("test")
     assert policy.allows(_identity(1)) is True
@@ -316,7 +322,7 @@ def test_composite_mixin_denies_when_regular_needs_do_not_match(app, db):
     g = FixedNeedsGenerator(UserNeed(1))
 
     class MyPolicy(_CompositeTestPolicy):
-        can_test = [g]
+        can_test = (g,)
 
     policy = MyPolicy("test")
     assert policy.allows(_identity(2)) is False
@@ -328,7 +334,7 @@ def test_composite_mixin_allows_single_inner_generator_matching(app, db):
     gen = CompositeAndGenerator(g)
 
     class MyPolicy(_CompositeTestPolicy):
-        can_test = [gen]
+        can_test = (gen,)
 
     policy = MyPolicy("test")
     assert policy.allows(_identity(1)) is True
@@ -340,7 +346,7 @@ def test_composite_mixin_denies_single_inner_generator_not_matching(app, db):
     gen = CompositeAndGenerator(g)
 
     class MyPolicy(_CompositeTestPolicy):
-        can_test = [gen]
+        can_test = (gen,)
 
     policy = MyPolicy("test")
     assert policy.allows(_identity(2)) is False
@@ -354,15 +360,13 @@ def test_composite_mixin_and_logic_allows_when_all_inner_generators_match(app, d
     gen = CompositeAndGenerator(g1, g2)
 
     class MyPolicy(_CompositeTestPolicy):
-        can_test = [gen]
+        can_test = (gen,)
 
     policy = MyPolicy("test")
     assert policy.allows(_identity(1, role_need)) is True
 
 
-def test_composite_mixin_and_logic_denies_when_first_inner_generator_does_not_match(
-    app, db
-):
+def test_composite_mixin_and_logic_denies_when_first_inner_generator_does_not_match(app, db):
     """AND composite: identity missing the first generator's need is denied."""
     role_need = Need("role", "editor")
     g1 = FixedNeedsGenerator(UserNeed(1))
@@ -370,16 +374,14 @@ def test_composite_mixin_and_logic_denies_when_first_inner_generator_does_not_ma
     gen = CompositeAndGenerator(g1, g2)
 
     class MyPolicy(_CompositeTestPolicy):
-        can_test = [gen]
+        can_test = (gen,)
 
     policy = MyPolicy("test")
     # user 2 has the role but is not user 1
     assert policy.allows(_identity(2, role_need)) is False
 
 
-def test_composite_mixin_and_logic_denies_when_second_inner_generator_does_not_match(
-    app, db
-):
+def test_composite_mixin_and_logic_denies_when_second_inner_generator_does_not_match(app, db):
     """AND composite: identity missing the second generator's need is denied."""
     role_need = Need("role", "editor")
     g1 = FixedNeedsGenerator(UserNeed(1))
@@ -387,7 +389,7 @@ def test_composite_mixin_and_logic_denies_when_second_inner_generator_does_not_m
     gen = CompositeAndGenerator(g1, g2)
 
     class MyPolicy(_CompositeTestPolicy):
-        can_test = [gen]
+        can_test = (gen,)
 
     policy = MyPolicy("test")
     # user 1 but without the editor role
@@ -404,7 +406,7 @@ def test_composite_mixin_and_logic_three_inner_generators_all_match(app, db):
     gen = CompositeAndGenerator(g1, g2, g3)
 
     class MyPolicy(_CompositeTestPolicy):
-        can_test = [gen]
+        can_test = (gen,)
 
     policy_allow = MyPolicy("test")
     assert policy_allow.allows(_identity(1, role_a, role_b)) is True
@@ -423,7 +425,7 @@ def test_composite_mixin_excludes_deny_even_when_needs_match(app, db):
     gen = CompositeAndGenerator(g)
 
     class MyPolicy(_CompositeTestPolicy):
-        can_test = [gen]
+        can_test = (gen,)
 
     policy = MyPolicy("test")
     # user 1 is also banned
@@ -437,7 +439,7 @@ def test_composite_mixin_allows_when_excluded_need_not_present(app, db):
     gen = CompositeAndGenerator(g)
 
     class MyPolicy(_CompositeTestPolicy):
-        can_test = [gen]
+        can_test = (gen,)
 
     policy = MyPolicy("test")
     # user 1 is NOT banned
@@ -452,7 +454,7 @@ def test_composite_mixin_excludes_in_second_inner_generator_deny(app, db):
     gen = CompositeAndGenerator(g1, g2)
 
     class MyPolicy(_CompositeTestPolicy):
-        can_test = [gen]
+        can_test = (gen,)
 
     policy = MyPolicy("test")
     editor = Need("role", "editor")
@@ -472,7 +474,7 @@ def test_composite_mixin_empty_inner_generator_prevents_satisfaction(app, db):
     gen = CompositeAndGenerator(g_empty, g_normal)
 
     class MyPolicy(_CompositeTestPolicy):
-        can_test = [gen]
+        can_test = (gen,)
 
     policy = MyPolicy("test")
     assert policy.allows(_identity(1)) is False
@@ -486,7 +488,7 @@ def test_composite_mixin_or_semantics_first_composite_matches(app, db):
     gen2 = CompositeAndGenerator(g2)
 
     class MyPolicy(_CompositeTestPolicy):
-        can_test = [gen1, gen2]
+        can_test = (gen1, gen2)
 
     policy = MyPolicy("test")
     assert policy.allows(_identity(1)) is True
@@ -500,7 +502,7 @@ def test_composite_mixin_or_semantics_second_composite_matches(app, db):
     gen2 = CompositeAndGenerator(g2)
 
     class MyPolicy(_CompositeTestPolicy):
-        can_test = [gen1, gen2]
+        can_test = (gen1, gen2)
 
     policy = MyPolicy("test")
     assert policy.allows(_identity(2)) is True
@@ -514,7 +516,7 @@ def test_composite_mixin_or_semantics_neither_composite_matches(app, db):
     gen2 = CompositeAndGenerator(g2)
 
     class MyPolicy(_CompositeTestPolicy):
-        can_test = [gen1, gen2]
+        can_test = (gen1, gen2)
 
     policy = MyPolicy("test")
     assert policy.allows(_identity(99)) is False
@@ -531,7 +533,7 @@ def test_composite_mixin_mixed_regular_and_composite_generators(app, db):
     composite_gen = CompositeAndGenerator(composite_inner)
 
     class MyPolicy(_CompositeTestPolicy):
-        can_test = [regular_gen, composite_gen]
+        can_test = (regular_gen, composite_gen)
 
     # user 10 is satisfied by the regular generator (super().allows)
     assert MyPolicy("test").allows(_identity(10)) is True
@@ -551,7 +553,7 @@ def test_composite_mixin_and_logic_combining_user_and_role_needs(app, db):
     gen = CompositeAndGenerator(g_user, g_role)
 
     class MyPolicy(_CompositeTestPolicy):
-        can_test = [gen]
+        can_test = (gen,)
 
     # user 42 with admin role → allowed
     assert MyPolicy("test").allows(_identity(42, admin_role)) is True
@@ -571,7 +573,7 @@ def test_composite_mixin_no_composite_generators_falls_back_to_super(app, db):
     g = FixedNeedsGenerator(UserNeed(5))
 
     class MyPolicy(_CompositeTestPolicy):
-        can_test = [g]
+        can_test = (g,)
 
     # super().allows handles user 5
     assert MyPolicy("test").allows(_identity(5)) is True

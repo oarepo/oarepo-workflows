@@ -14,7 +14,7 @@ from functools import reduce
 from typing import TYPE_CHECKING, Any, override
 
 from flask import current_app
-from flask_principal import RoleNeed
+from flask_principal import Identity, RoleNeed
 from invenio_access import ActionNeed
 from invenio_search.engine import dsl
 from oarepo_runtime.services.generators import (
@@ -37,12 +37,10 @@ if TYPE_CHECKING:
     from invenio_requests.customizations.request_types import RequestType
 
     from oarepo_workflows import Workflow
-    from oarepo_workflows.services.permissions import DefaultWorkflowPermissions
+    from oarepo_workflows.services.permissions import BaseWorkflowPermissionPolicy
 
 
-def query_filters_from_all_workflows(
-    action: str, **context: Any
-) -> list[dsl.query.Query]:
+def query_filters_from_all_workflows(action: str, **context: Any) -> list[dsl.query.Query]:
     """Get query filters to match records depending on the records' workflow."""
     workflows = current_oarepo_workflows.record_workflows
     queries = []
@@ -153,7 +151,7 @@ class FromRecordWorkflow(Generator):
         self,
         record: Record | None = None,
         **context: Any,
-    ) -> DefaultWorkflowPermissions | None:
+    ) -> BaseWorkflowPermissionPolicy | None:
         """Get the permissions policy from the workflow.
 
         At first the workflow id is determined from the context.
@@ -167,10 +165,8 @@ class FromRecordWorkflow(Generator):
             if not record:
                 return None
         action_name = self._action_name(**context)
-        policy = self._get_workflow(record, **context).permissions(
-            action_name, **context | {"record": record}
-        )
-        return policy if hasattr(policy, f"can_{action_name}") else None
+        policy = self._get_workflow(record, **context).permissions(action_name, **context | {"record": record})
+        return policy if policy is not None and hasattr(policy, f"can_{action_name}") else None
 
     @override
     def needs(self, **context: Any) -> Sequence[Need]:
@@ -242,9 +238,7 @@ class IfInState(RecipientGeneratorMixin, ConditionalGenerator):
         if isinstance(state, str):
             state = [state]
         if not isinstance(state, list | tuple):
-            raise TypeError(
-                f"State must be a string, list or tuple. Got {type(state)}."
-            )
+            raise TypeError(f"State must be a string, list or tuple. Got {type(state)}.")
         self.state = state
         super().__init__(then_, else_ or [])
 
@@ -272,9 +266,7 @@ class IfInState(RecipientGeneratorMixin, ConditionalGenerator):
 
         recipients = self.then_ if self._condition(record, **context) else self.else_  # type: ignore[reportArgumentType]
         generator = MultipleEntitiesGenerator(recipients)
-        return generator.reference_receivers(
-            record=record, request_type=request_type, **context
-        )
+        return generator.reference_receivers(record=record, request_type=request_type, **context)
 
     @override
     def _query_instate(self, **context: Any) -> dsl.query.Query:
@@ -315,16 +307,12 @@ class SameAs(AggregateGenerator):
         self.delegated_permission_name = permission_name
 
     @override
-    def _generators(
-        self, policy: RecordPermissionPolicy, **context: Any
-    ) -> Sequence[Generator]:  # type: ignore[override]
+    def _generators(self, policy: RecordPermissionPolicy, **context: Any) -> Sequence[Generator]:  # type: ignore[override]
         """Get the generators from the policy."""
         return getattr(policy, self.delegated_permission_name)  # type: ignore[no-any-return]
 
     @override
-    def needs(
-        self, policy: RecordPermissionPolicy | None = None, **context: Any
-    ) -> Sequence[Need]:  # type: ignore[reportIncompatibleMethodOverride]
+    def needs(self, policy: RecordPermissionPolicy | None = None, **context: Any) -> Sequence[Need]:  # type: ignore[reportIncompatibleMethodOverride]
         """Get the needs from the policy."""
         if policy is None:
             raise ValueError(
@@ -334,9 +322,7 @@ class SameAs(AggregateGenerator):
         return super().needs(**context | {"policy": policy})  # type: ignore[no-any-return]
 
     @override
-    def excludes(
-        self, policy: RecordPermissionPolicy | None = None, **context: Any
-    ) -> Sequence[Need]:  # type: ignore[reportIncompatibleMethodOverride]
+    def excludes(self, policy: RecordPermissionPolicy | None = None, **context: Any) -> Sequence[Need]:  # type: ignore[reportIncompatibleMethodOverride]
         """Get the excludes from the policy."""
         if policy is None:
             raise ValueError(
@@ -345,9 +331,7 @@ class SameAs(AggregateGenerator):
         return super().excludes(**context | {"policy": policy})  # type: ignore[no-any-return]
 
     @override
-    def query_filter(
-        self, policy: RecordPermissionPolicy | None = None, **context: Any
-    ) -> dsl.query.Query:  # type: ignore[reportIncompatibleMethodOverride]
+    def query_filter(self, policy: RecordPermissionPolicy | None = None, **context: Any) -> dsl.query.Query:  # type: ignore[reportIncompatibleMethodOverride]
         """Get the query_filter from the policy."""
         if policy is None:
             raise ValueError(
@@ -364,26 +348,26 @@ class SameAs(AggregateGenerator):
         return repr(self)
 
 
-class UserWithRole(Generator):
+class UserWithRole(RecipientGeneratorMixin, Generator):
     """Generator that checks if the user has a specific role."""
 
     def __init__(self, role_name: str):
+        """Initialize with the role name to check."""
         self.role_name = role_name
 
+    @override
     def needs(self, **context: Any) -> Sequence[Need]:
-        return [
-            RoleNeed(
-                current_app.extensions["security"]
-                .datastore.find_role(self.role_name)
-                .id
-            )
-        ]
+        role = current_app.extensions["security"].datastore.find_role(self.role_name)
+        if role is None:
+            return []
+        return [RoleNeed(role.id)]
 
-    def query_filter(self, identity=None, **kwargs) -> dsl.query.Query:
+    @override
+    def query_filter(self, identity: Identity | None = None, **kwargs: Any) -> dsl.query.Query:
         if not identity:
             return dsl.Q("match_none")
         for provide in identity.provides:
-            if provide.method == "role" and provide.value in self.roles:
+            if provide.method == "role" and provide.value == self.role_name:
                 return dsl.Q("match_all")
         return dsl.Q("match_none")
 
@@ -395,13 +379,25 @@ class UserWithRole(Generator):
         """Return String representation of the generator."""
         return repr(self)
 
+    @override
+    def reference_receivers(
+        self,
+        record: Record | None = None,
+        request_type: RequestType | None = None,
+        **context: Any,
+    ) -> list[Mapping[str, str]]:  # pragma: no cover
+        role_id = current_app.extensions["security"].datastore.find_role(self.role_name).id
+        return [{"group": role_id}]
 
-class HasActionNeed(Generator):
+
+class HasActionNeed(RecipientGeneratorMixin, Generator):
     """Generator that checks if the user has a specific action."""
 
     def __init__(self, action: str):
+        """Initialize with the action to check."""
         self.action = action
 
+    @override
     def needs(self, **context: Any) -> Sequence[Need]:
         return [ActionNeed(self.action)]
 
@@ -412,3 +408,12 @@ class HasActionNeed(Generator):
     def __str__(self) -> str:
         """Return String representation of the generator."""
         return repr(self)
+
+    @override
+    def reference_receivers(
+        self,
+        record: Record | None = None,
+        request_type: RequestType | None = None,
+        **context: Any,
+    ) -> list[Mapping[str, str]]:  # pragma: no cover
+        return [{"action_need": self.action}]

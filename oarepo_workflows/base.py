@@ -55,13 +55,9 @@ class Workflow:
         """Return a permission policy class merged with permissions for creating requests and events."""
         extra_permissions = {}
         for r in self.requests().requests:
-            extra_permissions[f"can_{r.request_type.type_id}_create"] = (
-                r.requester_generator,
-            )
+            extra_permissions[f"can_{r.request_type.type_id}_create"] = (r.requester_generator,)
             for event_id, e in r.events.items():
-                extra_permissions[f"can_{r.request_type.type_id}_{event_id}_create"] = (
-                    e.submitter_generator,
-                )
+                extra_permissions[f"can_{r.request_type.type_id}_{event_id}_create"] = (e.submitter_generator,)
         return type(
             f"{self.permission_policy_cls.__name__}WithRequests",
             (self.permission_policy_cls,),
@@ -80,11 +76,13 @@ class Workflow:
             )
         if not issubclass(self.permission_policy_cls, BaseWorkflowPermissionPolicy):
             raise TypeError(
-                f"Workflow permission policy {self.permission_policy_cls} is not a subclass of DefaultWorkflowPermissions."
+                f"Workflow permission policy {self.permission_policy_cls} "
+                "is not a subclass of DefaultWorkflowPermissions."
             )
         if not issubclass(self.request_policy_cls, WorkflowRequestPolicy):
             raise TypeError(
-                f"Workflow request permission policy {self.request_policy_cls} is not a subclass of WorkflowRequestPolicy."
+                f"Workflow request permission policy {self.request_policy_cls} "
+                "is not a subclass of WorkflowRequestPolicy."
             )
 
 
