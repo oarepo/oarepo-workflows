@@ -22,7 +22,7 @@ from invenio_records.dictutils import dict_lookup
 
 
 class ActionRecipient(RecipientGenerator):
-    """Role recipient generator for a notification."""
+    """Action recipient generator for a notification."""
 
     def __init__(self, key: str):
         """Ctor."""
