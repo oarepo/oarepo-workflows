@@ -40,5 +40,5 @@ class RecordOwnersForRecipients(RecipientGeneratorMixin, BaseRecordOwners):
                     "user": str(record.parent.access.owner.resolve().id),  # type: ignore[reportAttributeAccessIssue]
                 }
             ]
-        except AttributeError:
+        except AttributeError:  # pragma: no cover
             return []
