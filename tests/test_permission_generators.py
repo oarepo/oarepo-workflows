@@ -288,4 +288,4 @@ def test_record_owners_for_recipients_with_record(app, db, location, users):
     """Record owners are correctly identified as recipients."""
     record = RDMDraft.create({})
     record.parent.access.owner = users[0].user
-    assert RecordOwnersForRecipients().reference_receivers(record) == [{"user": "1"}]
+    assert RecordOwnersForRecipients().reference_receivers(record) == [{"user": str(users[0].id)}]
