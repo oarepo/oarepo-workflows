@@ -11,9 +11,11 @@ from __future__ import annotations
 
 from flask_principal import Identity, Need, RoleNeed, UserNeed
 from invenio_access import ActionNeed
+from invenio_rdm_records.records.api import RDMDraft
 from invenio_records_permissions import RecordPermissionPolicy
 from invenio_search.engine import dsl
 
+from oarepo_workflows.requests.generators.record_owners import RecordOwnersForRecipients
 from oarepo_workflows.services.permissions.generators import HasActionNeed, UserWithRole
 
 # ---------------------------------------------------------------------------
@@ -270,3 +272,20 @@ def test_user_with_role_multiple_users_only_member_allowed(app, db, role):
     assert MyPolicy("test").allows(_identity(1, role_need)) is True
     assert MyPolicy("test").allows(_identity(2)) is False
     assert MyPolicy("test").allows(_identity(3, RoleNeed("other-role"))) is False
+
+
+#
+# RecordOwnersForRecipients
+#
+
+
+def test_record_owners_for_recipients_no_record(app, db):
+    """Record owners are correctly identified as recipients."""
+    assert RecordOwnersForRecipients().reference_receivers() == []
+
+
+def test_record_owners_for_recipients_with_record(app, db, location, users):
+    """Record owners are correctly identified as recipients."""
+    record = RDMDraft.create({})
+    record.parent.access.owner = users[0].user
+    assert RecordOwnersForRecipients().reference_receivers(record) == [{"user": 1}]
