@@ -37,7 +37,7 @@ class RecordOwnersForRecipients(RecipientGeneratorMixin, BaseRecordOwners):
         try:
             return [
                 {
-                    "user": record.parent.access.owner.resolve().id,  # type: ignore[reportAttributeAccessIssue]
+                    "user": str(record.parent.access.owner.resolve().id),  # type: ignore[reportAttributeAccessIssue]
                 }
             ]
         except AttributeError:
