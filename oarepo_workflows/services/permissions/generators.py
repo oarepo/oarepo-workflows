@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import logging
 import operator
 from functools import reduce
 from typing import TYPE_CHECKING, Any, override
@@ -23,7 +24,7 @@ from oarepo_runtime.services.generators import (
     Generator,
 )
 
-from oarepo_workflows.errors import InvalidWorkflowError
+from oarepo_workflows.errors import InvalidWorkflowError, MissingWorkflowError
 from oarepo_workflows.proxies import current_oarepo_workflows
 from oarepo_workflows.requests import RecipientGeneratorMixin
 
@@ -38,6 +39,8 @@ if TYPE_CHECKING:
 
     from oarepo_workflows import Workflow
     from oarepo_workflows.services.permissions import BaseWorkflowPermissionPolicy
+
+log = logging.getLogger(__name__)
 
 
 def query_filters_from_all_workflows(action: str, **context: Any) -> list[dsl.query.Query]:
@@ -96,6 +99,9 @@ class FromRecordWorkflow(Generator):
 
     The implementation of the permission gets the workflow id from the passed context
     (record or data) and then looks up the workflow definition in the configuration.
+    If there is no workflow id on the record, the generator will return empty needs.
+    If there is a workflow id on the record but there is no workflow definition for it,
+    the generator will emit a warning and also return empty needs.
 
     The workflow definition must contain a permissions policy that is then used to
     determine the permissions for the action.
@@ -119,7 +125,7 @@ class FromRecordWorkflow(Generator):
         return self._action(**context) if callable(self._action) else self._action
 
     # noinspection PyMethodMayBeStatic
-    def _get_workflow(self, record: Record | None = None, **context: Any) -> Workflow:
+    def _get_workflow(self, record: Record | None = None, **context: Any) -> Workflow | None:
         """Get the workflow id from the context.
 
         If the record is passed, the workflow is determined from the record.
@@ -129,21 +135,25 @@ class FromRecordWorkflow(Generator):
 
         :param record: Record to get the workflow from.
         :param context: Context to get the workflow from.
-        :return: Workflow id.
-        :raises MissingWorkflowError: If the workflow is not found in the data.
+        :return: Either the workflow or None if no workflow is defined on the record or is invalid.
         """
         if record:
-            workflow = current_oarepo_workflows.get_workflow(record)
+            try:
+                workflow = current_oarepo_workflows.get_workflow(record)
+            except MissingWorkflowError:
+                # no workflow on the record
+                return None
+            except InvalidWorkflowError as e:
+                log.warning("Invalid workflow: %s", e)
+                return None
         else:
             data = context.get("data", {})
             workflow_code = data.get("parent", {}).get("workflow", {})
             if not workflow_code:
                 return current_oarepo_workflows.default_workflow
             if workflow_code not in current_oarepo_workflows.workflow_by_code:
-                raise InvalidWorkflowError(
-                    f"Workflow {workflow_code} does not exist in the configuration.",
-                    record=record or context.get("data", {}),
-                )
+                log.warning("Workflow %s does not exist in the configuration.", workflow_code)
+                return None
             workflow = current_oarepo_workflows.workflow_by_code[workflow_code]
         return workflow
 
@@ -165,7 +175,8 @@ class FromRecordWorkflow(Generator):
             if not record:
                 return None
         action_name = self._action_name(**context)
-        policy = self._get_workflow(record, **context).permissions(action_name, **context | {"record": record})
+        workflow = self._get_workflow(record, **context)
+        policy = workflow.permissions(action_name, **context | {"record": record}) if workflow else None
         return policy if policy is not None and hasattr(policy, f"can_{action_name}") else None
 
     @override
