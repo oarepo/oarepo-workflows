@@ -114,7 +114,11 @@ class FromRecordWorkflow(Generator):
         action: str | Callable[..., str],
         record_getter: Callable[..., Record] | None = None,
     ) -> None:
-        """Initialize the permission."""
+        """Initialize the permission.
+
+        :param action: Action to check permissions for.
+        :param record_getter: Callable to get the record from the context.
+        """
         # might not be needed in subclasses
         super().__init__()
         self._action = action
@@ -126,12 +130,13 @@ class FromRecordWorkflow(Generator):
 
     # noinspection PyMethodMayBeStatic
     def _get_workflow(self, record: Record | None = None, **context: Any) -> Workflow | None:
-        """Get the workflow id from the context.
+        """Get the workflow from the context.
 
         If the record is passed, the workflow is determined from the record.
         If the record is not passed, the workflow is determined from the input data.
 
-        If the workflow is not found, an error is raised.
+        If the workflow is not found, a None is returned (for record) or default workflow
+        (for data from the context).
 
         :param record: Record to get the workflow from.
         :param context: Context to get the workflow from.
