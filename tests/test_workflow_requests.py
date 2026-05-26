@@ -12,8 +12,10 @@ from types import SimpleNamespace
 import pytest
 from flask_principal import Identity, UserNeed
 from invenio_rdm_records.services.generators import RecordOwners
+from invenio_search.engine import dsl
 from opensearch_dsl.query import Terms
 
+from oarepo_workflows import FromRecordWorkflow
 from oarepo_workflows.errors import EventTypeNotInWorkflowError, RequestTypeNotInWorkflowError
 from oarepo_workflows.proxies import current_oarepo_workflows
 from oarepo_workflows.requests import WorkflowRequest
@@ -155,3 +157,54 @@ def test_nonexistent_event_raises_error(app, search_clear):
     with pytest.raises(EventTypeNotInWorkflowError) as exc_info:
         events_policy["nonexistent_event"]
     assert exc_info.value.description == "Event type nonexistent_event is not set in a workflow."
+
+
+def test_from_record_workflow_missing_workflow(app, search_clear):
+    """FromRecordWorkflow returns empty results when the record has no workflow (MissingWorkflowError)."""
+    generator = FromRecordWorkflow("read")
+
+    id1 = Identity(id=1)
+    id1.provides.add(UserNeed(1))
+
+    # parent has no workflow attribute -> MissingWorkflowError is raised inside get_workflow
+    record = SimpleNamespace(parent=SimpleNamespace())
+
+    assert generator.needs(identity=id1, record=record) == []
+    assert generator.excludes(identity=id1, record=record) == []
+    assert generator.query_filter(identity=id1, record=record) == dsl.Q("match_none")
+
+
+def test_from_record_workflow_invalid_workflow(app, search_clear):
+    """FromRecordWorkflow returns empty results when the workflow code is unknown (InvalidWorkflowError)."""
+    generator = FromRecordWorkflow("read")
+
+    id1 = Identity(id=1)
+    id1.provides.add(UserNeed(1))
+
+    # workflow code does not exist in configuration -> InvalidWorkflowError is raised inside get_workflow
+    record = SimpleNamespace(parent=SimpleNamespace(workflow="nonexistent_workflow_xyz"))
+
+    assert generator.needs(identity=id1, record=record) == []
+    assert generator.excludes(identity=id1, record=record) == []
+    assert generator.query_filter(identity=id1, record=record) == dsl.Q("match_none")
+
+
+def test_from_record_workflow_invalid_workflow_in_data(app, search_clear):
+    """FromRecordWorkflow returns empty results when input data references an unknown workflow (no record case).
+
+    This exercises the else-branch of _get_workflow, reached during create operations
+    where there is no persisted record yet and the workflow code comes from the incoming
+    request data.  A truthy but unregistered workflow code must be handled gracefully.
+    """
+    generator = FromRecordWorkflow("read")
+
+    id1 = Identity(id=1)
+    id1.provides.add(UserNeed(1))
+
+    # No record supplied; data carries a workflow code that is not registered in the configuration.
+    # _get_workflow takes the else-branch, finds the code is unknown, logs a warning, and returns None.
+    data = {"parent": {"workflow": "nonexistent_workflow_xyz"}}
+
+    assert generator.needs(identity=id1, data=data) == []
+    assert generator.excludes(identity=id1, data=data) == []
+    assert generator.query_filter(identity=id1, data=data) == dsl.Q("match_none")
