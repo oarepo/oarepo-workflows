@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from invenio_administration.generators import Administration
 from invenio_rdm_records.services.generators import IfRecordDeleted, RecordOwners
 from invenio_records_permissions import RecordPermissionPolicy
 from invenio_records_permissions.generators import (
@@ -129,8 +130,8 @@ class DefaultWorkflowPermissions(BaseWorkflowPermissionPolicy):
 
     can_manage_internal = (SystemProcess(),)
 
-    can_manage_quota = (SystemProcess(),)
-    can_manage_record_access = (SystemProcess(),)
+    can_manage_quota = (SystemProcess(), UserManager)
+    can_manage_record_access = (SystemProcess(), Administration())
 
     can_moderate = (Disable(),)
 
