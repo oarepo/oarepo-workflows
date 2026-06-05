@@ -108,7 +108,7 @@ class WorkflowRecordPermissionPolicyMixin(InvenioRecordPermissionPolicy):
     can_manage = (FromRecordWorkflow("manage"),)
     can_manage_files = (FromRecordWorkflow("manage_files"),)
     can_manage_internal = (FromRecordWorkflow("manage_internal"),)
-    can_manage_quota = (FromRecordWorkflow("manage_quota"),)
+    can_manage_quota = (InAnyWorkflow("manage_quota"),)
     can_manage_record_access = (FromRecordWorkflow("manage_record_access"),)
     can_media_commit_files = (FromRecordWorkflow("media_commit_files"),)
     can_media_create_files = (FromRecordWorkflow("media_create_files"),)

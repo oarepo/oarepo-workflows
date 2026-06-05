@@ -172,7 +172,7 @@ class OARepoWorkflows:
                 f"to the default workflow."
             ) from exc
 
-    def get_workflow(self, record: Record | dict[str, Any]) -> Workflow:
+    def get_workflow(self, record: Record | dict[str, Any] | Any) -> Workflow:
         """Get the workflow for a record.
 
         :param record:  record to get the workflow for
@@ -191,7 +191,7 @@ class OARepoWorkflows:
                 workflow_id = record_parent.workflow
             except AttributeError as e:
                 raise MissingWorkflowError("Parent record does not have a workflow attribute.", record=record) from e
-        else:
+        elif isinstance(record, dict):
             try:
                 dict_parent: dict[str, Any] = record["parent"]
             except KeyError as e:
@@ -200,6 +200,13 @@ class OARepoWorkflows:
                 workflow_id = cast("str", dict_parent["workflow"])
             except KeyError as e:
                 raise MissingWorkflowError("Parent record does not have a workflow attribute.", record=record) from e
+        else:
+            # sometimes invenio sends for example User instead of the record to the permission check
+            raise MissingWorkflowError(
+                f"Instance of a type {type(record)} can not be used to determine the workflow.",
+                record=record,
+            )
+
         try:
             workflow_id = workflow_id or current_oarepo_workflows.default_workflow.code
             return self.workflow_by_code[workflow_id]
