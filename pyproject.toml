@@ -1,6 +1,6 @@
 [project]
 name = "oarepo-workflows"
-version = "5.0.1"
+version = "6.0.0"
 description = "OARepo module allowing record workflow functionality"
 readme = "README.md"
 authors = [
@@ -10,11 +10,11 @@ requires-python = ">=3.14,<3.15"
 
 dependencies = [
     "oarepo[rdm,tests]>=14.0.0,<15.0.0",
-    "oarepo-model>=3.0.0,<4.0.0",
-    "oarepo-runtime>=5.0.0,<6.0.0",
+    "oarepo-model>=4.0.0,<5.0.0",
+    "oarepo-runtime>=6.0.0,<7.0.0",
 
     # invenio
-    "invenio-rdm-records>=29.0.0,<30.0.0",
+    "invenio-rdm-records>=31.0.0,<32.0.0",
     "invenio-search>=3.1.2,<4.0.0",
 ]
 
@@ -29,7 +29,7 @@ dev = [
 ]
 
 tests = [
-    "oarepo-rdm>=6.0.0,<7.0.0",
+    "oarepo-rdm>=7.0.0,<8.0.0",
 
     # invenio dependencies
     "pytest-invenio>=4.0.0,<5.0.0",
