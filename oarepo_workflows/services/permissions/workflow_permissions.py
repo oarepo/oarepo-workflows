@@ -18,11 +18,12 @@ from invenio_records_permissions.generators import (
     AnyUser,
     AuthenticatedUser,
     Disable,
+    SameAs,
     SystemProcess,
 )
 from invenio_users_resources.services.permissions import UserManager
 
-from .generators import IfInState, SameAs
+from .generators import IfInState
 
 
 class BaseWorkflowPermissionPolicy(RecordPermissionPolicy):
@@ -60,7 +61,6 @@ class DefaultWorkflowPermissions(BaseWorkflowPermissionPolicy):
             if self.system_process not in can:
                 can = (*can, self.system_process)
                 setattr(self.__class__, f"can_{action_name}", can)
-        over["policy"] = self
         super().__init__(action_name, **over)
 
     can_read = (

@@ -12,8 +12,9 @@ from __future__ import annotations
 import dataclasses
 from typing import TYPE_CHECKING, Any, override
 
+from invenio_records_permissions.generators import CompositeGenerator
+
 from ...resolvers.multiple_entities import MultipleEntitiesEntity
-from ...services.permissions.generators import AggregateGenerator
 from .recipient_generator import RecipientGeneratorMixin
 
 if TYPE_CHECKING:
@@ -25,7 +26,7 @@ if TYPE_CHECKING:
 
 
 @dataclasses.dataclass
-class MultipleEntitiesGenerator(RecipientGeneratorMixin, AggregateGenerator):
+class MultipleEntitiesGenerator(RecipientGeneratorMixin, CompositeGenerator):
     """A generator that combines multiple generators with 'or' operation."""
 
     generators: Sequence[InvenioGenerator]
