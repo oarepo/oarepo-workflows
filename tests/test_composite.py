@@ -169,14 +169,14 @@ def test_hashable_list_can_wrap_need_objects():
 
 
 def test_require_all_raises_value_error_without_policy():
-    """needs() must raise ValueError when no policy key is present in context."""
+    """needs() must raise ValueError when no permission_policy key is present in context."""
     gen = RequireAll(FixedNeedsGenerator(UserNeed(1)))
     with pytest.raises(ValueError, match="Permission policy class is not set up in context"):
         gen.needs()
 
 
 def test_require_all_raises_value_error_with_other_context_keys():
-    """needs() must raise ValueError even when other keys are present but not 'policy'."""
+    """needs() must raise ValueError even when other keys are present but not 'permission_policy'."""
     gen = RequireAll(FixedNeedsGenerator(UserNeed(1)))
     with pytest.raises(ValueError, match="Permission policy class is not set up in context"):
         gen.needs(record={}, identity=None)
@@ -235,6 +235,7 @@ def test_require_all_needs_returns_single_composite_need():
 
     policy = MyPolicy("test")
     result = gen.needs(permission_policy=policy)
+    assert len(result) == 1
     assert result[0].method == "composite"
 
 
