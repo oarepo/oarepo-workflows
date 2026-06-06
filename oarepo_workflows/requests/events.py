@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import dataclasses
 from functools import cached_property
-from typing import TYPE_CHECKING, NoReturn
+from typing import TYPE_CHECKING, NoReturn, cast
 
 from oarepo_workflows.errors import EventTypeNotInWorkflowError
 from oarepo_workflows.requests.generators.multiple_entities import (
@@ -39,7 +39,7 @@ class WorkflowEvent:
     @cached_property
     def submitter_generator(self) -> Generator:
         """Return the requesters as a single requester generator."""
-        return MultipleEntitiesGenerator(self.submitters)
+        return cast("Generator", MultipleEntitiesGenerator(self.submitters))
 
 
 class WorkflowEvents(dict[str, WorkflowEvent]):

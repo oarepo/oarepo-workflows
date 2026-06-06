@@ -69,7 +69,7 @@ class WorkflowRequest:
     @cached_property
     def requester_generator(self) -> Generator:
         """Return the requesters as a single requester generator."""
-        return MultipleEntitiesGenerator(self.requesters)
+        return cast("Generator", MultipleEntitiesGenerator(self.requesters))
 
     def recipient_entity_reference(self, **context: Any) -> Mapping[str, str] | None:
         """Return the reference receiver of the workflow request with the given context.
