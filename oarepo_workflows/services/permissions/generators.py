@@ -11,15 +11,16 @@ from __future__ import annotations
 
 import logging
 import operator
+import warnings
 from functools import reduce
 from typing import TYPE_CHECKING, Any, override
 
 from flask import current_app
 from flask_principal import Identity, RoleNeed
 from invenio_access import ActionNeed
+from invenio_records_permissions.generators import SameAs as InvenioSameAs
 from invenio_search.engine import dsl
 from oarepo_runtime.services.generators import (
-    AggregateGenerator,
     ConditionalGenerator,
     Generator,
 )
@@ -32,7 +33,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Mapping, Sequence
 
     from flask_principal import Need
-    from invenio_records_permissions import RecordPermissionPolicy
     from invenio_records_permissions.generators import Generator as InvenioGenerator
     from invenio_records_resources.records import Record
     from invenio_requests.customizations.request_types import RequestType
@@ -297,7 +297,7 @@ class IfInState(RecipientGeneratorMixin, ConditionalGenerator):
         return repr(self)
 
 
-class SameAs(AggregateGenerator):
+class SameAs(InvenioSameAs):
     """Generator that delegates the permissions to another action.
 
     Example:
@@ -314,54 +314,15 @@ class SameAs(AggregateGenerator):
     """
 
     def __init__(self, permission_name: str) -> None:
-        """Initialize the generator.
-
-        :param permission_name: Name of the permission to delegate to. In most cases,
-        it will look like "can_<action>". A property with this name must exist on the policy
-        and its value must be a list of generators.
-        """
-        self.delegated_permission_name = permission_name
-
-    @override
-    def _generators(self, policy: RecordPermissionPolicy, **context: Any) -> Sequence[Generator]:  # type: ignore[override]
-        """Get the generators from the policy."""
-        return getattr(policy, self.delegated_permission_name)  # type: ignore[no-any-return]
-
-    @override
-    def needs(self, policy: RecordPermissionPolicy | None = None, **context: Any) -> Sequence[Need]:  # type: ignore[reportIncompatibleMethodOverride]
-        """Get the needs from the policy."""
-        if policy is None:
-            raise ValueError(
-                f"SameAs: Policy must be passed to the generator. Got the following context: {context.keys()}"
-            )
-        # the type: ignore should not be necessary here
-        return super().needs(**context | {"policy": policy})  # type: ignore[no-any-return]
-
-    @override
-    def excludes(self, policy: RecordPermissionPolicy | None = None, **context: Any) -> Sequence[Need]:  # type: ignore[reportIncompatibleMethodOverride]
-        """Get the excludes from the policy."""
-        if policy is None:
-            raise ValueError(
-                f"SameAs: Policy must be passed to the generator. Got the following context: {context.keys()}"
-            )
-        return super().excludes(**context | {"policy": policy})  # type: ignore[no-any-return]
-
-    @override
-    def query_filter(self, policy: RecordPermissionPolicy | None = None, **context: Any) -> dsl.query.Query:  # type: ignore[reportIncompatibleMethodOverride]
-        """Get the query_filter from the policy."""
-        if policy is None:
-            raise ValueError(
-                f"SameAs: Policy must be passed to the generator. Got the following context: {context.keys()}"
-            )
-        return super().query_filter(**context | {"policy": policy})
-
-    def __repr__(self) -> str:
-        """Return representation of the generator."""
-        return f"SameAs({self.delegated_permission_name})"
-
-    def __str__(self) -> str:
-        """Return String representation of the generator."""
-        return repr(self)
+        """Emit a deprecation warning and delegate to Invenio's SameAs."""
+        warnings.warn(
+            "oarepo_workflows SameAs has been moved to invenio_records_permissions.generators.SameAs"
+            " and will be removed in a future version. "
+            "Use invenio_records_permissions.generators.SameAs directly instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(permission_name)
 
 
 class UserWithRole(RecipientGeneratorMixin, Generator):

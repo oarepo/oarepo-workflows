@@ -9,17 +9,17 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from invenio_records_permissions.generators import (
     AnyUser,
+    SameAs,
     SystemProcess,
 )
 
 from .generators import (
     FromRecordWorkflow,
     InAnyWorkflow,
-    SameAs,
     query_filters_from_all_workflows,
 )
 
@@ -37,17 +37,6 @@ class WorkflowRecordPermissionPolicyMixin(InvenioRecordPermissionPolicy):
 
     Do not use this class in Workflow constructor.
     """
-
-    def __init__(self, *args: Any, **kwargs: Any):
-        """Store a permission policy in over so that SameAs can use it.
-
-        Note: after 2.1.0 release of invenio-records-permissions,
-        we will drop this constructor and replace SameAs with
-        invenio's SameAs.
-        """
-        super().__init__(*args, **kwargs)
-        if "policy" not in self.over:
-            self.over["policy"] = self
 
     can_commit_files = (FromRecordWorkflow("commit_files"),)
     can_create = (SystemProcess(), InAnyWorkflow("create"))
