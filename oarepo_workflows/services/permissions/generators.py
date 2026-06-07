@@ -18,11 +18,11 @@ from typing import TYPE_CHECKING, Any, override
 from flask import current_app
 from flask_principal import Identity, RoleNeed
 from invenio_access import ActionNeed
+from invenio_records_permissions.generators import Generator
 from invenio_records_permissions.generators import SameAs as InvenioSameAs
 from invenio_search.engine import dsl
 from oarepo_runtime.services.generators import (
     ConditionalGenerator,
-    Generator,
 )
 
 from oarepo_workflows.errors import InvalidWorkflowError, MissingWorkflowError
