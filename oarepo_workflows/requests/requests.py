@@ -31,10 +31,9 @@ if TYPE_CHECKING:
     from datetime import timedelta
 
     from flask_principal import Identity
-    from invenio_records_permissions.generators import Generator as InvenioGenerator
+    from invenio_records_permissions.generators import Generator
     from invenio_records_resources.records.api import Record
     from invenio_requests.customizations.request_types import RequestType
-    from oarepo_runtime.services.generators import Generator
 
     from oarepo_workflows.requests.events import WorkflowEvent
 
@@ -51,10 +50,10 @@ class WorkflowRequest:
     are the generators that define who can approve the request.
     """
 
-    requesters: Sequence[InvenioGenerator]
+    requesters: Sequence[Generator]
     """Generators that define who can submit the request."""
 
-    recipients: Sequence[InvenioGenerator]
+    recipients: Sequence[Generator]
     """Generators that define who can approve the request."""
 
     events: dict[str, WorkflowEvent] = dataclasses.field(default_factory=WorkflowEvents)
@@ -163,7 +162,7 @@ class WorkflowRequestEscalation:
     """
 
     after: timedelta
-    recipients: Sequence[InvenioGenerator]
+    recipients: Sequence[Generator]
 
     def recipient_entity_reference(self, **context: Any) -> Mapping[str, str] | None:
         """Return the reference receiver of the workflow escalation with the given context.

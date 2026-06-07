@@ -12,7 +12,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Never, override
 
 from invenio_access import SystemRoleNeed
-from oarepo_runtime.services.generators import Generator
+from invenio_records_permissions.generators import Generator
 
 from ...resolvers.auto_approve import AutoApprove as AutoApproveEntity
 from .recipient_generator import RecipientGeneratorMixin
