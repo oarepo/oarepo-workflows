@@ -9,6 +9,9 @@
 
 from __future__ import annotations
 
+from typing import Any
+
+from invenio_communities.communities.records.api import Community
 from invenio_records_permissions.generators import AnyUser, SystemProcess
 from invenio_requests.customizations.event_types import CommentEventType, LogEventType
 from invenio_requests.services.generators import Creator, Receiver
@@ -18,15 +21,27 @@ from invenio_requests.services.permissions import (
 
 from oarepo_workflows import FromRecordWorkflow
 from oarepo_workflows.requests.generators.conditionals import IfEventType
+from oarepo_workflows.services.permissions.composite import BooleanPermissionPolicyMixin
 
 
-class CreatorsFromWorkflowRequestsPermissionPolicy(InvenioRequestsPermissionPolicy):
+class CreatorsFromWorkflowRequestsPermissionPolicy(BooleanPermissionPolicyMixin, InvenioRequestsPermissionPolicy):  # type: ignore[reportIncompatibleMethodOverride]
     """Permissions for requests based on workflows.
 
     This permission adds a special generator RequestCreatorsFromWorkflow() to the default permissions.
     This generator takes a topic, gets the workflow from the topic and returns the generator for
     creators defined on the WorkflowRequest.
     """
+
+    def __init__(self, action: str, **kwargs: Any):
+        """Create a permission policy for the given action and kwargs."""
+        if (
+            action == "create"
+            and "community" not in kwargs
+            and "receiver" in kwargs
+            and isinstance(kwargs["receiver"], Community)
+        ):
+            kwargs["community"] = kwargs["receiver"]
+        super().__init__(action=action, **kwargs)
 
     can_create = (
         SystemProcess(),
