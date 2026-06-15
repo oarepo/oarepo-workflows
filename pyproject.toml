@@ -1,6 +1,6 @@
 [project]
 name = "oarepo-workflows"
-version = "6.0.1"
+version = "6.1.0"
 description = "OARepo module allowing record workflow functionality"
 readme = "README.md"
 authors = [
