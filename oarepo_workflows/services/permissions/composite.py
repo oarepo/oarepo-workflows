@@ -145,7 +145,9 @@ class RequireAll(RecipientGeneratorMixin, Generator):
         if "permission_policy" not in context:
             raise ValueError("Permission policy class is not set up in context")
         if not isinstance(context["permission_policy"], BooleanPermissionPolicyMixin):
-            raise TypeError("Permission policy class is not a BooleanPermissionPolicyMixin")
+            raise TypeError(
+                f"Permission policy class ({type(context['permission_policy'])}) is not a BooleanPermissionPolicyMixin"
+            )
         # Wrap the generator tuple in a HashableList so the resulting Need is
         # hashable and can live inside the frozenset returned by
         # BasePermissionPolicy.needs.

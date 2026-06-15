@@ -18,12 +18,14 @@ from typing import TYPE_CHECKING, Any, override
 from flask import current_app
 from flask_principal import Identity, RoleNeed
 from invenio_access import ActionNeed
+from invenio_rdm_records.records.api import RDMDraft, RDMRecord
 from invenio_records_permissions.generators import Generator
 from invenio_records_permissions.generators import SameAs as InvenioSameAs
 from invenio_search.engine import dsl
 from oarepo_runtime.services.generators import (
     ConditionalGenerator,
 )
+from opensearch_dsl.query import MatchNone
 
 from oarepo_workflows.errors import InvalidWorkflowError, MissingWorkflowError
 from oarepo_workflows.proxies import current_oarepo_workflows
@@ -295,6 +297,34 @@ class IfInState(RecipientGeneratorMixin, ConditionalGenerator):
     def __str__(self) -> str:
         """Return string representation of the generator."""
         return repr(self)
+
+
+class IfRDMRecordPassed(RecipientGeneratorMixin, ConditionalGenerator):
+    """Conditional generator that checks if the record is a RDM record."""
+
+    @override
+    def _condition(self, record: Record, **context: Any) -> bool:  # type: ignore[reportIncompatibleMethodOverride]
+        """Check if the record is in the state."""
+        return isinstance(record, (RDMRecord, RDMDraft))
+
+    @override
+    def reference_receivers(
+        self,
+        record: Record | None = None,
+        request_type: RequestType | None = None,
+        **context: Any,
+    ) -> list[Mapping[str, str]]:
+        from oarepo_workflows.requests.generators.multiple_entities import (
+            MultipleEntitiesGenerator,
+        )
+
+        recipients = self.then_ if self._condition(record, **context) else self.else_  # type: ignore[reportArgumentType]
+        generator = MultipleEntitiesGenerator(recipients)
+        return generator.reference_receivers(record=record, request_type=request_type, **context)
+
+    @override
+    def _query_instate(self, **context: Any) -> dsl.query.Query:
+        return MatchNone()
 
 
 class SameAs(InvenioSameAs):
