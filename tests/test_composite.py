@@ -188,7 +188,7 @@ def test_require_all_raises_type_error_for_plain_policy():
     wrong_policy = RecordPermissionPolicy("read")
     with pytest.raises(
         TypeError,
-        match="Permission policy class is not a BooleanPermissionPolicyMixin",
+        match=r"Permission policy class \(RecordPermissionPolicy\) is not a BooleanPermissionPolicyMixin",
     ):
         gen.needs(permission_policy=wrong_policy)
 

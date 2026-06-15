@@ -14,14 +14,21 @@ from functools import cached_property
 from typing import TYPE_CHECKING, Any, cast
 
 from flask_principal import Identity, Need
+from invenio_accounts.models import User
+from invenio_db import db
 from invenio_records_permissions.generators import (
     Generator,
 )
 
+from oarepo_workflows.requests import RecipientGeneratorMixin
+
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
 
     from invenio_records_permissions import RecordPermissionPolicy as RecordPermissionPolicyTypeCheckingBase
+    from invenio_records_resources.records import Record
+    from invenio_requests.customizations import RequestType
+
 else:
     RecordPermissionPolicyTypeCheckingBase = object
 
@@ -60,7 +67,7 @@ class HashableList(list):
         return self is not other
 
 
-class RequireAll(Generator):
+class RequireAll(RecipientGeneratorMixin, Generator):
     """A generator that requires **all** of its inner generators to be satisfied.
 
     Standard invenio generators are combined with **OR** semantics inside a
@@ -138,7 +145,10 @@ class RequireAll(Generator):
         if "permission_policy" not in context:
             raise ValueError("Permission policy class is not set up in context")
         if not isinstance(context["permission_policy"], BooleanPermissionPolicyMixin):
-            raise TypeError("Permission policy class is not a BooleanPermissionPolicyMixin")
+            raise TypeError(
+                f"Permission policy class ({type(context['permission_policy']).__name__}) "
+                "is not a BooleanPermissionPolicyMixin"
+            )
         # Wrap the generator tuple in a HashableList so the resulting Need is
         # hashable and can live inside the frozenset returned by
         # BasePermissionPolicy.needs.
@@ -151,6 +161,53 @@ class RequireAll(Generator):
     def __str__(self) -> str:
         """Return the string form of this generator (same as ``repr``)."""
         return repr(self)
+
+    def reference_receivers(
+        self,
+        record: Record | None = None,
+        request_type: RequestType | None = None,
+        **context: Any,
+    ) -> list[Mapping[str, str]]:  # pragma: no cover
+        """Return the reference receiver(s) of the request.
+
+        This call requires the context to contain at least "record" and "request_type"
+
+        Must return a list of dictionary serialization of the receivers.
+
+        Might return empty list to indicate that the generator does not
+        provide any receivers.
+
+        What RequireAll does is to return the intersection of all receivers from the generators.
+        The current implementation is very limited - it only supports users and roles.
+        """
+        intersected_users: set[str] = set()
+        """Set of user ids."""
+
+        for idx, gen in enumerate(self.generators):
+            if not isinstance(gen, RecipientGeneratorMixin):
+                raise TypeError(f"Generator {gen} is not a RecipientGeneratorMixin")
+            generator_users = set()
+            for recipient in gen.reference_receivers(record=record, request_type=request_type, **context):
+                if not recipient:
+                    continue
+                recipient_type, recipient_value = next(iter(recipient.items()))
+                match recipient_type:
+                    case "user":
+                        generator_users.add(recipient_value)
+                    case "group":
+                        # get all users in the role and add them to the generator_users set
+                        generator_users.update(
+                            str(row[0])
+                            for row in db.session.query(User.id).filter(User.roles.any(id=recipient_value)).all()
+                        )
+                    case _:
+                        raise ValueError(f"Unsupported recipient type for RequireAll: {recipient_type}")
+            if idx == 0:
+                intersected_users = generator_users
+            else:
+                intersected_users.intersection_update(generator_users)
+
+        return [{"user": user_id} for user_id in intersected_users]
 
 
 class BooleanPermissionPolicyMixin(RecordPermissionPolicyTypeCheckingBase):
@@ -216,7 +273,6 @@ class BooleanPermissionPolicyMixin(RecordPermissionPolicyTypeCheckingBase):
             for generator in generators:
                 generator_needs = set(generator.needs(**self.over))
                 generator_excludes = set(generator.excludes(**self.over))
-
                 if generator_excludes and generator_excludes.intersection(identity.provides):
                     # An explicit exclusion applies.  Deny immediately and
                     # conservatively — do not check further composites.

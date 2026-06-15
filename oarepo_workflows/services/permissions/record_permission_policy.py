@@ -17,6 +17,7 @@ from invenio_records_permissions.generators import (
     SystemProcess,
 )
 
+from .composite import BooleanPermissionPolicyMixin
 from .generators import (
     FromRecordWorkflow,
     InAnyWorkflow,
@@ -32,7 +33,7 @@ else:
     InvenioRecordPermissionPolicy = object
 
 
-class WorkflowRecordPermissionPolicyMixin(InvenioRecordPermissionPolicy):
+class WorkflowRecordPermissionPolicyMixin(BooleanPermissionPolicyMixin, InvenioRecordPermissionPolicy):  # type: ignore[reportIncompatibleMethodOverride]
     """Permission policy to be used in permission presets directly on RecordServiceConfig.permission_policy_cls.
 
     Do not use this class in Workflow constructor.
