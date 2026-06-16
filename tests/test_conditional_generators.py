@@ -30,11 +30,11 @@ def test_if_event_type_condition_does_not_match():
 
 
 def test_if_event_type_condition_no_event_type_passed():
-    """Test that IfEventType returns False when event_type is not passed."""
+    """Test that IfEventType uses CommentEventType when event_type is not passed."""
     generator = IfEventType(CommentEventType, [AuthenticatedUser()])
 
-    assert generator._condition() is False  # NOQA: SLF001
-    assert generator._condition(event_type=None) is False  # NOQA: SLF001
+    assert generator._condition() is True  # NOQA: SLF001
+    assert generator._condition(event_type=None) is True  # NOQA: SLF001
 
 
 def test_if_event_type_with_log_event():

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, override
 
+from invenio_requests.customizations.event_types import CommentEventType
 from invenio_search.engine import dsl
 from oarepo_runtime.services.generators import ConditionalGenerator
 
@@ -38,7 +39,8 @@ class IfEventType(ConditionalGenerator):
     @override
     def _condition(self, *, event_type: type[EventType] | None = None, **kwargs: Any) -> bool:
         if event_type is None:
-            return False
+            # if we have not received event type, assume it's a comment event type (invenio itself uses only this)
+            event_type = CommentEventType
         return event_type == self.event_type
 
     @override
