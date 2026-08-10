@@ -55,13 +55,19 @@ if TYPE_CHECKING:
     from invenio_records_resources.records.api import Record
 
 
+class RequestWithRecordTopicType(RequestType):
+    """Request type with record as topic type."""
+
+    allowed_topic_ref_types = ("record",)
+
+
 @pytest.fixture(scope="module")
 def request_types():
     return [
-        type("Req", (RequestType,), {"type_id": "req"})(),
-        type("Req1", (RequestType,), {"type_id": "req1"})(),
-        type("Req2", (RequestType,), {"type_id": "req2"})(),
-        type("Req3", (RequestType,), {"type_id": "req3"})(),
+        type("Req", (RequestWithRecordTopicType,), {"type_id": "req"})(),
+        type("Req1", (RequestWithRecordTopicType,), {"type_id": "req1"})(),
+        type("Req2", (RequestWithRecordTopicType,), {"type_id": "req2"})(),
+        type("Req3", (RequestWithRecordTopicType,), {"type_id": "req3"})(),
     ]
 
 
@@ -216,6 +222,15 @@ class IsApplicableTestRequestPolicy(WorkflowRequestPolicy):
     )
 
 
+class CommunityRequests(WorkflowRequestPolicy):
+    """Requests for testing."""
+
+    req = WorkflowRequest(
+        requesters=[UserGenerator("user1@example.org")],
+        recipients=[Administration()],
+    )
+
+
 @pytest.fixture(scope="module")
 def test_draft_service(app):
     """Service instance."""
@@ -326,6 +341,12 @@ WORKFLOWS = [
         label=_("For testing permissions from multiple workflows"),
         permission_policy_cls=DifferentReadTestTwoWorkflowPermissionPolicy,
         request_policy_cls=MyWorkflowRequests,
+    ),
+    Workflow(
+        code="community_workflow",
+        label=_("For testing requests created on a community"),
+        permission_policy_cls=TestPermissionPolicy,
+        request_policy_cls=CommunityRequests,
     ),
 ]
 

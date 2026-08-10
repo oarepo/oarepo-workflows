@@ -18,8 +18,9 @@ from oarepo_runtime.services.generators import ConditionalGenerator
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
+    from invenio_records.api import Record
     from invenio_records_permissions.generators import Generator as InvenioGenerator
-    from invenio_requests.customizations import EventType
+    from invenio_requests.customizations import EventType, RequestType
 
 
 class IfEventType(ConditionalGenerator):
@@ -46,3 +47,36 @@ class IfEventType(ConditionalGenerator):
     @override
     def _query_instate(self, **context: Any) -> dsl.query.Query:
         return dsl.Q("term", type_id=self.event_type.type_id)
+
+
+class IfTopicTypeAllowedInRequestType(ConditionalGenerator):
+    """Conditional generator conditioning on whether request type topic is record with workflow."""
+
+    topic_type_ref: str
+
+    @override
+    def _condition(
+        self, request_type: RequestType | None = None, record: Record | dict | None = None, **kwargs: Any
+    ) -> bool:
+        if request_type and self.topic_type_ref in request_type.allowed_topic_ref_types:
+            if len(request_type.allowed_topic_ref_types) > 1:
+                raise ValueError("More allowed topic types than one is not allowed with workflows.")
+            return True
+        return False
+
+    # used only in request create, doesn't need query_filter for now
+    @override
+    def _query_instate(self, **context: Any) -> dsl.query.Query:
+        return dsl.Q("match_none")
+
+
+class IfTopicTypeIsRecord(IfTopicTypeAllowedInRequestType):
+    """Conditional generator conditioning on whether request type topic is record with workflow."""
+
+    topic_type_ref = "record"
+
+
+class IfTopicTypeIsCommunity(IfTopicTypeAllowedInRequestType):
+    """Conditional generator conditioning on whether request type topic is community."""
+
+    topic_type_ref = "community"

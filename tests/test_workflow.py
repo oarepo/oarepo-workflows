@@ -164,8 +164,10 @@ def test_invalid_workflow_input(workflow_model, users, logged_client, default_wo
     )
     assert invalid_wf_response.status_code == 400
     assert invalid_wf_response.json["errors"][0]["messages"] == [
-        "Workflow fregrthythj does not exist in the configuration. Used on record dict[{'parent': "
-        "{'workflow': 'fregrthythj'}, 'metadata': {'title': 'Test'}, 'files': {'enabled': False}}]"
+        (
+            "Workflow fregrthythj does not exist in the configuration. Used on record dict[{'parent': "
+            "{'workflow': 'fregrthythj'}, 'metadata': {'title': 'Test'}, 'files': {'enabled': False}}]"
+        )
     ]
 
 
