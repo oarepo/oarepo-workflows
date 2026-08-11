@@ -126,7 +126,7 @@ class RecordStateTimestampField(TypedSystemField[Record, str]):
     @overload
     def __get__(self, record: Record, owner: type | None = None) -> str: ...
 
-    def __get__(self, record: Record | None, owner: type | None = None) -> str | None | Self:
+    def __get__(self, record: Record | None, owner: type | None = None) -> str | Self | None:
         """Get the persistent identifier."""
         if record is None:
             return self

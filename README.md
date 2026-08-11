@@ -76,6 +76,7 @@ from oarepo_workflows.records.systemfields import (
     RecordStateTimestampField,
 )
 
+
 class MyRecord(Record):
     state = RecordStateField(initial="draft")
     state_timestamp = RecordStateTimestampField()
@@ -87,13 +88,7 @@ Set state programmatically:
 from oarepo_workflows import current_oarepo_workflows
 
 # Change state with automatic notification
-current_oarepo_workflows.set_state(
-    identity,
-    record,
-    "published",
-    commit=True,
-    notify_later=True
-)
+current_oarepo_workflows.set_state(identity, record, "published", commit=True, notify_later=True)
 ```
 
 #### Workflow Field
@@ -102,6 +97,7 @@ Links parent records to their workflow definition:
 
 ```python
 from oarepo_workflows.records.systemfields import WorkflowField
+
 
 class MyParentRecord(ParentRecord):
     workflow = WorkflowField()
@@ -123,18 +119,19 @@ from oarepo_workflows.services.permissions import (
 from invenio_rdm_records.services.generators import RecordOwners
 from invenio_records_permissions.generators import AuthenticatedUser
 
+
 class MyWorkflowPermissions(DefaultWorkflowPermissions):
     can_create = [AuthenticatedUser()]
-    
+
     can_read = [
         IfInState("draft", [RecordOwners()]),
         IfInState("published", [AuthenticatedUser()]),
     ]
-    
+
     can_update = [
         IfInState("draft", [RecordOwners()]),
     ]
-    
+
     can_delete = [
         IfInState("draft", [RecordOwners()]),
     ]
@@ -154,6 +151,7 @@ Use `WorkflowRecordPermissionPolicy` on `RecordServiceConfig` to delegate all pe
 from oarepo_workflows.services.permissions import (
     WorkflowRecordPermissionPolicy,
 )
+
 
 class MyServiceConfig(RecordServiceConfig):
     permission_policy_cls = WorkflowRecordPermissionPolicy
@@ -176,17 +174,12 @@ from oarepo_workflows import (
 )
 from invenio_rdm_records.services.generators import RecordOwners
 
+
 class MyWorkflowRequests(WorkflowRequestPolicy):
     publish_request = WorkflowRequest(
-        requesters=[
-            IfInState("draft", [RecordOwners()])
-        ],
+        requesters=[IfInState("draft", [RecordOwners()])],
         recipients=[CommunityRole("curator")],
-        transitions=WorkflowTransitions(
-            submitted="submitted",
-            accepted="published",
-            declined="draft"
-        )
+        transitions=WorkflowTransitions(submitted="submitted", accepted="published", declined="draft"),
     )
 ```
 
@@ -205,6 +198,7 @@ Automatically approve requests when submitted:
 ```python
 from oarepo_workflows import AutoApprove
 
+
 class MyWorkflowRequests(WorkflowRequestPolicy):
     edit_request = WorkflowRequest(
         requesters=[IfInState("published", [RecordOwners()])],
@@ -220,21 +214,13 @@ Escalate unresolved requests to higher authority:
 from datetime import timedelta
 from oarepo_workflows import WorkflowRequestEscalation
 
+
 class MyWorkflowRequests(WorkflowRequestPolicy):
     delete_request = WorkflowRequest(
         requesters=[IfInState("published", [RecordOwners()])],
         recipients=[CommunityRole("curator")],
-        transitions=WorkflowTransitions(
-            submitted="deleting",
-            accepted="deleted",
-            declined="published"
-        ),
-        escalations=[
-            WorkflowRequestEscalation(
-                after=timedelta(days=14),
-                recipients=[UserWithRole("administrator")]
-            )
-        ]
+        transitions=WorkflowTransitions(submitted="deleting", accepted="deleted", declined="published"),
+        escalations=[WorkflowRequestEscalation(after=timedelta(days=14), recipients=[UserWithRole("administrator")])],
     )
 ```
 
@@ -245,15 +231,12 @@ Define custom events that can be submitted on requests:
 ```python
 from oarepo_workflows.requests import WorkflowEvent
 
+
 class MyWorkflowRequests(WorkflowRequestPolicy):
     review_request = WorkflowRequest(
         requesters=[RecordOwners()],
         recipients=[CommunityRole("reviewer")],
-        events={
-            "request_changes": WorkflowEvent(
-                submitters=[CommunityRole("reviewer")]
-            )
-        }
+        events={"request_changes": WorkflowEvent(submitters=[CommunityRole("reviewer")])},
     )
 ```
 
@@ -288,6 +271,7 @@ Ensures workflow is set when creating records:
 
 ```python
 from oarepo_workflows.services.components import WorkflowComponent
+
 
 class MyServiceConfig(RecordServiceConfig):
     components = [
@@ -357,13 +341,10 @@ Support for requests with multiple recipients:
 ```python
 from oarepo_workflows import WorkflowRequest
 
+
 class MyWorkflowRequests(WorkflowRequestPolicy):
     review_request = WorkflowRequest(
-        requesters=[RecordOwners()],
-        recipients=[
-            CommunityRole("reviewer"),
-            CommunityRole("curator")
-        ]
+        requesters=[RecordOwners()], recipients=[CommunityRole("reviewer"), CommunityRole("curator")]
     )
 ```
 
@@ -398,16 +379,8 @@ Define roles used in workflow permissions:
 from invenio_i18n import lazy_gettext as _
 
 COMMUNITIES_ROLES = [
-    dict(
-        name="curator",
-        title=_("Curator"),
-        description=_("Curator of the community")
-    ),
-    dict(
-        name="reviewer",
-        title=_("Reviewer"),
-        description=_("Reviewer of submissions")
-    ),
+    dict(name="curator", title=_("Curator"), description=_("Curator of the community")),
+    dict(name="reviewer", title=_("Reviewer"), description=_("Reviewer of submissions")),
 ]
 ```
 
@@ -418,11 +391,7 @@ Define events available to all workflows:
 ```python
 from oarepo_workflows.requests import WorkflowEvent
 
-DEFAULT_WORKFLOW_EVENTS = {
-    "comment": WorkflowEvent(
-        submitters=[Creator(), Receiver()]
-    )
-}
+DEFAULT_WORKFLOW_EVENTS = {"comment": WorkflowEvent(submitters=[Creator(), Receiver()])}
 ```
 
 ## Development

@@ -217,6 +217,23 @@ class FromRecordWorkflow(Generator):
         return dsl.Q("match_none")
 
 
+class FromCommunityWorkflow(FromRecordWorkflow):
+    """Workflow permission generator changed to get the workflow from community custom field."""
+
+    @override
+    def _get_workflow(self, record: Record | None = None, **context: Any) -> Workflow | None:
+        """Get the workflow whose code is stored in the community's `workflow` custom field."""
+        if not record:
+            return None
+        workflow_code = record.get("custom_fields", {}).get("workflow")
+        if not workflow_code:
+            return None
+        if workflow_code not in current_oarepo_workflows.workflow_by_code:
+            log.warning("Workflow %s does not exist in the configuration.", workflow_code)
+            return None
+        return current_oarepo_workflows.workflow_by_code[workflow_code]
+
+
 class WorkflowPermission(FromRecordWorkflow):
     """Deprecated alias for FromRecordWorkflow."""
 

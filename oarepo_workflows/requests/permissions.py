@@ -20,8 +20,13 @@ from invenio_requests.services.permissions import (
 )
 
 from oarepo_workflows import FromRecordWorkflow
-from oarepo_workflows.requests.generators.conditionals import IfEventType
+from oarepo_workflows.requests.generators.conditionals import (
+    IfEventType,
+    IfTopicTypeIsCommunity,
+    IfTopicTypeIsRecord,
+)
 from oarepo_workflows.services.permissions.composite import BooleanPermissionPolicyMixin
+from oarepo_workflows.services.permissions.generators import FromCommunityWorkflow
 
 
 class CreatorsFromWorkflowRequestsPermissionPolicy(BooleanPermissionPolicyMixin, InvenioRequestsPermissionPolicy):  # type: ignore[reportIncompatibleMethodOverride]
@@ -45,8 +50,20 @@ class CreatorsFromWorkflowRequestsPermissionPolicy(BooleanPermissionPolicyMixin,
 
     can_create = (
         SystemProcess(),
-        FromRecordWorkflow(
-            action=lambda *, request_type, **kwargs: f"{request_type.type_id}_create"  # noqa: ARG005
+        IfTopicTypeIsRecord(
+            then_=[
+                FromRecordWorkflow(
+                    action=lambda *, request_type, **kwargs: f"{request_type.type_id}_create"  # noqa: ARG005
+                ),
+            ],
+            else_=[
+                IfTopicTypeIsCommunity(
+                    then_=[
+                        FromCommunityWorkflow(action=lambda *, request_type, **kwargs: f"{request_type.type_id}_create")  # noqa: ARG005
+                    ],
+                    else_=InvenioRequestsPermissionPolicy.can_create,
+                )
+            ],
         ),
     )
 
