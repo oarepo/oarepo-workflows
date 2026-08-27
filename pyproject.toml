@@ -54,10 +54,16 @@ action_need = "oarepo_workflows.notifications.resolvers:action_resolver"
 
 [project.entry-points."invenio_base.finalize_app"]
 oarepo_workflows = "oarepo_workflows.ext:finalize_app"
+
 [project.entry-points."invenio_base.api_finalize_app"]
 oarepo_workflows = "oarepo_workflows.ext:finalize_app"
+
 [project.entry-points."invenio_config.module"]
 oarepo_workflows = "oarepo_workflows.initial_config"
+
+[project.entry-points."oarepo.explainers"]
+300_in_any_workflow = "oarepo_workflows.services.permissions.explainers:InAnyWorkflowPermissionExplainer"
+
 
 [[tool.mypy.overrides]]
 module = ["untyped_package.*"]

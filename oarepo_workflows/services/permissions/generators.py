@@ -96,6 +96,10 @@ class InAnyWorkflow(Generator):
         return reduce(operator.or_, queries)
 
 
+class RecordNotPassedError(Exception):
+    """Raised when the record is not passed or can not be transformed."""
+
+
 class FromRecordWorkflow(Generator):
     """Permission delegating check to workflow.
 
@@ -176,15 +180,28 @@ class FromRecordWorkflow(Generator):
         is instantiated with the action name and the context and the permissions
         for the action are returned.
         """
+        try:
+            record, workflow, action_name = self._get_record_workflow_action(record=record, **context)
+        except RecordNotPassedError:
+            return None
+        policy = workflow.permissions(action_name, **context | {"record": record}) if workflow else None
+        return policy if policy is not None and hasattr(policy, f"can_{action_name}") else None
+
+    def _get_record_workflow_action(
+        self, *, record: Record | None, **context: Any
+    ) -> tuple[Record | None, Workflow | None, str]:
+        """Get the record, workflow, and action name from the context.
+
+        If there is a record transformer, transform the record.
+        """
         if self._record_getter:
             record = self._record_getter(**context)
             # we should explicitly decide what should throw exception and what should not do anything
             if not record:
-                return None
+                raise RecordNotPassedError
         action_name = self._action_name(**context)
         workflow = self._get_workflow(record, **context)
-        policy = workflow.permissions(action_name, **context | {"record": record}) if workflow else None
-        return policy if policy is not None and hasattr(policy, f"can_{action_name}") else None
+        return record, workflow, action_name
 
     @override
     def needs(self, **context: Any) -> Sequence[Need]:
