@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 class WorkflowsMappingPreset(Preset):
     """Preset for record mapping."""
 
-    modifies = ("draft-mapping",)  # depends on should already be finished?
+    modifies = ("record-mapping",)
 
     @override
     def apply(
@@ -58,7 +58,5 @@ class WorkflowsMappingPreset(Preset):
                 }
             }
         }
-
-        yield PatchJSONFile("draft-mapping", workflow_mapping)
 
         yield PatchJSONFile("record-mapping", workflow_mapping)
