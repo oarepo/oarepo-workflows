@@ -60,43 +60,31 @@ def test_request_policy_access(app, search_clear):
     assert "req" in requests
 
 
-def test_is_applicable(users, logged_client, search_clear, record_service):
+def test_is_applicable(users, workflow_model, logged_client, location, search_clear):
     from oarepo_workflows import current_oarepo_workflows
 
     req = current_oarepo_workflows.workflow_by_code["is_applicable_workflow"].requests().requests_by_id["req"]
 
-    id1 = Identity(id=1)
-    id1.provides.add(UserNeed(1))
+    id1 = users[0].identity
+    id2 = users[1].identity
 
-    id2 = Identity(id=2)
-    id2.provides.add(UserNeed(2))
-
-    record = SimpleNamespace(
-        parent=SimpleNamespace(
-            access=(SimpleNamespace(owner=SimpleNamespace(owner_id=1))),
-            workflow="is_applicable_workflow",
-        )
-    )
+    record = workflow_model.Draft.create({})
+    record.parent.workflow = "is_applicable_workflow"
+    record.parent.access.owner = users[0].user
 
     assert req.is_applicable(id2, record=record) is False
     assert req.is_applicable(id1, record=record) is True
 
 
-def test_list_applicable_requests(users, logged_client, search_clear, record_service):
+def test_list_applicable_requests(users, workflow_model, logged_client, location, search_clear):
     requests = current_oarepo_workflows.workflow_by_code["is_applicable_workflow"].requests()
 
-    id1 = Identity(id=1)
-    id1.provides.add(UserNeed(1))
+    id1 = users[0].identity
+    id2 = users[1].identity
 
-    id2 = Identity(id=2)
-    id2.provides.add(UserNeed(2))
-
-    record = SimpleNamespace(
-        parent=SimpleNamespace(
-            access=(SimpleNamespace(owner=SimpleNamespace(owner_id=1))),
-            workflow="is_applicable_workflow",
-        )
-    )
+    record = workflow_model.Draft.create({})
+    record.parent.workflow = "is_applicable_workflow"
+    record.parent.access.owner = users[0].user
 
     assert {x[0] for x in requests.applicable_workflow_requests(id1, record=record)} == {"req"}
 
