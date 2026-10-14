@@ -33,8 +33,29 @@ if TYPE_CHECKING:
 
     from oarepo_workflows.requests.events import WorkflowEvent
 
-
 log = getLogger(__name__)
+
+
+@dataclasses.dataclass
+class WorkflowTransitions:
+    """Transitions for a workflow request.
+
+    If the request is submitted and submitted is filled,
+    the record (topic) of the request will be moved to state defined in submitted.
+    If the request is approved, the record will be moved to state defined in approved.
+    If the request is rejected, the record will be moved to state defined in rejected.
+    """
+
+    submitted: str | None = None
+    accepted: str | None = None
+    declined: str | None = None
+    cancelled: str | None = None
+
+    def __getitem__(self, transition_name: str):
+        """Get the transition by name."""
+        if transition_name not in ["submitted", "accepted", "declined", "cancelled"]:
+            raise KeyError(f"Transition {transition_name} not defined in {self.__class__.__name__}")
+        return getattr(self, transition_name)
 
 
 @dataclasses.dataclass(kw_only=True)
@@ -55,7 +76,7 @@ class WorkflowRequest:
     events: dict[str, WorkflowEvent] = dataclasses.field(default_factory=WorkflowEvents)
     """Events that can be submitted with the request."""
 
-    transitions: WorkflowTransitions = dataclasses.field(default_factory=lambda: WorkflowTransitions())  # noqa PLW0108
+    transitions: WorkflowTransitions = dataclasses.field(default_factory=WorkflowTransitions)
     """Transitions applied to the state of the topic of the request."""
 
     escalations: list[WorkflowRequestEscalation] = dataclasses.field(default_factory=list)
@@ -124,28 +145,6 @@ class WorkflowRequest:
             return current_request_type_registry.lookup(self._request_type)
         except KeyError:  # pragma: no cover
             return current_request_type_registry.lookup(self._request_type.replace("-", "_"))  # pragma: no cover
-
-
-@dataclasses.dataclass
-class WorkflowTransitions:
-    """Transitions for a workflow request.
-
-    If the request is submitted and submitted is filled,
-    the record (topic) of the request will be moved to state defined in submitted.
-    If the request is approved, the record will be moved to state defined in approved.
-    If the request is rejected, the record will be moved to state defined in rejected.
-    """
-
-    submitted: str | None = None
-    accepted: str | None = None
-    declined: str | None = None
-    cancelled: str | None = None
-
-    def __getitem__(self, transition_name: str):
-        """Get the transition by name."""
-        if transition_name not in ["submitted", "accepted", "declined", "cancelled"]:
-            raise KeyError(f"Transition {transition_name} not defined in {self.__class__.__name__}")
-        return getattr(self, transition_name)
 
 
 @dataclasses.dataclass

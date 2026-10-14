@@ -70,10 +70,8 @@ class FromRecordWorkflowExplainer(PolicyExplainerMixin, PermissionExplainer):
         ret = super().explain(identity)
         generator = cast("FromRecordWorkflow", self.generator)
         over = self.permission_policy.over
-        policy = generator._get_permissions_from_workflow(**over)  # noqa SLF001
-        _record, workflow, action_name = generator._get_record_workflow_action(  # noqa SLF001
-            **{"record": None, **over}
-        )
+        policy = generator._get_permissions_from_workflow(**over)  # noqa: SLF001
+        _record, workflow, action_name = generator._get_record_workflow_action(**{"record": None, **over})  # noqa: SLF001
         if policy is not None:
             ret.append(
                 self.explain_policy(
