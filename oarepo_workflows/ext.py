@@ -243,7 +243,6 @@ def finalize_app(app: Flask) -> None:
     for workflow in ext.record_workflows:
         for r in workflow.requests().requests:
             try:
-                r.request_type  # noqa B018
-            # TODO: ugly; how to test?
+                r.request_type  # noqa: B018
             except KeyError as e:
-                raise UnregisteredRequestTypeError(r._request_type) from e  # noqa SLF001
+                raise UnregisteredRequestTypeError(r._request_type) from e  # noqa: SLF001

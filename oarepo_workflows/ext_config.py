@@ -22,5 +22,5 @@ WORKFLOWS_ALLOWED_REQUEST_RECEIVERS = ["multiple", "action_need"]
 WORKFLOWS_DEFAULT_WORKFLOW = "individual"
 
 NOTIFICATION_RECIPIENTS_RESOLVERS = {
-    "action_need": lambda key, notification: ActionRecipient(key),  # noqa ARG005
+    "action_need": lambda key, notification: ActionRecipient(key),  # noqa: ARG005
 }

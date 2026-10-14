@@ -90,8 +90,8 @@ def test_action_need_service_read(action_need_service):
     read_item = action_need_service.read(system_identity, "administration")
 
     assert {"id": "administration", "type": "action_need"}.items() <= read_item.data.items()
-    assert _is_action_need(read_item._record)  # noqa SLF001
-    assert read_item._record.value == "administration"  # noqa SLF001
+    assert _is_action_need(read_item._record)
+    assert read_item._record.value == "administration"
 
 
 def test_action_need_service_read_many(action_need_service):

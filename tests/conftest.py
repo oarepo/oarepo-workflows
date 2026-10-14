@@ -522,15 +522,13 @@ def _create_user(user_fixture, app, db) -> None:
         user_fixture.create(app, db)
     except IntegrityError:
         datastore = app.extensions["security"].datastore
-        user_fixture._user = datastore.get_user_by_email(  # noqa: SLF001
-            user_fixture.email
-        )
-        user_fixture._app = app  # noqa: SLF001
+        user_fixture._user = datastore.get_user_by_email(user_fixture.email)
+        user_fixture._app = app
         app.logger.info("skipping creation of %s, already existing", user_fixture.email)
 
 
 @pytest.fixture
-def users(app, db, UserFixture, password):  # noqa: N803 # as it is a fixture name
+def users(app, db, UserFixture, password):  # noqa N803
     """Predefined user fixtures."""
     user1 = UserFixture(
         email="user1@example.org",
