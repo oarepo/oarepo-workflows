@@ -36,7 +36,7 @@ class ActionNeedSchema(ma.Schema):
     Serializes ``ActionNeed(value)`` as ``{"id": value, "type": "action_need"}``.
     """
 
-    class Meta:
+    class Meta(ma.Schema.Meta):  # ty: ignore[invalid-attribute-override]
         """Marshmallow schema meta."""
 
         unknown = ma.INCLUDE

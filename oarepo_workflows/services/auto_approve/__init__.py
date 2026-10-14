@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 class AutoApproveSchema(ma.Schema):
     """Marshmallow schema for auto-approve."""
 
-    class Meta:
+    class Meta(ma.Schema.Meta):  # ty: ignore[invalid-attribute-override]
         """Marshmallow schema meta."""
 
         unknown = ma.INCLUDE

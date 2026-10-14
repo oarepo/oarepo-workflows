@@ -82,8 +82,7 @@ class RecordStateField(TypedSystemField[Record, str]):
     @overload
     def __set__(self, instance: Record, value: str) -> None: ...
 
-    # TODO: why pyright thinks this is an override error?
-    def __set__(self, instance: Record | None, value: str | Self) -> None:  # type: ignore[override]
+    def __set__(self, instance: Record | None, value: str | Self) -> None:
         """Directly set the state of the record."""
         if instance is None or isinstance(value, RecordStateField):
             raise AttributeError("Cannot set state on class or with another field.")
@@ -117,13 +116,13 @@ class RecordStateTimestampField(TypedSystemField[Record, str]):
             self.set_dictkey(record, datetime.now(tz=UTC).isoformat())
 
     @overload
-    def __get__(self, record: None, owner: type | None = None) -> Self: ...
+    def __get__(self, instance: None, owner: type | None = None) -> Self: ...
 
     @overload
-    def __get__(self, record: Record, owner: type | None = None) -> str: ...
+    def __get__(self, instance: Record, owner: type | None = None) -> str: ...
 
-    def __get__(self, record: Record | None, owner: type | None = None) -> str | Self | None:
+    def __get__(self, instance: Record | None, owner: type | None = None) -> str | Self | None:
         """Get the persistent identifier."""
-        if record is None:
+        if instance is None:
             return self
-        return cast("str | None", self.get_dictkey(record))
+        return cast("str | None", self.get_dictkey(instance))

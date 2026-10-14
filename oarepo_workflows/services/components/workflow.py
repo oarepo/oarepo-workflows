@@ -54,4 +54,4 @@ class WorkflowComponent(ServiceComponent):
                 f"Workflow {workflow_id} does not exist in the configuration.",
                 record=data or record,
             )
-        record.parent.workflow = workflow_id  # type: ignore[reportAttributeAccessIssue, reportOptionalMemberAccess]
+        record.parent.workflow = workflow_id

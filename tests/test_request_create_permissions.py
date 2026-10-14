@@ -74,7 +74,7 @@ def test_from_community_workflow_needs(users, app):
     needs = generator.needs(record=community, request_type=request_type("community"))
 
     user_id = users[0].user.id
-    assert needs == {Need(method="id", value=user_id), Need(method="system_role", value="system_process")}
+    assert set(needs) == {Need(method="id", value=user_id), Need(method="system_role", value="system_process")}
 
 
 @pytest.mark.parametrize("community", [None, {"custom_fields": {}}, {"custom_fields": {"workflow": "does_not_exist"}}])

@@ -48,7 +48,7 @@ class StateChangeOperation(Operation):
     @override
     def on_register(self, uow: UnitOfWork) -> None:
         """Change the state of the record and commit the changes."""
-        self.record.state = self.new_state  # type: ignore[assignment]
+        self.record.state = self.new_state  # ty: ignore[unresolved-attribute]
 
         if self.commit:
             service = current_runtime.get_record_service_for_record(self.record)
