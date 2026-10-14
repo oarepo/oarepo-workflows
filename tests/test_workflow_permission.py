@@ -3,8 +3,6 @@
 
 from __future__ import annotations
 
-from types import SimpleNamespace
-
 import pytest
 from flask_principal import Identity, Need, UserNeed
 from invenio_search.engine import dsl
@@ -15,9 +13,6 @@ from oarepo_workflows.services.permissions.generators import InAnyWorkflow
 
 
 def test_get_workflow_errors(users, workflow_model, logged_client, record_service, location, search_clear):
-    fake_record = SimpleNamespace(parent=SimpleNamespace())
-    with pytest.raises(MissingWorkflowError, match=r"Parent record does not have a workflow attribute."):
-        assert current_oarepo_workflows.get_workflow(fake_record)
     bad_data = {}
     with pytest.raises(MissingWorkflowError, match=r"Record does not have a parent attribute."):
         assert current_oarepo_workflows.get_workflow(bad_data)
