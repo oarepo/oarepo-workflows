@@ -1,10 +1,6 @@
-#
-# Copyright (C) 2024 CESNET z.s.p.o.
-#
-# oarepo-workflows is free software; you can redistribute it and/or
-# modify it under the terms of the MIT License; see LICENSE file for more
-# details.
-#
+# SPDX-FileCopyrightText: 2024 CESNET z.s.p.o
+# SPDX-License-Identifier: MIT
+
 from __future__ import annotations
 
 import pytest
@@ -49,7 +45,7 @@ def test_auto_approve_generator(app, search_clear):
 def test_auto_approve_service(auto_approve_service):
     read_item = auto_approve_service.read(system_identity, "true")
     assert {"id": "true", "type": "auto_approve"}.items() <= read_item.data.items()
-    assert isinstance(read_item._record, AutoApprove)  # noqa SLF001
+    assert isinstance(read_item._record, AutoApprove)
 
     read_list = auto_approve_service.read_many(system_identity, ["true", "true"])
     expected_list = [

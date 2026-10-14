@@ -1,15 +1,11 @@
-#
-# Copyright (C) 2024 CESNET z.s.p.o.
-#
-# oarepo-workflows is free software; you can redistribute it and/or
-# modify it under the terms of the MIT License; see LICENSE file for more
-# details.
-#
+# SPDX-FileCopyrightText: 2024 CESNET z.s.p.o
+# SPDX-License-Identifier: MIT
+
 """Service for reading multiple-recipients entities."""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, cast, override
+from typing import TYPE_CHECKING, Any, override
 
 import marshmallow as ma
 from invenio_records_resources.services.base.config import ServiceConfig
@@ -29,7 +25,6 @@ from oarepo_workflows.services.results import InMemoryResultList
 if TYPE_CHECKING:
     from flask_principal import Identity
     from invenio_db.uow import UnitOfWork
-    from invenio_records_resources.references.entity_resolvers.base import EntityProxy
 
 
 class MultipleEntitiesSchema(ma.Schema):
@@ -71,10 +66,7 @@ class MultipleEntitiesEntityService(RecordService):
         **kwargs: Any,
     ) -> RecordItem:
         """Return a service result item from multiple entity id."""
-        entity_proxy = cast(
-            "EntityProxy",
-            ResolverRegistry.resolve_entity_proxy({"multiple": id_}, raise_=True),
-        )
+        entity_proxy = ResolverRegistry.resolve_entity_proxy({"multiple": id_}, raise_=True)
         return self.result_item(self, identity, entity_proxy.resolve(), schema=self.schema)
 
     @override
@@ -86,16 +78,10 @@ class MultipleEntitiesEntityService(RecordService):
         **kwargs: Any,
     ) -> RecordList:
         """Return a service result list from multiple entity ids."""
-        results = [
-            cast(
-                "EntityProxy",
-                ResolverRegistry.resolve_entity_proxy({"multiple": id_}, raise_=True),
-            ).resolve()
-            for id_ in ids
-        ]
+        results = [ResolverRegistry.resolve_entity_proxy({"multiple": id_}, raise_=True).resolve() for id_ in ids]
         # TODO: I would guess we need our own typed service superclass ig but why is it complaining
         #  here and not in read or in AutoApproveService?
-        return self.result_list(identity, results, self.schema)  # type: ignore[no-any-return]
+        return self.result_list(identity, results, self.schema)
 
     #
     # High-level API

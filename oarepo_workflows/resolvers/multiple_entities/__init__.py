@@ -1,10 +1,6 @@
-#
-# Copyright (C) 2024 CESNET z.s.p.o.
-#
-# oarepo-workflows is free software; you can redistribute it and/or
-# modify it under the terms of the MIT License; see LICENSE file for more
-# details.
-#
+# SPDX-FileCopyrightText: 2024 CESNET z.s.p.o
+# SPDX-License-Identifier: MIT
+
 """Multiple entities entity and resolver."""
 
 from __future__ import annotations
@@ -12,7 +8,7 @@ from __future__ import annotations
 import dataclasses
 import json
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, cast, override
+from typing import TYPE_CHECKING, Any, override
 
 from invenio_records_resources.references.entity_resolvers import EntityProxy
 from invenio_records_resources.references.entity_resolvers.base import EntityResolver
@@ -57,13 +53,7 @@ class MultipleEntitiesProxy(EntityProxy):
         """Resolve the entity reference into entity."""
         values = json.loads(self._parse_ref_dict_id())
         return MultipleEntitiesEntity(
-            entities=[
-                cast(
-                    "EntityProxy",
-                    ResolverRegistry.resolve_entity_proxy(ref, raise_=True),
-                )
-                for ref in values
-            ]
+            entities=[ResolverRegistry.resolve_entity_proxy(ref, raise_=True) for ref in values]
         )
 
     @override
@@ -88,7 +78,7 @@ class MultipleEntitiesProxy(EntityProxy):
             hit[type_] |= {id_: {type_: id_}}
         fr = FieldsResolver([EntityResolverExpandableField(field_key) for field_key in field_keys])
         fr.resolve(identity, [hit])
-        return fr.expand(identity, hit)  # type: ignore[no-any-return]
+        return fr.expand(identity, hit)
 
 
 class MultipleEntitiesResolver(EntityResolver):
@@ -104,7 +94,7 @@ class MultipleEntitiesResolver(EntityResolver):
     @override
     def matches_reference_dict(self, ref_dict: dict) -> bool:
         """Check if the reference dictionary can be resolved by this resolver."""
-        return cast("bool", self._parse_ref_dict_type(ref_dict) == self.type_id)
+        return self._parse_ref_dict_type(ref_dict) == self.type_id
 
     @override
     def _reference_entity(self, entity: MultipleEntitiesEntity) -> dict[str, str]:

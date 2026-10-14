@@ -1,10 +1,6 @@
-#
-# Copyright (C) 2024 CESNET z.s.p.o.
-#
-# oarepo-workflows is free software; you can redistribute it and/or
-# modify it under the terms of the MIT License; see LICENSE file for more
-# details.
-#
+# SPDX-FileCopyrightText: 2024 CESNET z.s.p.o
+# SPDX-License-Identifier: MIT
+
 """Default configuration for oarepo-workflows."""
 
 from __future__ import annotations
@@ -26,5 +22,5 @@ WORKFLOWS_ALLOWED_REQUEST_RECEIVERS = ["multiple", "action_need"]
 WORKFLOWS_DEFAULT_WORKFLOW = "individual"
 
 NOTIFICATION_RECIPIENTS_RESOLVERS = {
-    "action_need": lambda key, notification: ActionRecipient(key),  # noqa ARG005
+    "action_need": lambda key, notification: ActionRecipient(key),  # noqa: ARG005
 }

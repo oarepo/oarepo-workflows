@@ -1,11 +1,6 @@
-#
-# Copyright (c) 2025 CESNET z.s.p.o.
-#
-# This file is a part of oarepo-workflows (see http://github.com/oarepo/oarepo-workflows).
-#
-# oarepo-workflows is free software; you can redistribute it and/or modify it
-# under the terms of the MIT License; see LICENSE file for more details.
-#
+# SPDX-FileCopyrightText: 2025 CESNET z.s.p.o
+# SPDX-License-Identifier: MIT
+
 from __future__ import annotations
 
 import base64
@@ -527,15 +522,13 @@ def _create_user(user_fixture, app, db) -> None:
         user_fixture.create(app, db)
     except IntegrityError:
         datastore = app.extensions["security"].datastore
-        user_fixture._user = datastore.get_user_by_email(  # noqa: SLF001
-            user_fixture.email
-        )
-        user_fixture._app = app  # noqa: SLF001
+        user_fixture._user = datastore.get_user_by_email(user_fixture.email)
+        user_fixture._app = app
         app.logger.info("skipping creation of %s, already existing", user_fixture.email)
 
 
 @pytest.fixture
-def users(app, db, UserFixture, password):  # noqa: N803 # as it is a fixture name
+def users(app, db, UserFixture, password):  # noqa N803
     """Predefined user fixtures."""
     user1 = UserFixture(
         email="user1@example.org",

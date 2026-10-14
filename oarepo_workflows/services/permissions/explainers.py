@@ -1,11 +1,6 @@
-#
-# Copyright (c) 2026 CESNET z.s.p.o.
-#
-# This file is a part of oarepo-workflows (see https://github.com/oarepo/oarepo-workflows).
-#
-# oarepo-workflows is free software; you can redistribute it and/or modify it
-# under the terms of the MIT License; see LICENSE file for more details.
-#
+# SPDX-FileCopyrightText: 2026 CESNET z.s.p.o
+# SPDX-License-Identifier: MIT
+
 """Permission explainer for InAnyWorkflow permission generator."""
 
 from __future__ import annotations
@@ -75,10 +70,8 @@ class FromRecordWorkflowExplainer(PolicyExplainerMixin, PermissionExplainer):
         ret = super().explain(identity)
         generator = cast("FromRecordWorkflow", self.generator)
         over = self.permission_policy.over
-        policy = generator._get_permissions_from_workflow(**over)  # noqa SLF001
-        _record, workflow, action_name = generator._get_record_workflow_action(  # noqa SLF001
-            **{"record": None, **over}
-        )
+        policy = generator._get_permissions_from_workflow(**over)  # noqa: SLF001
+        _record, workflow, action_name = generator._get_record_workflow_action(**{"record": None, **over})  # noqa: SLF001
         if policy is not None:
             ret.append(
                 self.explain_policy(

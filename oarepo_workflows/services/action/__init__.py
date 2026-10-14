@@ -1,10 +1,6 @@
-#
-# Copyright (C) 2024 CESNET z.s.p.o.
-#
-# oarepo-workflows is free software; you can redistribute it and/or
-# modify it under the terms of the MIT License; see LICENSE file for more
-# details.
-#
+# SPDX-FileCopyrightText: 2024 CESNET z.s.p.o
+# SPDX-License-Identifier: MIT
+
 """Service for reading ActionNeed entities.
 
 The implementation is simple as ActionNeed is resolved directly from its value (action name)
@@ -40,7 +36,7 @@ class ActionNeedSchema(ma.Schema):
     Serializes ``ActionNeed(value)`` as ``{"id": value, "type": "action_need"}``.
     """
 
-    class Meta:
+    class Meta(ma.Schema.Meta):  # ty: ignore[invalid-attribute-override]
         """Marshmallow schema meta."""
 
         unknown = ma.INCLUDE

@@ -1,10 +1,6 @@
-#
-# Copyright (C) 2024 CESNET z.s.p.o.
-#
-# oarepo-workflows is free software; you can redistribute it and/or
-# modify it under the terms of the MIT License; see LICENSE file for more
-# details.
-#
+# SPDX-FileCopyrightText: 2024 CESNET z.s.p.o
+# SPDX-License-Identifier: MIT
+
 """Service components for supporting workflows on Invenio records."""
 
 from __future__ import annotations
@@ -58,4 +54,4 @@ class WorkflowComponent(ServiceComponent):
                 f"Workflow {workflow_id} does not exist in the configuration.",
                 record=data or record,
             )
-        record.parent.workflow = workflow_id  # type: ignore[reportAttributeAccessIssue, reportOptionalMemberAccess]
+        record.parent.workflow = workflow_id

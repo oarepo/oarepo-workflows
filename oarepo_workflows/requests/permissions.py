@@ -1,15 +1,11 @@
-#
-# Copyright (C) 2024 CESNET z.s.p.o.
-#
-# oarepo-workflows is free software; you can redistribute it and/or
-# modify it under the terms of the MIT License; see LICENSE file for more
-# details.
-#
+# SPDX-FileCopyrightText: 2024 CESNET z.s.p.o
+# SPDX-License-Identifier: MIT
+
 """Base permission policy that overwrites invenio-requests."""
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from invenio_communities.communities.records.api import Community
 from invenio_records_permissions.generators import AnyUser, SystemProcess
@@ -28,8 +24,25 @@ from oarepo_workflows.requests.generators.conditionals import (
 from oarepo_workflows.services.permissions.composite import BooleanPermissionPolicyMixin
 from oarepo_workflows.services.permissions.generators import FromCommunityWorkflow
 
+if TYPE_CHECKING:
+    from invenio_records_resources.records import Record
+    from invenio_requests.customizations import EventType, RequestType
+    from invenio_requests.records.api import Request
 
-class CreatorsFromWorkflowRequestsPermissionPolicy(BooleanPermissionPolicyMixin, InvenioRequestsPermissionPolicy):  # type: ignore[reportIncompatibleMethodOverride]
+
+def _create_action(*, request_type: RequestType, **_: Any) -> str:
+    return f"{request_type.type_id}_create"
+
+
+def _event_create_action(*, request: Request, event_type: type[EventType] = CommentEventType, **_: Any) -> str:
+    return f"{request.type.type_id}_{event_type.type_id}_create"
+
+
+def _request_topic(*, request: Request, **_: Any) -> Record:
+    return request.topic.resolve()
+
+
+class CreatorsFromWorkflowRequestsPermissionPolicy(BooleanPermissionPolicyMixin, InvenioRequestsPermissionPolicy):
     """Permissions for requests based on workflows.
 
     This permission adds a special generator RequestCreatorsFromWorkflow() to the default permissions.
@@ -52,15 +65,11 @@ class CreatorsFromWorkflowRequestsPermissionPolicy(BooleanPermissionPolicyMixin,
         SystemProcess(),
         IfTopicTypeIsRecord(
             then_=[
-                FromRecordWorkflow(
-                    action=lambda *, request_type, **kwargs: f"{request_type.type_id}_create"  # noqa: ARG005
-                ),
+                FromRecordWorkflow(action=_create_action),
             ],
             else_=[
                 IfTopicTypeIsCommunity(
-                    then_=[
-                        FromCommunityWorkflow(action=lambda *, request_type, **kwargs: f"{request_type.type_id}_create")  # noqa: ARG005
-                    ],
+                    then_=[FromCommunityWorkflow(action=_create_action)],
                     else_=InvenioRequestsPermissionPolicy.can_create,
                 )
             ],
@@ -72,10 +81,8 @@ class CreatorsFromWorkflowRequestsPermissionPolicy(BooleanPermissionPolicyMixin,
         IfEventType(CommentEventType, [Creator(), Receiver()]),
         IfEventType(LogEventType, [Creator(), Receiver()]),
         FromRecordWorkflow(
-            action=lambda *, request, event_type=CommentEventType, **kwargs: (  # noqa: ARG005
-                f"{request.type.type_id}_{event_type.type_id}_create"
-            ),
-            record_getter=lambda *, request, **kwargs: request.topic.resolve(),  # noqa: ARG005
+            action=_event_create_action,
+            record_getter=_request_topic,
         ),
     )
 

@@ -1,10 +1,6 @@
-#
-# Copyright (C) 2024 CESNET z.s.p.o.
-#
-# oarepo-workflows is free software; you can redistribute it and/or
-# modify it under the terms of the MIT License; see LICENSE file for more
-# details.
-#
+# SPDX-FileCopyrightText: 2024 CESNET z.s.p.o
+# SPDX-License-Identifier: MIT
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, override
@@ -188,9 +184,9 @@ def test_multiple_entities_entity_proxy(users, role, workflow_model, location, s
 def test_service(multiple_recipients_service, users, search_clear):
     read_item = multiple_recipients_service.read(system_identity, '[{"user": "1"}, {"user": "2"}]')
     assert {"id": '[{"user": "1"}, {"user": "2"}]'}.items() <= read_item.data.items()
-    assert isinstance(read_item._record, MultipleEntitiesEntity)  # noqa SLF001
+    assert isinstance(read_item._record, MultipleEntitiesEntity)
 
-    refdicts = [entity._ref_dict for entity in read_item._record.entities]  # noqa SLF001
+    refdicts = [entity._ref_dict for entity in read_item._record.entities]
     assert len(refdicts) == 2
     assert {"user": "1"} in refdicts
     assert {"user": "2"} in refdicts

@@ -1,10 +1,6 @@
-#
-# Copyright (C) 2024 CESNET z.s.p.o.
-#
-# oarepo-workflows is free software; you can redistribute it and/or
-# modify it under the terms of the MIT License; see LICENSE file for more
-# details.
-#
+# SPDX-FileCopyrightText: 2024 CESNET z.s.p.o
+# SPDX-License-Identifier: MIT
+
 """Unit of Work operations module for workflows.
 
 Provides operation class for changing the workflow state.
@@ -52,7 +48,7 @@ class StateChangeOperation(Operation):
     @override
     def on_register(self, uow: UnitOfWork) -> None:
         """Change the state of the record and commit the changes."""
-        self.record.state = self.new_state  # type: ignore[assignment]
+        self.record.state = self.new_state  # ty: ignore[unresolved-attribute]
 
         if self.commit:
             service = current_runtime.get_record_service_for_record(self.record)

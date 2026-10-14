@@ -1,10 +1,6 @@
-#
-# Copyright (C) 2024 CESNET z.s.p.o.
-#
-# oarepo-workflows is free software; you can redistribute it and/or
-# modify it under the terms of the MIT License; see LICENSE file for more
-# details.
-#
+# SPDX-FileCopyrightText: 2024 CESNET z.s.p.o
+# SPDX-License-Identifier: MIT
+
 """Tests for ActionNeed resolver and service."""
 
 from __future__ import annotations
@@ -94,8 +90,8 @@ def test_action_need_service_read(action_need_service):
     read_item = action_need_service.read(system_identity, "administration")
 
     assert {"id": "administration", "type": "action_need"}.items() <= read_item.data.items()
-    assert _is_action_need(read_item._record)  # noqa SLF001
-    assert read_item._record.value == "administration"  # noqa SLF001
+    assert _is_action_need(read_item._record)
+    assert read_item._record.value == "administration"
 
 
 def test_action_need_service_read_many(action_need_service):

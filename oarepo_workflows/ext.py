@@ -1,10 +1,6 @@
-#
-# Copyright (C) 2024 CESNET z.s.p.o.
-#
-# oarepo-workflows is free software; you can redistribute it and/or
-# modify it under the terms of the MIT License; see LICENSE file for more
-# details.
-#
+# SPDX-FileCopyrightText: 2024 CESNET z.s.p.o
+# SPDX-License-Identifier: MIT
+
 """Flask extension for workflows."""
 
 from __future__ import annotations
@@ -13,6 +9,8 @@ import importlib.metadata
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, cast
 
+from invenio_drafts_resources.records import Record as RecordWithDraft
+from invenio_records.api import RecordBase
 from invenio_records_resources.services.uow import unit_of_work
 
 from oarepo_workflows import current_oarepo_workflows
@@ -39,7 +37,6 @@ if TYPE_CHECKING:
     from flask import Flask
     from flask_principal import Identity
     from invenio_db.uow import UnitOfWork
-    from invenio_drafts_resources.records import Record
 
     from oarepo_workflows.base import (
         StateChangedNotifier,
@@ -112,7 +109,7 @@ class OARepoWorkflows:
     def set_state(  # noqa: PLR0913
         self,
         identity: Identity,
-        record: Record,
+        record: RecordWithDraft,
         new_state: str,
         *args: Any,
         uow: UnitOfWork,
@@ -146,7 +143,7 @@ class OARepoWorkflows:
     @property
     def record_workflows(self) -> list[Workflow]:
         """Return a dictionary of available record workflows."""
-        return self.app.config["WORKFLOWS"]  # type: ignore[no-any-return]
+        return self.app.config["WORKFLOWS"]
 
     @property
     def default_workflow_events(self) -> dict[str, WorkflowEvent]:
@@ -172,25 +169,24 @@ class OARepoWorkflows:
                 f"to the default workflow."
             ) from exc
 
-    def get_workflow(self, record: Record | dict[str, Any] | Any) -> Workflow:
+    def get_workflow(self, record: RecordWithDraft | dict[str, Any] | Any) -> Workflow:
         """Get the workflow for a record.
 
         :param record:  record to get the workflow for
         :raises MissingWorkflowError: if the workflow is not found
         :raises InvalidWorkflowError: if the workflow is invalid
         """
-        if hasattr(record, "parent"):
-            try:
-                record_parent: WithWorkflow = record.parent  # type: ignore[reportAttributeAccessIssue]
-            except AttributeError as e:  # TODO: hasattr(record, "parent") already tested?
-                raise MissingWorkflowError(
-                    "Record does not have a parent attribute, is it a draft-enabled record?",
-                    record=record,
-                ) from e
+        if isinstance(record, RecordWithDraft):
+            record_parent: WithWorkflow = record.parent
             try:
                 workflow_id = record_parent.workflow
             except AttributeError as e:
                 raise MissingWorkflowError("Parent record does not have a workflow attribute.", record=record) from e
+        elif isinstance(record, RecordBase):
+            raise MissingWorkflowError(
+                "Records without drafts have no parent attribute and do not allow setting a workflow",
+                record=record,
+            )
         elif isinstance(record, dict):
             try:
                 dict_parent: dict[str, Any] = record["parent"]
@@ -247,7 +243,6 @@ def finalize_app(app: Flask) -> None:
     for workflow in ext.record_workflows:
         for r in workflow.requests().requests:
             try:
-                r.request_type  # noqa B018
-            # TODO: ugly; how to test?
+                r.request_type  # noqa: B018
             except KeyError as e:
-                raise UnregisteredRequestTypeError(r._request_type) from e  # noqa SLF001
+                raise UnregisteredRequestTypeError(r._request_type) from e  # noqa: SLF001

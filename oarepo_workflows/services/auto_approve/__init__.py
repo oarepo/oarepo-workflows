@@ -1,10 +1,6 @@
-#
-# Copyright (C) 2024 CESNET z.s.p.o.
-#
-# oarepo-workflows is free software; you can redistribute it and/or
-# modify it under the terms of the MIT License; see LICENSE file for more
-# details.
-#
+# SPDX-FileCopyrightText: 2024 CESNET z.s.p.o
+# SPDX-License-Identifier: MIT
+
 """Service for reading auto-approve entities.
 
 The implementation is simple as auto approve is just one entity
@@ -36,7 +32,7 @@ if TYPE_CHECKING:
 class AutoApproveSchema(ma.Schema):
     """Marshmallow schema for auto-approve."""
 
-    class Meta:
+    class Meta(ma.Schema.Meta):  # ty: ignore[invalid-attribute-override]
         """Marshmallow schema meta."""
 
         unknown = ma.INCLUDE

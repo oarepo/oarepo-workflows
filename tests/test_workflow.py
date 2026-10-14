@@ -1,10 +1,6 @@
-#
-# Copyright (C) 2024 CESNET z.s.p.o.
-#
-# oarepo-workflows is free software; you can redistribute it and/or
-# modify it under the terms of the MIT License; see LICENSE file for more
-# details.
-#
+# SPDX-FileCopyrightText: 2024 CESNET z.s.p.o
+# SPDX-License-Identifier: MIT
+
 from __future__ import annotations
 
 import copy
@@ -178,9 +174,7 @@ def test_state_change(
     location,
     search_clear,
 ):
-    record = record_service.create(  # noqa SLF001
-        identity=users[0].identity, data=default_workflow_json
-    )._record
+    record = record_service.create(identity=users[0].identity, data=default_workflow_json)._record
     current_oarepo_workflows.set_state(users[0].identity, record, "approving", commit=False)
     assert record["state"] == "approving"
 
@@ -195,6 +189,6 @@ def test_state_change_entrypoint_hookup(
     from tests import entrypoints
 
     entrypoints.state_change_notifier_called = False
-    record = record_service.create(users[0].identity, default_workflow_json)._record  # noqa SLF001
+    record = record_service.create(users[0].identity, default_workflow_json)._record
     current_oarepo_workflows.set_state(users[0].identity, record, "approving", commit=False)
     assert entrypoints.state_change_notifier_called

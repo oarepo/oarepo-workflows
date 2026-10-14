@@ -1,10 +1,6 @@
-#
-# Copyright (C) 2024 CESNET z.s.p.o.
-#
-# oarepo-workflows is free software; you can redistribute it and/or
-# modify it under the terms of the MIT License; see LICENSE file for more
-# details.
-#
+# SPDX-FileCopyrightText: 2024 CESNET z.s.p.o
+# SPDX-License-Identifier: MIT
+
 """Record policy for workflows."""
 
 from __future__ import annotations
@@ -33,7 +29,7 @@ else:
     InvenioRecordPermissionPolicy = object
 
 
-class WorkflowRecordPermissionPolicyMixin(BooleanPermissionPolicyMixin, InvenioRecordPermissionPolicy):  # type: ignore[reportIncompatibleMethodOverride]
+class WorkflowRecordPermissionPolicyMixin(BooleanPermissionPolicyMixin, InvenioRecordPermissionPolicy):
     """Permission policy to be used in permission presets directly on RecordServiceConfig.permission_policy_cls.
 
     Do not use this class in Workflow constructor.
@@ -134,5 +130,5 @@ class WorkflowRecordPermissionPolicyMixin(BooleanPermissionPolicyMixin, InvenioR
             "read_deleted",
             "read_all_records",
         ):
-            return super().query_filters  # type: ignore[no-any-return]
+            return super().query_filters
         return query_filters_from_all_workflows(self.action, **self.over)

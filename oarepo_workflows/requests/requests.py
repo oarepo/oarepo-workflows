@@ -1,10 +1,6 @@
-#
-# Copyright (C) 2024 CESNET z.s.p.o.
-#
-# oarepo-workflows is free software; you can redistribute it and/or
-# modify it under the terms of the MIT License; see LICENSE file for more
-# details.
-#
+# SPDX-FileCopyrightText: 2024 CESNET z.s.p.o
+# SPDX-License-Identifier: MIT
+
 """Workflow requests."""
 
 from __future__ import annotations
@@ -12,7 +8,7 @@ from __future__ import annotations
 import dataclasses
 from functools import cached_property
 from logging import getLogger
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Protocol, cast, runtime_checkable
 
 from invenio_requests.proxies import (
     current_request_type_registry,
@@ -37,8 +33,51 @@ if TYPE_CHECKING:
 
     from oarepo_workflows.requests.events import WorkflowEvent
 
-
 log = getLogger(__name__)
+
+
+@runtime_checkable
+class RequestTypeWithCreationChecks(Protocol):
+    """Request type with methods checking whether it can be created."""
+
+    @classmethod
+    def is_applicable_to(cls, identity: Identity, topic: Record, *_args: Any, **kwargs: Any) -> bool:
+        """Check if the request type is applicable to the topic."""
+        ...
+
+    def can_create(
+        self,
+        identity: Identity,
+        data: dict[str, Any],
+        receiver: dict[str, str] | Any | None,
+        topic: Record,
+        creator: dict[str, str] | Any | None,
+        **kwargs: Any,
+    ) -> None:
+        """Check if the request can be created."""
+        ...
+
+
+@dataclasses.dataclass
+class WorkflowTransitions:
+    """Transitions for a workflow request.
+
+    If the request is submitted and submitted is filled,
+    the record (topic) of the request will be moved to state defined in submitted.
+    If the request is approved, the record will be moved to state defined in approved.
+    If the request is rejected, the record will be moved to state defined in rejected.
+    """
+
+    submitted: str | None = None
+    accepted: str | None = None
+    declined: str | None = None
+    cancelled: str | None = None
+
+    def __getitem__(self, transition_name: str):
+        """Get the transition by name."""
+        if transition_name not in ["submitted", "accepted", "declined", "cancelled"]:
+            raise KeyError(f"Transition {transition_name} not defined in {self.__class__.__name__}")
+        return getattr(self, transition_name)
 
 
 @dataclasses.dataclass(kw_only=True)
@@ -59,7 +98,7 @@ class WorkflowRequest:
     events: dict[str, WorkflowEvent] = dataclasses.field(default_factory=WorkflowEvents)
     """Events that can be submitted with the request."""
 
-    transitions: WorkflowTransitions = dataclasses.field(default_factory=lambda: WorkflowTransitions())  # noqa PLW0108
+    transitions: WorkflowTransitions = dataclasses.field(default_factory=WorkflowTransitions)
     """Transitions applied to the state of the topic of the request."""
 
     escalations: list[WorkflowRequestEscalation] = dataclasses.field(default_factory=list)
@@ -84,18 +123,15 @@ class WorkflowRequest:
         :param context: Context of the request that is passed to the requester generators.
         """
         try:
-            if hasattr(self.request_type, "is_applicable_to"):
+            if isinstance(self.request_type, RequestTypeWithCreationChecks):
                 # invenio RequestType doesn't have is_applicable_to check
-                return self.request_type.is_applicable_to(identity, topic=record, **context)  # type: ignore[no-any-return]
-            return cast(
-                "bool",
-                current_requests_service.check_permission(
-                    identity,
-                    "create",
-                    record=record,
-                    request_type=self.request_type,
-                    **context,
-                ),
+                return self.request_type.is_applicable_to(identity, topic=record, **context)
+            return current_requests_service.check_permission(
+                identity,
+                "create",
+                record=record,
+                request_type=self.request_type,
+                **context,
             )
         except InvalidConfigurationError:
             raise
@@ -128,28 +164,6 @@ class WorkflowRequest:
             return current_request_type_registry.lookup(self._request_type)
         except KeyError:  # pragma: no cover
             return current_request_type_registry.lookup(self._request_type.replace("-", "_"))  # pragma: no cover
-
-
-@dataclasses.dataclass
-class WorkflowTransitions:
-    """Transitions for a workflow request.
-
-    If the request is submitted and submitted is filled,
-    the record (topic) of the request will be moved to state defined in submitted.
-    If the request is approved, the record will be moved to state defined in approved.
-    If the request is rejected, the record will be moved to state defined in rejected.
-    """
-
-    submitted: str | None = None
-    accepted: str | None = None
-    declined: str | None = None
-    cancelled: str | None = None
-
-    def __getitem__(self, transition_name: str):
-        """Get the transition by name."""
-        if transition_name not in ["submitted", "accepted", "declined", "cancelled"]:
-            raise KeyError(f"Transition {transition_name} not defined in {self.__class__.__name__}")
-        return getattr(self, transition_name)
 
 
 @dataclasses.dataclass

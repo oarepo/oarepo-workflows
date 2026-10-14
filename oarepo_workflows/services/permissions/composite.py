@@ -1,17 +1,12 @@
-#
-# Copyright (c) 2026 CESNET z.s.p.o.
-#
-# This file is a part of oarepo-workflows (see https://github.com/oarepo/oarepo-workflows).
-#
-# oarepo-workflows is free software; you can redistribute it and/or modify it
-# under the terms of the MIT License; see LICENSE file for more details.
-#
+# SPDX-FileCopyrightText: 2026 CESNET z.s.p.o
+# SPDX-License-Identifier: MIT
+
 """Composite generator that combines multiple generators using AND logic."""
 
 from __future__ import annotations
 
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 from flask_principal import Identity, Need
 from invenio_accounts.models import User
@@ -54,7 +49,7 @@ class HashableList(list):
         ``==``.  Both operators are therefore overridden together.
     """
 
-    def __hash__(self) -> int:  # type: ignore[override]
+    def __hash__(self) -> int:  # ty: ignore[invalid-attribute-override]
         """Return a hash based on object identity, not contents."""
         return hash(id(self))
 
@@ -292,19 +287,19 @@ class BooleanPermissionPolicyMixin(RecordPermissionPolicyTypeCheckingBase):
         return False
 
     @cached_property
-    def needs(self) -> frozenset[Need]:  # type: ignore[reportIncompatibleMethodOverride]
+    def needs(self) -> set[Need]:
         """Return the set of needs for this permission policy.
 
         Note: over and action are frozen in constructor, so we can safely
         cache the results of needs and excludes.
         """
-        return cast("frozenset[Need]", super().needs)
+        return super().needs
 
     @cached_property
-    def excludes(self) -> frozenset[Need]:  # type: ignore[reportIncompatibleMethodOverride]
+    def excludes(self) -> set[Need]:
         """Return the set of excludes for this permission policy.
 
         Note: over and action are frozen in constructor, so we can safely
         cache the results of needs and excludes.
         """
-        return cast("frozenset[Need]", super().excludes)
+        return super().excludes
