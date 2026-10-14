@@ -10,9 +10,10 @@ from invenio_records_resources.references.entity_resolvers import (
 )
 
 
+# TODO: consider moving to requests
 def action_resolver() -> ServiceResultResolver:
     """Return action need notification resolver."""
     return ServiceResultResolver(service_id="action_need", type_key="action_need")
 
 
-action_resolver.type_key = "action_need"  # type: ignore[reportFunctionMemberAccess, attr-defined]
+action_resolver.type_key = "action_need"  # ty: ignore[unresolved-attribute]

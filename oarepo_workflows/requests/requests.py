@@ -103,16 +103,13 @@ class WorkflowRequest:
         try:
             if hasattr(self.request_type, "is_applicable_to"):
                 # invenio RequestType doesn't have is_applicable_to check
-                return self.request_type.is_applicable_to(identity, topic=record, **context)  # type: ignore[no-any-return]
-            return cast(
-                "bool",
-                current_requests_service.check_permission(
-                    identity,
-                    "create",
-                    record=record,
-                    request_type=self.request_type,
-                    **context,
-                ),
+                return self.request_type.is_applicable_to(identity, topic=record, **context)  # ty: ignore[call-non-callable]
+            return current_requests_service.check_permission(
+                identity,
+                "create",
+                record=record,
+                request_type=self.request_type,
+                **context,
             )
         except InvalidConfigurationError:
             raise

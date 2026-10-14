@@ -21,16 +21,6 @@ class AutoApprove:
 
     id = "true"
     type = "auto_approve"
-    # TODO: see below
-    # ref_dict = MappingProxyType({"auto_approve": "true"}) - must be dict due to how
-    # invenio_records_resources.references.registry.ResolverRegistryBase.reference_entity is implemented
-
-    # for mypy ref_dict: ClassVar[dict[str, str]] = {"auto_approve": "true"}
-
-    # Instead of ClassVar; typing for classproperty does not work
-
-    # idea: define reference dict type
-
     ref_dict: Mapping[str, str] = {"auto_approve": "true"}
 
 

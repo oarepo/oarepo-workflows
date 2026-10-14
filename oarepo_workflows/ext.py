@@ -142,7 +142,7 @@ class OARepoWorkflows:
     @property
     def record_workflows(self) -> list[Workflow]:
         """Return a dictionary of available record workflows."""
-        return self.app.config["WORKFLOWS"]  # type: ignore[no-any-return]
+        return self.app.config["WORKFLOWS"]
 
     @property
     def default_workflow_events(self) -> dict[str, WorkflowEvent]:
