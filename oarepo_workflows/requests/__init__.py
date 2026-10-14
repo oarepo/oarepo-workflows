@@ -10,6 +10,7 @@ from .policy import (
     WorkflowRequestPolicy,
 )
 from .requests import (
+    RequestTypeWithCreationChecks,
     WorkflowRequest,
     WorkflowRequestEscalation,
     WorkflowTransitions,
@@ -19,6 +20,7 @@ __all__ = (
     "AutoApprove",
     "AutoRequest",
     "RecipientGeneratorMixin",
+    "RequestTypeWithCreationChecks",
     "WorkflowRequest",
     "WorkflowRequestEscalation",
     "WorkflowRequestPolicy",
