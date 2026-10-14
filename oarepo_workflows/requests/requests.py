@@ -8,7 +8,7 @@ from __future__ import annotations
 import dataclasses
 from functools import cached_property
 from logging import getLogger
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Protocol, cast, runtime_checkable
 
 from invenio_requests.proxies import (
     current_request_type_registry,
@@ -34,6 +34,28 @@ if TYPE_CHECKING:
     from oarepo_workflows.requests.events import WorkflowEvent
 
 log = getLogger(__name__)
+
+
+@runtime_checkable
+class RequestTypeWithCreationChecks(Protocol):
+    """Request type with methods checking whether it can be created."""
+
+    @classmethod
+    def is_applicable_to(cls, identity: Identity, topic: Record, *_args: Any, **kwargs: Any) -> bool:
+        """Check if the request type is applicable to the topic."""
+        ...
+
+    def can_create(
+        self,
+        identity: Identity,
+        data: dict[str, Any],
+        receiver: dict[str, str] | Any | None,
+        topic: Record,
+        creator: dict[str, str] | Any | None,
+        **kwargs: Any,
+    ) -> None:
+        """Check if the request can be created."""
+        ...
 
 
 @dataclasses.dataclass
@@ -101,9 +123,9 @@ class WorkflowRequest:
         :param context: Context of the request that is passed to the requester generators.
         """
         try:
-            if hasattr(self.request_type, "is_applicable_to"):
+            if isinstance(self.request_type, RequestTypeWithCreationChecks):
                 # invenio RequestType doesn't have is_applicable_to check
-                return self.request_type.is_applicable_to(identity, topic=record, **context)  # ty: ignore[call-non-callable]
+                return self.request_type.is_applicable_to(identity, topic=record, **context)
             return current_requests_service.check_permission(
                 identity,
                 "create",
