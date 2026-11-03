@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from .generators import AutoApprove, AutoRequest, RecipientGeneratorMixin
+from .generators import AutoApprove, RecipientGeneratorMixin
 from .policy import (
     WorkflowRequestPolicy,
 )
@@ -18,7 +18,6 @@ from .requests import (
 
 __all__ = (
     "AutoApprove",
-    "AutoRequest",
     "RecipientGeneratorMixin",
     "RequestTypeWithCreationChecks",
     "WorkflowRequest",

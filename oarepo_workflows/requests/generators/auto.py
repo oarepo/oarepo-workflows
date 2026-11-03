@@ -24,19 +24,6 @@ auto_request_need = SystemRoleNeed("auto_request")
 auto_approve_need = SystemRoleNeed("auto_approve")
 
 
-class AutoRequest(Generator):
-    """Auto request generator.
-
-    This generator is used to automatically create a request
-    when a record is moved to a specific state.
-    """
-
-    @override
-    def needs(self, **context: Any) -> Sequence[Need]:
-        """Get needs that signal workflow to automatically create the request."""
-        return [auto_request_need]
-
-
 class AutoApprove(RecipientGeneratorMixin, Generator):
     """Auto approve generator.
 
