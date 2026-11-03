@@ -18,7 +18,6 @@ from .base import Workflow
 from .proxies import current_oarepo_workflows
 from .requests import (
     AutoApprove,
-    AutoRequest,
     WorkflowRequest,
     WorkflowRequestEscalation,
     WorkflowRequestPolicy,
@@ -33,7 +32,6 @@ except PackageNotFoundError:
 
 __all__ = (
     "AutoApprove",
-    "AutoRequest",
     "FromRecordWorkflow",
     "IfInState",
     "Workflow",
