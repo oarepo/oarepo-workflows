@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Any
 from invenio_communities.communities.records.api import Community
 from invenio_records_permissions.generators import AnyUser, SystemProcess
 from invenio_requests.customizations.event_types import CommentEventType, LogEventType
-from invenio_requests.services.generators import Creator, Receiver
 from invenio_requests.services.permissions import (
     PermissionPolicy as InvenioRequestsPermissionPolicy,
 )
@@ -78,8 +77,8 @@ class CreatorsFromWorkflowRequestsPermissionPolicy(BooleanPermissionPolicyMixin,
 
     can_create_comment = (
         SystemProcess(),
-        IfEventType(CommentEventType, [Creator(), Receiver()]),
-        IfEventType(LogEventType, [Creator(), Receiver()]),
+        IfEventType(CommentEventType, InvenioRequestsPermissionPolicy.can_create_comment),
+        IfEventType(LogEventType, InvenioRequestsPermissionPolicy.can_create_comment),
         FromRecordWorkflow(
             action=_event_create_action,
             record_getter=_request_topic,
