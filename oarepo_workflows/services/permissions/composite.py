@@ -49,7 +49,7 @@ class HashableList(list):
         ``==``.  Both operators are therefore overridden together.
     """
 
-    def __hash__(self) -> int:  # ty: ignore[invalid-attribute-override]
+    def __hash__(self) -> int:
         """Return a hash based on object identity, not contents."""
         return hash(id(self))
 

@@ -37,11 +37,11 @@ log = getLogger(__name__)
 
 
 @runtime_checkable
-class RequestTypeWithCreationChecks(Protocol):
-    """Request type with methods checking whether it can be created."""
+class RequestTypeWithCreationChecks[T](Protocol):
+    """Request type with methods checking whether it can be created on a topic of type T."""
 
     @classmethod
-    def is_applicable_to(cls, identity: Identity, topic: Record, *_args: Any, **kwargs: Any) -> bool:
+    def is_applicable_to(cls, identity: Identity, topic: T, *_args: Any, **kwargs: Any) -> bool:
         """Check if the request type is applicable to the topic."""
         ...
 
@@ -50,7 +50,7 @@ class RequestTypeWithCreationChecks(Protocol):
         identity: Identity,
         data: dict[str, Any],
         receiver: dict[str, str] | Any | None,
-        topic: Record,
+        topic: T,
         creator: dict[str, str] | Any | None,
         **kwargs: Any,
     ) -> None:
