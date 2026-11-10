@@ -5,8 +5,9 @@
 
 from __future__ import annotations
 
-from functools import cached_property
-from typing import TYPE_CHECKING, Any
+import operator
+from functools import cached_property, reduce
+from typing import TYPE_CHECKING, Any, cast, override
 
 from flask_principal import Identity, Need
 from invenio_accounts.models import User
@@ -14,6 +15,7 @@ from invenio_db import db
 from invenio_records_permissions.generators import (
     Generator,
 )
+from invenio_search.engine import dsl
 
 from oarepo_workflows.requests import RecipientGeneratorMixin
 
@@ -148,6 +150,22 @@ class RequireAll(RecipientGeneratorMixin, Generator):
         # hashable and can live inside the frozenset returned by
         # BasePermissionPolicy.needs.
         return [Need("composite", HashableList(self.generators))]
+
+    @override
+    def query_filter(self, **context: Any) -> dsl.query.Query:
+        filters: list[dsl.query.Query] = []
+        for generator in self.generators:
+            query = generator.query_filter(**context)
+            # Invenio seems to have a bug with generators intended to return "match_none" returning None or empty list,
+            # which gets filtered in invenio_records_permissions.api.permission_filter and no filter present is treated
+            # as "match_all"
+
+            # this is conservative approach that causes divergent behavior from Invenio
+            if not query:
+                return dsl.Q("match_none")
+            # typing suggests query might be a list, which shouldn't happen outside the empty list bug
+            filters.append(cast("dsl.query.Query", query))
+        return reduce(operator.and_, filters, dsl.Q("match_all"))
 
     def __repr__(self) -> str:
         """Return a developer-friendly representation of this generator."""
