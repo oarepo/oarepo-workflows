@@ -11,6 +11,7 @@ import pytest
 from flask_principal import Identity, Need, UserNeed
 from invenio_records_permissions import RecordPermissionPolicy
 from invenio_records_permissions.generators import Generator
+from invenio_search.engine import dsl
 
 from oarepo_workflows.services.permissions.composite import (
     BooleanPermissionPolicyMixin,
@@ -66,6 +67,18 @@ class EmptyGenerator(Generator):
     def excludes(self, **_kwargs: Any):
         """Return no excludes."""
         return []
+
+
+class FixedQueryGenerator(Generator):
+    """Generator that always returns a fixed query filter."""
+
+    def __init__(self, query: Any) -> None:
+        """Initialize with the fixed query filter."""
+        self._query = query
+
+    def query_filter(self, **_kwargs: Any):
+        """Return the fixed query filter."""
+        return self._query
 
 
 # ---------------------------------------------------------------------------
@@ -290,6 +303,20 @@ def test_require_all_each_call_creates_new_hashable_list():
     # Different objects even though contents are the same
     assert hl1 is not hl2
     assert hl1 != hl2
+
+
+def test_require_all_query_filter_combines_inner_filters_with_and():
+    gen = RequireAll(
+        FixedQueryGenerator(dsl.Q("term", owner=1)),
+        FixedQueryGenerator(dsl.Q("term", state="draft")),
+    )
+    assert gen.query_filter() == dsl.Q("term", owner=1) & dsl.Q("term", state="draft")
+
+
+@pytest.mark.parametrize("empty_filter", [None, []])
+def test_require_all_query_filter_matches_nothing_when_inner_filter_is_empty(empty_filter):
+    gen = RequireAll(FixedQueryGenerator(dsl.Q("term", owner=1)), FixedQueryGenerator(empty_filter))
+    assert gen.query_filter() == dsl.Q("match_none")
 
 
 # ===========================================================================
