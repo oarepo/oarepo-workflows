@@ -167,7 +167,7 @@ class RequireAll(RecipientGeneratorMixin, Generator):
                 return dsl.Q("match_none")
             # typing suggests query might be a list, which shouldn't happen outside the empty list bug
             filters.append(cast("dsl.query.Query", query))
-        return reduce(operator.and_, filters, dsl.Q("match_all"))
+        return reduce(operator.and_, filters)
 
     def __repr__(self) -> str:
         """Return a developer-friendly representation of this generator."""
