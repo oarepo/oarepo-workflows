@@ -113,6 +113,8 @@ class RequireAll(RecipientGeneratorMixin, Generator):
             finishes without a ``break``, triggering the ``else`` branch in
             ``BooleanPermissionPolicyMixin.allows``).
         """
+        if not generators:
+            raise ValueError("RequireAll generator can't be created without any generators.")
         self.generators = generators
 
     def needs(self, **context: Any) -> Sequence[Need]:
