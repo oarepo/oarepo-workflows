@@ -177,6 +177,11 @@ def test_hashable_list_can_wrap_need_objects():
 # ===========================================================================
 
 
+def test_no_generators_throws_error():
+    with pytest.raises(ValueError, match="RequireAll generator can't be created without any generators"):
+        RequireAll()
+
+
 def test_require_all_raises_value_error_without_policy():
     """needs() must raise ValueError when no permission_policy key is present in context."""
     gen = RequireAll(FixedNeedsGenerator(UserNeed(1)))
