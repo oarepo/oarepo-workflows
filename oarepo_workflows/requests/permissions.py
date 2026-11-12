@@ -8,11 +8,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from invenio_communities.communities.records.api import Community
+from invenio_pidstore.errors import PIDDoesNotExistError
 from invenio_records_permissions.generators import AnyUser, SystemProcess
 from invenio_requests.customizations.event_types import CommentEventType, LogEventType
 from invenio_requests.services.permissions import (
     PermissionPolicy as InvenioRequestsPermissionPolicy,
 )
+from sqlalchemy.exc import NoResultFound
 
 from oarepo_workflows import FromRecordWorkflow
 from oarepo_workflows.requests.generators.conditionals import (
@@ -37,8 +39,12 @@ def _event_create_action(*, request: Request, event_type: type[EventType] = Comm
     return f"{request.type.type_id}_{event_type.type_id}_create"
 
 
-def _request_topic(*, request: Request, **_: Any) -> Record:
-    return request.topic.resolve()
+def _request_topic(*, request: Request, **_: Any) -> Record | None:
+    # A closed request can outlive its topic (e.g. a discarded draft); FromRecordWorkflow then grants nothing.
+    try:
+        return request.topic.resolve()
+    except PIDDoesNotExistError, NoResultFound:
+        return None
 
 
 class CreatorsFromWorkflowRequestsPermissionPolicy(BooleanPermissionPolicyMixin, InvenioRequestsPermissionPolicy):

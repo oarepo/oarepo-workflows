@@ -5,12 +5,16 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
 from flask_principal import Need
+from invenio_pidstore.errors import PIDDoesNotExistError
 from invenio_requests.customizations.request_types import RequestType
 from invenio_requests.services.permissions import (
     PermissionPolicy as InvenioRequestsPermissionPolicy,
 )
+from sqlalchemy.exc import NoResultFound
 
 from oarepo_workflows.requests.generators.conditionals import IfTopicTypeIsCommunity, IfTopicTypeIsRecord
 from oarepo_workflows.requests.permissions import CreatorsFromWorkflowRequestsPermissionPolicy
@@ -84,3 +88,19 @@ def test_from_community_workflow_without_workflow(app, community):
 
     assert generator._get_workflow(community) is None
     assert generator.needs(record=community) == []
+
+
+@pytest.mark.parametrize("error", [PIDDoesNotExistError("recid", "discarded-draft"), NoResultFound()])
+def test_comment_workflow_permission_grants_nothing_when_topic_is_gone(error):
+    """A request can outlive its topic (e.g. a discarded draft); its workflow then grants nothing."""
+    generator = next(
+        g for g in CreatorsFromWorkflowRequestsPermissionPolicy.can_create_comment if isinstance(g, FromRecordWorkflow)
+    )
+
+    def resolve():
+        raise error
+
+    request = SimpleNamespace(type=request_type("record"), topic=SimpleNamespace(resolve=resolve))
+
+    assert generator.needs(request=request) == []
+    assert generator.excludes(request=request) == []
