@@ -114,7 +114,7 @@ class FromRecordWorkflow(Generator):
     def __init__(
         self,
         action: str | Callable[..., str],
-        record_getter: Callable[..., Record] | None = None,
+        record_getter: Callable[..., Record | None] | None = None,
     ) -> None:
         """Initialize the permission.
 
