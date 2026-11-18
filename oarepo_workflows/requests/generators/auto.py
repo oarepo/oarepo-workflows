@@ -20,9 +20,7 @@ if TYPE_CHECKING:
     from invenio_records_resources.records import Record
     from invenio_requests.customizations import RequestType
 
-auto_request_need = SystemRoleNeed("auto_request")
 auto_approve_need = SystemRoleNeed("auto_approve")
-
 
 class AutoApprove(RecipientGeneratorMixin, Generator):
     """Auto approve generator.
