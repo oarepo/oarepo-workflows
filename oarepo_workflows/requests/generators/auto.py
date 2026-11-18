@@ -22,6 +22,7 @@ if TYPE_CHECKING:
 
 auto_approve_need = SystemRoleNeed("auto_approve")
 
+
 class AutoApprove(RecipientGeneratorMixin, Generator):
     """Auto approve generator.
 
